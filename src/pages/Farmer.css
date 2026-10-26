@@ -1,0 +1,186 @@
+/* src/pages/Farmer.css */
+
+.farmer-page { min-height: 100vh; }
+
+/* DB status indicator in sidebar */
+.db-indicator { border-left: 3px solid var(--color-border); }
+.db-indicator--connected { border-left-color: var(--color-sage); }
+.db-indicator--offline   { border-left-color: var(--color-tan); }
+
+.db-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-muted);
+}
+.db-indicator--connected .db-dot {
+  background: var(--color-sage);
+  animation: pulse-green 2s infinite;
+}
+.db-indicator--offline .db-dot { background: var(--color-tan); }
+
+/* Record UUID shown in success state */
+.record-id {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  background: rgba(0,0,0,0.06);
+  border-radius: 4px;
+  padding: 1px 6px;
+  word-break: break-all;
+}
+
+.farmer-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+/* Form sections */
+.form-section {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2xl);
+  margin-bottom: var(--space-xl);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--transition-normal);
+}
+.form-section:focus-within {
+  box-shadow: var(--shadow-md);
+  border-color: rgba(82,183,136,0.4);
+}
+
+.form-section-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.form-section-num {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-white);
+  background: var(--color-forest-mid);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Quantity input */
+.qty-input-wrap {
+  display: flex;
+}
+
+.qty-unit {
+  width: 100px;
+  flex-shrink: 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0 !important;
+  border-left: none !important;
+  background: var(--color-parchment) !important;
+  font-weight: 600 !important;
+}
+
+/* Errors */
+.form-control--error {
+  border-color: #ef4444 !important;
+  background: rgba(239,68,68,0.04) !important;
+}
+.form-error {
+  font-size: 0.8125rem;
+  color: #dc2626;
+  font-weight: 500;
+  display: block;
+  margin-top: 2px;
+}
+
+/* Footer */
+.farmer-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl) var(--space-2xl);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Sidebar */
+.farmer-sidebar { position: sticky; top: calc(var(--nav-height) + var(--space-xl)); }
+
+.farmer-tip-card { padding: var(--space-xl); }
+
+.farmer-tips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-left: var(--space-md);
+}
+.farmer-tips li {
+  font-size: 0.875rem;
+  color: var(--color-dark);
+  list-style: disc;
+  line-height: 1.55;
+}
+
+.farmer-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.farmer-steps li {
+  font-size: 0.875rem;
+  color: var(--color-dark);
+  line-height: 1.55;
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-parchment);
+}
+
+/* Success state */
+.farmer-success {
+  max-width: 700px;
+  margin: var(--space-3xl) auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.farmer-success__icon {
+  font-size: 4rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+.farmer-success__summary {
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2xl);
+}
+
+.farmer-success__actions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .farmer-layout { grid-template-columns: 1fr; }
+  .farmer-sidebar { position: static; }
+}

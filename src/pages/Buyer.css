@@ -1,0 +1,117 @@
+/* src/pages/Buyer.css */
+
+.buyer-page { min-height: 100vh; }
+
+/* Shared with Farmer: DB indicator in sidebar */
+.db-indicator { border-left: 3px solid var(--color-border); }
+.db-indicator--connected { border-left-color: var(--color-sage); }
+.db-indicator--offline   { border-left-color: var(--color-tan); }
+
+.db-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--color-muted);
+}
+.db-indicator--connected .db-dot {
+  background: var(--color-sage);
+  animation: pulse-green 2s infinite;
+}
+.db-indicator--offline .db-dot { background: var(--color-tan); }
+
+.record-id {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  background: rgba(0,0,0,0.06);
+  border-radius: 4px;
+  padding: 1px 6px;
+  word-break: break-all;
+}
+
+.buyer-hero {
+  background: linear-gradient(135deg, #4a2c0a 0%, #6B4423 40%, #B5835A 100%) !important;
+}
+
+.buyer-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+.buyer-form-wrap { }
+
+.buyer-sidebar { position: sticky; top: calc(var(--nav-height) + var(--space-xl)); }
+
+.buyer-tip-card { padding: var(--space-xl); }
+
+/* Buyer section number override */
+.buyer-num {
+  background: linear-gradient(135deg, #6B4423, #D4A96A) !important;
+}
+
+/* Residue type chip grid */
+.residue-type-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.residue-type-btn {
+  padding: 0.5rem 1.125rem;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: var(--color-parchment);
+  color: var(--color-forest);
+  border: 1.5px solid var(--color-border);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.residue-type-btn:hover {
+  border-color: var(--color-forest-mid);
+  background: rgba(45,106,79,0.08);
+}
+
+.residue-type-btn.active {
+  background: var(--color-forest-mid);
+  color: var(--color-white);
+  border-color: var(--color-forest-mid);
+  box-shadow: 0 2px 8px rgba(45,106,79,0.25);
+}
+
+/* Success state */
+.buyer-success {
+  max-width: 700px;
+  margin: var(--space-3xl) auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-xl);
+}
+
+.buyer-success__icon {
+  font-size: 4rem;
+  animation: float 3s ease-in-out infinite;
+}
+
+.buyer-success__summary {
+  width: 100%;
+  text-align: left;
+  padding: var(--space-2xl);
+}
+
+.buyer-success__actions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .buyer-layout { grid-template-columns: 1fr; }
+  .buyer-sidebar { position: static; }
+}

@@ -1,0 +1,18 @@
+/* src/App.css */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Pages that don't start with a full-bleed hero need top padding */
+.page-wrapper {
+  flex: 1;
+  padding-top: var(--nav-height);
+}
+
+/* Home has its own hero that overlaps the nav */
+.page-wrapper--home {
+  padding-top: 0;
+}
