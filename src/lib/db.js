@@ -4,6 +4,8 @@
 // Pages import these functions; they never import supabase directly.
 // ─────────────────────────────────────────────────────────────────
 import { supabase, isConfigured } from './supabase.js';
+import { STATE_RESIDUE_DATA, MARKET_PRICE_REFERENCES } from '../data/stateResidueData.js';
+import { VEHICLE_PROFILES } from './transportCalculator.js';
 
 /** Sentinel error returned when Supabase is not yet configured. */
 const NOT_CONFIGURED = {
@@ -26,19 +28,29 @@ export async function createFarmerListing(formData) {
   const quantityTonnes = toTonnes(Number(formData.quantity), formData.unit);
 
   const payload = {
-    farmer_name:        formData.farmerName.trim(),
-    contact_phone:      formData.contactPhone?.trim() || null,
-    contact_email:      formData.contactEmail?.trim()  || null,
-    residue_type:       formData.residueType,
-    quantity_tonnes:    quantityTonnes,
-    location:           formData.location.trim(),
-    district:           formData.district?.trim()       || null,
-    state:              formData.state.trim(),
-    availability_date:  formData.availabilityDate,
-    pickup_preference:  formData.pickupPreference,
-    notes:              formData.notes?.trim()          || null,
-    status:             'active',
-    is_demo:            false,
+    farmer_name:            formData.farmerName.trim(),
+    contact_phone:          formData.contactPhone?.trim() || null,
+    contact_email:          formData.contactEmail?.trim()  || null,
+    residue_type:           formData.residueType,
+    quantity_tonnes:        quantityTonnes,
+    location:               formData.location.trim(),
+    district:               formData.district?.trim()       || null,
+    state:                  formData.state.trim(),
+    availability_date:      formData.availabilityDate,
+    pickup_preference:      formData.pickupPreference,
+    notes:                  formData.notes?.trim()          || null,
+    status:                 'active',
+    is_demo:                false,
+    // Commercial & Quality Metadata
+    asking_price_per_tonne: formData.askingPricePerTonne !== undefined && formData.askingPricePerTonne !== '' && formData.askingPricePerTonne !== null
+      ? Number(formData.askingPricePerTonne)
+      : null,
+    is_price_negotiable:    formData.isPriceNegotiable !== undefined ? Boolean(formData.isPriceNegotiable) : true,
+    price_condition:        formData.priceCondition || 'farm_gate',
+    moisture_percent:       formData.moisturePercent !== undefined && formData.moisturePercent !== '' && formData.moisturePercent !== null
+      ? Number(formData.moisturePercent)
+      : null,
+    residue_form:           formData.residueForm || 'baled',
   };
 
   const { data, error } = await supabase
@@ -123,6 +135,17 @@ export async function createBuyerRequirement(formData) {
     availability_status:        formData.available,
     notes:                      formData.notes?.trim()              || null,
     is_demo:                    false,
+    // Commercial & Purchasing Purpose Metadata
+    offered_price_per_tonne:    formData.offeredPricePerTonne !== undefined && formData.offeredPricePerTonne !== '' && formData.offeredPricePerTonne !== null
+      ? Number(formData.offeredPricePerTonne)
+      : null,
+    purchasing_purpose:         formData.purchasingPurpose || formData.intendedUse || 'Biomass Power Generation',
+    is_price_negotiable:        formData.isPriceNegotiable !== undefined ? Boolean(formData.isPriceNegotiable) : true,
+    delivery_term_preference:   formData.deliveryTermPreference || 'delivered',
+    max_acceptable_moisture:    formData.maxAcceptableMoisture !== undefined && formData.maxAcceptableMoisture !== '' && formData.maxAcceptableMoisture !== null
+      ? Number(formData.maxAcceptableMoisture)
+      : null,
+    preferred_residue_form:     formData.preferredResidueForm || 'baled',
   };
 
   const { data, error } = await supabase
@@ -240,6 +263,135 @@ export async function updateContactRequestStatus(id, status) {
     .single();
 
   return { data, error };
+}
+
+// ─── Market Intelligence & Transport Data Access ─────────────────
+
+/**
+ * Fetch state-wise crop residue agricultural statistics.
+ * Falls back gracefully to verified stateResidueData when offline or table empty.
+ */
+export async function fetchStateResidueStatistics({ state, residueType } = {}) {
+  if (isConfigured) {
+    try {
+      let query = supabase.from('state_residue_statistics').select('*');
+      if (state && state !== 'All States') {
+        query = query.eq('state', state);
+      }
+      if (residueType && residueType !== 'All Types') {
+        query = query.eq('residue_type', residueType);
+      }
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        return { data, error: null, source: 'supabase' };
+      }
+    } catch {
+      // Fall through to fallback
+    }
+  }
+
+  // Fallback to grounded local static data
+  let fallbackList = [];
+  Object.values(STATE_RESIDUE_DATA).forEach((st) => {
+    if (state && state !== 'All States' && st.stateName !== state) return;
+    if (st.crops) {
+      st.crops.forEach((c) => {
+        if (residueType && residueType !== 'All Types' && c.residueType !== residueType) return;
+        fallbackList.push({
+          state: st.stateName,
+          crop_type: c.cropName,
+          residue_type: c.residueType,
+          reporting_year: c.reportingYear,
+          crop_production_tonnes: c.cropProductionTonnes,
+          residue_generated_tonnes: c.residueGeneratedTonnes,
+          surplus_tonnes: c.surplusTonnes,
+          collectable_tonnes: c.collectableTonnes,
+          existing_uses_tonnes: c.existingUsesTonnes,
+          potential_available_tonnes: c.potentialAvailableTonnes,
+          rpr_ratio: c.rprRatio,
+          source_name: c.source,
+          source_url: c.sourceUrl,
+          methodology: c.methodology,
+        });
+      });
+    }
+  });
+
+  return { data: fallbackList, error: null, source: 'grounded_dataset' };
+}
+
+/**
+ * Fetch verified vehicle transport rate configurations.
+ * Falls back to transportCalculator.js profiles.
+ */
+export async function fetchTransportConfigs() {
+  if (isConfigured) {
+    try {
+      const { data, error } = await supabase
+        .from('transport_rate_configs')
+        .select('*');
+      if (!error && data && data.length > 0) {
+        return { data, error: null, source: 'supabase' };
+      }
+    } catch {
+      // Fall through to fallback
+    }
+  }
+
+  // Fallback to VEHICLE_PROFILES
+  const fallbackProfiles = Object.entries(VEHICLE_PROFILES).map(([key, v]) => ({
+    vehicle_type: key,
+    label: v.name,
+    category: v.category,
+    payload_tonnes: v.capacityTonnes,
+    rate_per_km: v.ratePerKm,
+    fixed_trip_charge: v.fixedCharge,
+    toll_rate_per_km: v.tollPerKm,
+    loading_per_tonne: v.loadingPerTonne,
+    unloading_per_tonne: v.unloadingPerTonne,
+    interstate_permit_fee: v.interstatePermitFee,
+  }));
+
+  return { data: fallbackProfiles, error: null, source: 'grounded_dataset' };
+}
+
+/**
+ * Fetch official market price references.
+ * Falls back to MARKET_PRICE_REFERENCES.
+ */
+export async function fetchMarketPriceReferences({ residueType } = {}) {
+  if (isConfigured) {
+    try {
+      let query = supabase.from('market_price_references').select('*');
+      if (residueType && residueType !== 'All Types') {
+        query = query.eq('residue_type', residueType);
+      }
+      const { data, error } = await query;
+      if (!error && data && data.length > 0) {
+        return { data, error: null, source: 'supabase' };
+      }
+    } catch {
+      // Fall through to fallback
+    }
+  }
+
+  // Fallback to MARKET_PRICE_REFERENCES
+  let fallbackRefs = Object.entries(MARKET_PRICE_REFERENCES).map(([type, val]) => ({
+    residue_type: type,
+    min_price_inr: val.min,
+    max_price_inr: val.max,
+    typical_rate_inr: val.typical,
+    price_unit: val.unit,
+    delivery_condition: val.condition,
+    source_name: val.source,
+    reporting_year: val.year,
+  }));
+
+  if (residueType && residueType !== 'All Types') {
+    fallbackRefs = fallbackRefs.filter((r) => r.residue_type === residueType);
+  }
+
+  return { data: fallbackRefs, error: null, source: 'grounded_dataset' };
 }
 
 // ─── Dashboard summary ───────────────────────────────────────────

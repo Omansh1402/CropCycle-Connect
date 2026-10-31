@@ -19,6 +19,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { resolveCoordinates, calculateHaversineDistanceKm } from './geo.js';
+import { calculateTransportationCost, calculateDeliveredCost } from './transportCalculator.js';
 
 export const MATCH_WEIGHTS = {
   QUANTITY: 0.40,
@@ -54,6 +55,14 @@ const HIGH_SYNERGY_USES = {
     'paddy straw', 'wheat straw', 'sugarcane bagasse', 'cotton stalks',
     'mustard stalks', 'maize stalks', 'groundnut shells', 'sunflower stalks',
   ],
+  'Biofuel Production': [
+    'paddy straw', 'wheat straw', 'sugarcane bagasse', 'cotton stalks',
+    'mustard stalks', 'maize stalks', 'groundnut shells', 'sunflower stalks',
+  ],
+  'Biomass Power Generation': [
+    'paddy straw', 'wheat straw', 'sugarcane bagasse', 'cotton stalks',
+    'mustard stalks', 'groundnut shells', 'soybean stalks',
+  ],
   'Bio-CNG Production': [
     'paddy straw', 'sugarcane bagasse', 'cotton stalks', 'soybean stalks',
     'maize stalks', 'wheat straw',
@@ -62,6 +71,10 @@ const HIGH_SYNERGY_USES = {
     'sugarcane bagasse', 'wheat straw', 'banana pseudostems', 'paddy straw',
   ],
   'Compost / Organic Fertiliser': [
+    'paddy straw', 'cotton stalks', 'groundnut shells', 'maize stalks',
+    'banana pseudostems', 'soybean stalks', 'wheat straw', 'mustard stalks',
+  ],
+  'Compost and Organic Fertilizer': [
     'paddy straw', 'cotton stalks', 'groundnut shells', 'maize stalks',
     'banana pseudostems', 'soybean stalks', 'wheat straw', 'mustard stalks',
   ],
@@ -77,8 +90,14 @@ const HIGH_SYNERGY_USES = {
   'Animal Feed / Fodder': [
     'wheat straw', 'paddy straw', 'groundnut shells', 'maize stalks',
   ],
+  'Cattle Feed': [
+    'wheat straw', 'paddy straw', 'groundnut shells', 'maize stalks',
+  ],
   'Construction Material': [
     'banana pseudostems', 'sugarcane bagasse', 'wheat straw',
+  ],
+  'Industrial Raw Material': [
+    'sugarcane bagasse', 'cotton stalks', 'groundnut shells', 'banana pseudostems', 'mustard stalks',
   ],
 };
 
@@ -92,6 +111,9 @@ export function normalizeListing(raw = {}) {
   const quantity = Number(raw.quantity_tonnes ?? raw.quantity ?? 0);
   const coords = raw.coordinates ? resolveCoordinates(raw.coordinates) : resolveCoordinates(raw);
 
+  const rawAskingPrice = raw.asking_price_per_tonne ?? raw.askingPricePerTonne ?? raw.expected_price ?? raw.expectedPrice;
+  const askingPricePerTonne = rawAskingPrice != null && !isNaN(Number(rawAskingPrice)) ? Number(rawAskingPrice) : null;
+
   return {
     id: raw.id || 'unknown-listing',
     farmerName: raw.farmer_name || raw.farmerName || 'Anonymous Farmer',
@@ -103,6 +125,11 @@ export function normalizeListing(raw = {}) {
     coordinates: coords,
     availabilityDate: raw.availability_date || raw.availabilityDate || '',
     pickupPreference: raw.pickup_preference || raw.pickupPreference || 'Not specified',
+    askingPricePerTonne,
+    isPriceNegotiable: raw.is_price_negotiable ?? raw.isPriceNegotiable ?? true,
+    priceCondition: raw.price_condition || raw.priceCondition || 'farm_gate',
+    moisturePercent: raw.moisture_percent != null ? Number(raw.moisture_percent) : (raw.moisturePercent != null ? Number(raw.moisturePercent) : null),
+    residueForm: raw.residue_form || raw.residueForm || 'baled',
     status: raw.status || 'active',
     isDemo: !!(raw.is_demo || raw.isDemo),
   };
@@ -135,12 +162,14 @@ export function normalizeBuyer(raw = {}) {
     isAvailable = raw.availability_status.toLowerCase() !== 'no';
   }
 
-  // Price normalization: supports raw.price_per_tonne or raw.pricePerTonne
-  const rawPrice = raw.price_per_tonne ?? raw.pricePerTonne;
+  // Price normalization: supports raw.offered_price_per_tonne, raw.price_per_tonne, etc.
+  const rawPrice = raw.offered_price_per_tonne ?? raw.offeredPricePerTonne ?? raw.price_per_tonne ?? raw.pricePerTonne;
   const pricePerTonne = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : null;
   const isDemo = !!(raw.is_demo || raw.isDemo);
   const priceType = raw.price_type || raw.priceType || (isDemo ? 'demo' : (pricePerTonne ? 'commercial' : null));
   const coords = raw.coordinates ? resolveCoordinates(raw.coordinates) : resolveCoordinates(raw);
+
+  const purchasingPurpose = raw.purchasing_purpose || raw.purchasingPurpose || raw.intended_use || raw.intendedUse || 'Industrial Processing';
 
   return {
     id: raw.id || 'unknown-buyer',
@@ -152,8 +181,14 @@ export function normalizeBuyer(raw = {}) {
     acceptedTypes,
     requiredQuantity: isNaN(reqQty) ? 0 : reqQty,
     maxIntake,
-    intendedUse: raw.intended_use || raw.intendedUse || 'Industrial Processing',
+    intendedUse: purchasingPurpose,
+    purchasingPurpose,
     pricePerTonne,
+    offeredPricePerTonne: pricePerTonne,
+    isPriceNegotiable: raw.is_price_negotiable ?? raw.isPriceNegotiable ?? true,
+    deliveryTermPreference: raw.delivery_term_preference || raw.deliveryTermPreference || 'delivered',
+    maxAcceptableMoisture: raw.max_acceptable_moisture != null ? Number(raw.max_acceptable_moisture) : null,
+    preferredResidueForm: raw.preferred_residue_form || raw.preferredResidueForm || 'baled',
     priceType,
     available: isAvailable,
     availabilityStatus: raw.availability_status || (isAvailable ? 'yes' : 'no'),
@@ -343,11 +378,6 @@ export function calculateProximityFit(farmerLocationInput, buyerLocationInput) {
 
 /**
  * Component 3: Available Capacity Fit (20% Weight)
- * Evaluates whether the buyer's processing infrastructure can accommodate the lot.
- * If maxIntake is specified:
- *   - listing <= maxIntake: 1.0
- *   - listing > maxIntake: maxIntake / listing (discounted proportionally)
- * If maxIntake not specified, falls back to 2x requiredQuantity as buffer.
  */
 export function calculateCapacityFit(listingQty, buyerMaxIntake) {
   const qListing = Number(listingQty);
@@ -362,7 +392,6 @@ export function calculateCapacityFit(listingQty, buyerMaxIntake) {
     };
   }
 
-  // When buyer intake capacity is unspecified, do not apply an arbitrary capacity penalty
   if (qMax == null) {
     return {
       score: 1.0,
@@ -381,7 +410,6 @@ export function calculateCapacityFit(listingQty, buyerMaxIntake) {
     };
   }
 
-  // Exceeds explicitly declared capacity: calculate proportional absorption fit
   const ratio = Math.max(0.10, qMax / qListing);
   const normalized = Number(Math.min(0.95, ratio).toFixed(4));
 
@@ -395,10 +423,6 @@ export function calculateCapacityFit(listingQty, buyerMaxIntake) {
 
 /**
  * Component 4: Use-Case Compatibility (10% Weight)
- * Assesses value-chain synergy between residue biological traits and industrial output.
- * - High-synergy circular pairing: 1.0
- * - Buyer-accepted standard processing: 0.75
- * - General biomass compatibility: 0.50
  */
 export function calculateUseCaseFit(residueType, intendedUse, acceptedTypes = []) {
   if (!residueType || !intendedUse) {
@@ -437,6 +461,7 @@ export function calculateUseCaseFit(residueType, intendedUse, acceptedTypes = []
 /**
  * Scores an individual pair of listing and buyer.
  * Enforces Step 1 compatibility check before computing Step 2 score components.
+ * Incorporates commercial pricing and transportation cost calculations.
  */
 export function scoreMatch(listingInput, buyerInput) {
   const listing = normalizeListing(listingInput);
@@ -473,6 +498,7 @@ export function scoreMatch(listingInput, buyerInput) {
           isDemoPrice: !!(buyer.isDemo || buyer.priceType === 'demo'),
           priceLabel: buyer.pricePerTonne != null ? 'Price available on request' : 'Price unavailable',
         },
+        commercial: null,
       },
     };
   }
@@ -483,10 +509,10 @@ export function scoreMatch(listingInput, buyerInput) {
     { location: listing.location, district: listing.district, state: listing.state, coordinates: listing.coordinates },
     { location: buyer.location, state: buyer.state, coordinates: buyer.coordinates }
   );
-  const capRes = calculateCapacityFit(listing.quantity, buyer.maxIntake, buyer.requiredQuantity);
+  const capRes = calculateCapacityFit(listing.quantity, buyer.maxIntake);
   const useRes = calculateUseCaseFit(listing.residueType, buyer.intendedUse, buyer.acceptedTypes);
 
-  // Pricing & Potential Value calculations (Feature 4)
+  // Pricing & Commercial details
   const pricePerTonne = buyer.pricePerTonne != null ? Number(buyer.pricePerTonne) : null;
   const indicativeValue = (pricePerTonne != null && listing.quantity > 0)
     ? Number((listing.quantity * pricePerTonne).toFixed(2))
@@ -495,6 +521,32 @@ export function scoreMatch(listingInput, buyerInput) {
   const priceLabel = pricePerTonne != null
     ? (isDemoPrice ? 'Demo Price (Indicative)' : 'Indicative Price')
     : 'Price unavailable';
+
+  // Interstate & Transportation calculation
+  const fState = (listing.state || '').toLowerCase().trim();
+  const bState = (buyer.state || '').toLowerCase().trim();
+  const isInterstate = Boolean(fState && bState && fState !== bState);
+
+  const effectiveDistanceKm = proxRes.coordinateDistanceKm ?? proxRes.estimatedDistanceKm;
+  const transportResult = calculateTransportationCost({
+    distanceKm: effectiveDistanceKm,
+    quantityTonnes: listing.quantity,
+    isInterstate,
+  });
+
+  const basePriceForDelivered = buyer.pricePerTonne ?? listing.askingPricePerTonne ?? null;
+  const deliveredResult = calculateDeliveredCost({
+    purchasePricePerTonne: basePriceForDelivered,
+    transportCostPerTonne: transportResult.costPerTonne,
+    quantityTonnes: listing.quantity,
+  });
+
+  const territoryTier =
+    proxRes.proximityTier === 'local'
+      ? 'same_district'
+      : proxRes.proximityTier === 'intrastate'
+      ? 'same_state'
+      : 'interstate';
 
   // Apply weights
   const weightedPoints = {
@@ -512,6 +564,7 @@ export function scoreMatch(listingInput, buyerInput) {
   const warnings = [];
   if (capRes.warning) warnings.push(capRes.warning);
   if (proxRes.proximityTier === 'unspecified') warnings.push('Approximate proximity used due to unspecified location');
+  if (isInterstate) warnings.push('Interstate haulage: interstate permit charges applied in freight estimation');
 
   // Step 4: Narrative explanation
   const explanation = {
@@ -550,7 +603,7 @@ export function scoreMatch(listingInput, buyerInput) {
     finalScore,
     explanation,
     metadata: {
-      estimatedDistanceKm: proxRes.coordinateDistanceKm ?? proxRes.estimatedDistanceKm,
+      estimatedDistanceKm: effectiveDistanceKm,
       tierDistanceKm: proxRes.estimatedDistanceKm,
       coordinateDistanceKm: proxRes.coordinateDistanceKm,
       proximityTier: proxRes.proximityTier,
@@ -562,6 +615,25 @@ export function scoreMatch(listingInput, buyerInput) {
         indicativeValue,
         isDemoPrice,
         priceLabel,
+      },
+      commercial: {
+        farmerName: listing.farmerName,
+        buyerName: buyer.orgName,
+        residueType: listing.residueType,
+        availableQuantity: listing.quantity,
+        requiredQuantity: buyer.requiredQuantity,
+        sourceDistrict: listing.district || '',
+        sourceState: listing.state || '',
+        destinationLocation: buyer.location || '',
+        destinationState: buyer.state || '',
+        roadDistanceKm: effectiveDistanceKm,
+        farmerAskingPrice: listing.askingPricePerTonne,
+        buyerOfferedRate: buyer.offeredPricePerTonne ?? buyer.pricePerTonne,
+        buyerPurchasingPurpose: buyer.purchasingPurpose || buyer.intendedUse,
+        isInterstate,
+        territoryTier,
+        transportation: transportResult,
+        delivered: deliveredResult,
       },
     },
   };
@@ -654,6 +726,7 @@ function extractState(text = '') {
     'gujarat', 'punjab', 'telangana', 'kerala', 'maharashtra',
     'haryana', 'rajasthan', 'uttar pradesh', 'west bengal', 'karnataka',
     'tamil nadu', 'andhra pradesh', 'madhya pradesh', 'bihar', 'odisha',
+    'chhattisgarh', 'jharkhand', 'assam', 'uttarakhand', 'himachal pradesh',
   ];
   return commonStates.find((state) => text.includes(state)) || '';
 }
@@ -687,20 +760,11 @@ function buildSummaryNarrative({ orgName, residueType, finalScore, proxTier, int
 /**
  * Recommends grouping compatible nearby farmer listings to fulfill
  * a buyer's batch demand.
- *
- * NOTE:
- * Returned as a "suggested collection opportunity", NOT a confirmed booking.
- * Does not invent live buyers, prices, or transactions.
- *
- * @param {Array} listingsInput - Array of farmer listings
- * @param {Array} buyersInput - Array of buyer requirement profiles
- * @returns {Array} Array of suggested collection grouping opportunities
  */
 export function findCollectionGroupings(listingsInput = [], buyersInput = []) {
   const listings = Array.isArray(listingsInput) ? listingsInput.map(normalizeListing) : [];
   const buyers = Array.isArray(buyersInput) ? buyersInput.map(normalizeBuyer) : [];
 
-  // Consider active listings with valid positive quantities
   const activeListings = listings.filter(
     (l) => (l.status.toLowerCase() === 'active' || l.status.toLowerCase() === 'pending') && l.quantity > 0
   );
@@ -708,7 +772,6 @@ export function findCollectionGroupings(listingsInput = [], buyersInput = []) {
 
   const opportunities = [];
 
-  // Group listings by (residueType + district/state)
   const clusters = new Map();
   for (const item of activeListings) {
     const resKey = item.residueType.toLowerCase().trim();
@@ -723,7 +786,6 @@ export function findCollectionGroupings(listingsInput = [], buyersInput = []) {
 
   let opportunityIndex = 1;
   for (const [, clusterItems] of clusters.entries()) {
-    // Only form aggregate grouping if at least 2 farmer listings exist in the cluster
     if (clusterItems.length < 2) continue;
 
     const residueType = clusterItems[0].residueType;
@@ -732,23 +794,19 @@ export function findCollectionGroupings(listingsInput = [], buyersInput = []) {
     const clusterLocation = district ? `${district}, ${state}` : state;
     const totalClusterTonnes = clusterItems.reduce((acc, curr) => acc + curr.quantity, 0);
 
-    // Find compatible buyers that accept this residue type
     const compatibleBuyers = availableBuyers.filter((b) =>
       b.acceptedTypes.some((t) => t.toLowerCase().trim() === residueType.toLowerCase().trim())
     );
 
     for (const buyer of compatibleBuyers) {
-      // Must be within buyer's max intake capacity if specified
       if (buyer.maxIntake && totalClusterTonnes > buyer.maxIntake) continue;
 
-      // Group is viable if it fulfills between 50% and 150% of the buyer's batch requirement
       const fulfillmentPct = Math.round((totalClusterTonnes / buyer.requiredQuantity) * 100);
       if (fulfillmentPct < 40) continue;
 
       const pricePerTonne = buyer.pricePerTonne;
       const indicativeLotValue = pricePerTonne ? Math.round(totalClusterTonnes * pricePerTonne) : null;
 
-      // Calculate proximity between cluster and buyer
       const prox = calculateProximityFit(
         { location: clusterItems[0].location, district, state },
         { location: buyer.location, state: buyer.state }
@@ -789,7 +847,6 @@ export function findCollectionGroupings(listingsInput = [], buyersInput = []) {
     }
   }
 
-  // Sort opportunities by highest volume and closest fulfillment to 100%
   opportunities.sort((a, b) => {
     const diffA = Math.abs(100 - a.fulfillmentPct);
     const diffB = Math.abs(100 - b.fulfillmentPct);

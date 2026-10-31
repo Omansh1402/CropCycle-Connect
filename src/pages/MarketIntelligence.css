@@ -1,0 +1,229 @@
+/* src/pages/MarketIntelligence.css */
+
+.market-intelligence-page {
+  min-height: 100vh;
+  background-color: var(--color-offwhite, #F9FAF8);
+  padding-bottom: var(--space-3xl, 4rem);
+}
+
+.data-source-badge-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border, #E5E7EB);
+  border-radius: var(--radius-sm, 6px);
+  padding: 8px 14px;
+  text-align: right;
+}
+
+.filter-bar-card {
+  padding: var(--space-lg, 1.25rem);
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border, #E5E7EB);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.section-card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--color-border, #E5E7EB);
+  border-radius: var(--radius-md, 8px);
+  padding: var(--space-xl, 1.5rem);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.section-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-sm, 0.75rem);
+  border-bottom: 1px solid #F1F5F9;
+  padding-bottom: var(--space-md, 1rem);
+}
+
+/* Data Table */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+  text-align: left;
+}
+
+.data-table th {
+  background-color: #F8FAF9;
+  color: var(--color-forest, #1E3A2F);
+  font-weight: 600;
+  padding: 10px 14px;
+  border-bottom: 2px solid #E2E8F0;
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #E2E8F0;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.data-table tbody tr:hover {
+  background-color: #F8FAFC;
+}
+
+.row-highlight {
+  background-color: #F0FDF4 !important;
+}
+
+.row-local-match {
+  background-color: #FBFDF7;
+}
+
+/* Ledger Boxes */
+.ledger-box {
+  padding: var(--space-lg, 1.25rem);
+  border-radius: var(--radius-sm, 6px);
+  border: 1px solid #E2E8F0;
+  background-color: #FFFFFF;
+}
+
+.ledger-box--statewide {
+  border-left: 4px solid #64748B;
+}
+
+.ledger-box--platform {
+  border-left: 4px solid var(--color-forest, #1E3A2F);
+}
+
+.ledger-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs, 0.5rem);
+}
+
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-block: 6px;
+  border-bottom: 1px dashed #E2E8F0;
+  font-size: 0.875rem;
+}
+
+.ledger-row.highlight {
+  background-color: #F8FAF9;
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #E2E8F0;
+  margin-top: 4px;
+}
+
+/* Visual Analytics Charts */
+.chart-card {
+  padding: var(--space-lg, 1.25rem);
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: var(--radius-sm, 6px);
+}
+
+.chart-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm, 0.75rem);
+}
+
+.chart-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chart-bar-label {
+  display: flex;
+  justify-content: space-between;
+}
+
+.chart-track {
+  width: 100%;
+  height: 10px;
+  background-color: #E2E8F0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.chart-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.4s ease;
+}
+
+.chart-fill--forest {
+  background-color: var(--color-forest, #1E3A2F);
+}
+
+.chart-fill--warm {
+  background-color: #D97706;
+}
+
+.utilization-bar-stacked {
+  display: flex;
+  width: 100%;
+  height: 18px;
+  border-radius: 9px;
+  overflow: hidden;
+  background-color: #E2E8F0;
+}
+
+.seg-uses {
+  background-color: #94A3B8;
+}
+
+.seg-surplus {
+  background-color: var(--color-forest, #1E3A2F);
+}
+
+.chart-legend-grid {
+  display: flex;
+  gap: var(--space-md, 1rem);
+  flex-wrap: wrap;
+  margin-top: var(--space-xs, 0.5rem);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* Pricing Tiles */
+.pricing-tile {
+  padding: var(--space-md, 1rem);
+  border: 1px solid #E2E8F0;
+  background-color: #FFFFFF;
+  border-radius: var(--radius-sm, 6px);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.pricing-tile:hover {
+  border-color: var(--color-forest, #1E3A2F);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.unavailable-data-notice {
+  padding: var(--space-xl, 1.5rem);
+  background-color: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: var(--radius-sm, 6px);
+  text-align: center;
+}
+

@@ -8,7 +8,7 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node test/matchingEngine.test.js && node test/auditSuite.test.js"
+    "test": "node test/matchingEngine.test.js && node test/auditSuite.test.js && node test/marketIntelligence.test.js"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

@@ -9,6 +9,8 @@ import {
   formatDbError,
 } from '../lib/db';
 import { scoreMatch, normalizeBuyer, normalizeListing } from '../lib/matchingEngine';
+import { VEHICLE_CONFIGS, calculateTransportationCost, calculateDeliveredCost } from '../lib/transportCalculator';
+import { useTranslation } from '../lib/i18n';
 import { DbErrorAlert, LoadingSpinner } from '../components/DbStatus';
 import SplitText from '../components/reactbits/SplitText';
 import FadeContent from '../components/reactbits/FadeContent';
@@ -22,6 +24,7 @@ export default function MatchDetails() {
   const { buyerId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const listingId = searchParams.get('listing');
+  const { t } = useTranslation();
 
   // Loaded buyer and listing state (supports both DB and sample)
   const [buyerData, setBuyerData] = useState(() => {
@@ -32,6 +35,7 @@ export default function MatchDetails() {
   });
   const [availableListings, setAvailableListings] = useState(sampleListings);
   const [loadingData, setLoadingData] = useState(false);
+  const [selectedVehicle, setSelectedVehicle] = useState('auto');
 
   // Form states
   const [requestSent, setRequestSent] = useState(false);
@@ -130,6 +134,33 @@ export default function MatchDetails() {
     return scoreMatch(normalizedListing, normalizedBuyer);
   }, [normalizedBuyer, normalizedListing]);
 
+  // Compute detailed transport and delivered cost
+  const transportCalc = useMemo(() => {
+    if (!normalizedListing || !normalizedBuyer) return null;
+    const distanceKm = matchResult?.metadata?.coordinateDistanceKm || matchResult?.metadata?.estimatedDistanceKm || 120;
+    const isInterstate = matchResult?.metadata?.commercial?.isInterstate ?? (
+      (normalizedListing.state || '').trim().toLowerCase() !== (normalizedBuyer.state || '').trim().toLowerCase()
+    );
+    const vTier = selectedVehicle !== 'auto' ? selectedVehicle : (
+      distanceKm > 400 || normalizedListing.quantity > 20 ? 'heavy_truck' :
+      distanceKm > 100 || normalizedListing.quantity > 8 ? 'medium_truck' :
+      distanceKm > 30 ? 'small_truck' : 'tractor_trolley'
+    );
+    const transport = calculateTransportationCost({
+      quantityTonnes: normalizedListing.quantity,
+      distanceKm,
+      vehicleType: vTier,
+      isInterstate,
+    });
+    const purchasePrice = normalizedListing.askingPricePerTonne || matchResult?.metadata?.pricing?.pricePerTonne || normalizedBuyer.offeredPricePerTonne || 2100;
+    const delivered = calculateDeliveredCost({
+      purchasePricePerTonne: purchasePrice,
+      transportCostPerTonne: transport?.costPerTonne,
+      quantityTonnes: normalizedListing.quantity,
+    });
+    return { transport, delivered, purchasePrice, distanceKm, isInterstate, vTier };
+  }, [normalizedListing, normalizedBuyer, matchResult, selectedVehicle]);
+
   if (loadingData) {
     return (
       <main className="match-details-page">
@@ -144,13 +175,13 @@ export default function MatchDetails() {
     return (
       <main className="match-details-page">
         <div className="container section">
-          <div className="card text-center" style={{ padding: 'var(--space-3xl) var(--space-xl)' }}>
-            <h1 className="heading-lg">Enterprise Profile Not Found</h1>
-            <p className="body-md text-muted mt-sm mb-lg">
-              The requested buyer record does not exist in the active directory.
+          <div className="error-state-card text-center">
+            <h2 className="heading-lg">Buyer Profile Not Located</h2>
+            <p className="body-md text-muted mt-xs">
+              The requested buyer requirement ID could not be retrieved from the active index.
             </p>
-            <Link to="/matches" className="btn btn-primary">
-              Return to Marketplace
+            <Link to="/matches" className="btn btn-primary mt-md">
+              Return to Matches Catalog
             </Link>
           </div>
         </div>
@@ -158,45 +189,50 @@ export default function MatchDetails() {
     );
   }
 
-  const score = matchResult?.finalScore ?? 75;
+  const score = matchResult ? matchResult.finalScore : 70;
+  const scoreBadgeClass =
+    score >= 80 ? 'score-pill--high' :
+    score >= 60 ? 'score-pill--medium' : 'score-pill--low';
 
-  // Handle Contact Request submission
   const handleSendRequest = async (e) => {
     e.preventDefault();
     setDbError(null);
     setMsgError('');
 
     if (!message.trim() || message.trim().length < 10) {
-      setMsgError('Please enter a descriptive message (at least 10 characters)');
+      setMsgError('Message must contain at least 10 characters.');
       return;
     }
 
     setLoading(true);
     try {
-      const payload = {
-        buyerId: normalizedBuyer.id,
-        listingId: normalizedListing?.id || null,
-        requesterName: requesterName.trim() || 'Cooperative Manager',
-        requesterEmail: requesterEmail.trim() || null,
-        message: message.trim(),
-        requestType,
-      };
+      const isRealListing = listingId && listingId.includes('-');
+      const isRealBuyer = buyerId && buyerId.includes('-');
 
-      const { data, error } = await createContactRequest(payload);
+      const { data, error } = await createContactRequest({
+        listingId: isRealListing ? listingId : null,
+        buyerId: isRealBuyer ? buyerId : null,
+        demoBuyerRef: !isRealBuyer ? buyerId : null,
+        requestType,
+        message,
+        requesterName: requesterName.trim() || null,
+        requesterEmail: requesterEmail.trim() || null,
+      });
 
       if (error) {
         if (error.code === 'NOT_CONFIGURED') {
           setRequestSent(true);
+          setSavedRequestId(null);
           return;
         }
         setDbError(formatDbError(error));
         return;
       }
 
-      setSavedRequestId(data?.id ?? null);
+      setSavedRequestId(data?.id || null);
       setRequestSent(true);
     } catch {
-      setDbError('An unexpected error occurred. Please try again.');
+      setDbError('An unexpected network error occurred while transmitting your request.');
     } finally {
       setLoading(false);
     }
@@ -204,48 +240,48 @@ export default function MatchDetails() {
 
   return (
     <main className="match-details-page">
-      {/* Breadcrumb Navigation */}
-      <nav className="details-breadcrumb" aria-label="Breadcrumb">
-        <div className="container">
-          <div className="breadcrumb-inner">
-            <Link to="/" className="breadcrumb-link">Overview</Link>
-            <span className="breadcrumb-sep">/</span>
-            <Link to="/matches" className="breadcrumb-link">Marketplace</Link>
-            <span className="breadcrumb-sep">/</span>
-            <span className="breadcrumb-curr">{normalizedBuyer.orgName}</span>
-          </div>
-        </div>
-      </nav>
-
-      {/* Header Banner */}
+      {/* Page Header */}
       <header className="page-header">
         <div className="container">
-          <div className="details-header-flex">
-            <div className="details-header-info">
-              <span className="section-eyebrow">Enterprise Procurement Dossier</span>
-              <SplitText text={normalizedBuyer.orgName} tag="h1" className="display-lg" delay={0.03} />
-              <div className="details-meta-row mt-sm">
-                <span className="details-meta-tag font-medium">
-                  {normalizedBuyer.location} {normalizedBuyer.state ? `(${normalizedBuyer.state})` : ''}
+          <div className="breadcrumb-nav mb-sm">
+            <Link to="/matches" className="body-sm text-forest font-medium">← All Matches</Link>
+            <span className="body-sm text-muted"> / </span>
+            <span className="body-sm text-muted">{normalizedBuyer.orgName}</span>
+          </div>
+
+          <div className="page-header__flex">
+            <div>
+              <div className="flex items-center gap-xs flex-wrap mb-xs">
+                <span className="badge badge-muted">
+                  {normalizedBuyer.orgType || 'Industrial Buyer'}
                 </span>
+                {normalizedBuyer.purchasingPurpose && (
+                  <span className="badge badge-warm">{normalizedBuyer.purchasingPurpose}</span>
+                )}
+                {normalizedBuyer.isDemo && (
+                  <span className="badge badge-muted">Reference Record</span>
+                )}
                 <span className={`status-pill ${normalizedBuyer.available ? 'status-pill--active' : 'status-pill--standby'}`}>
                   <span className="status-dot-mini" />
-                  {normalizedBuyer.available ? 'Actively Receiving Biomass' : 'Intake On Standby'}
-                </span>
-                <span className="badge badge-muted">
-                  {normalizedBuyer.orgType}
+                  {normalizedBuyer.available ? 'Active Intake' : 'Intake Standby'}
                 </span>
               </div>
+              <SplitText text={normalizedBuyer.orgName} tag="h1" className="display-lg" delay={0.02} />
+              <p className="body-lg text-muted mt-xs">
+                {normalizedBuyer.location}, {normalizedBuyer.state} · Seeking {normalizedBuyer.requiredQuantity} tonnes
+              </p>
             </div>
 
-            <div className="details-header-score">
-              <div className="score-summary-pill">
-                <span className="score-lg-val">
-                  <CountUp to={score} duration={1.2} />
-                </span>
-                <span className="score-lg-unit">%</span>
+            {/* Score Callout */}
+            <div className="score-callout-card">
+              <span className="score-callout-label">Match Alignment</span>
+              <div className={`score-pill ${scoreBadgeClass}`} style={{ fontSize: '1.75rem', padding: '8px 16px' }}>
+                <span className="score-val"><CountUp to={score} duration={1.2} /></span>
+                <span className="score-unit">%</span>
               </div>
-              <span className="score-summary-label">Algorithm Compatibility</span>
+              <span className="body-xs text-muted mt-xs">
+                {score >= 80 ? 'Optimal Sourcing Match' : score >= 60 ? 'Compatible Profile' : 'Partial Match'}
+              </span>
             </div>
           </div>
         </div>
@@ -391,6 +427,95 @@ export default function MatchDetails() {
               </div>
             </section>
 
+            {/* Smart Interstate Logistics & Delivered Cost Breakdown */}
+            {transportCalc && transportCalc.transport && (
+              <section className="card details-section">
+                <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
+                  <div>
+                    <h2 className="heading-md">Smart Logistics &amp; Delivered Cost Breakdown</h2>
+                    <p className="body-sm text-muted">
+                      Transparent multi-tier freight model with verified capacities and road travel distances.
+                    </p>
+                  </div>
+                  <span className="badge badge-green">
+                    {transportCalc.isInterstate ? 'Interstate Delivery' : 'Intra-State Delivery'}
+                  </span>
+                </div>
+
+                {/* Route & Distance Info */}
+                <div className="spec-table-grid mb-md">
+                  <div className="spec-item">
+                    <span className="label">Origin</span>
+                    <div className="spec-val">{normalizedListing.location}{normalizedListing.state ? `, ${normalizedListing.state}` : ''}</div>
+                  </div>
+                  <div className="spec-item">
+                    <span className="label">Destination</span>
+                    <div className="spec-val">{normalizedBuyer.location}, {normalizedBuyer.state}</div>
+                  </div>
+                  <div className="spec-item">
+                    <span className="label">Road Transit Distance</span>
+                    <div className="spec-val font-semibold text-forest">
+                      {transportCalc.distanceKm} km (OSRM Road Routing)
+                    </div>
+                  </div>
+                  <div className="spec-item">
+                    <span className="label">Active Vehicle Profile</span>
+                    <div className="spec-val">
+                      <select
+                        value={selectedVehicle}
+                        onChange={(e) => setSelectedVehicle(e.target.value)}
+                        className="form-control"
+                        style={{ padding: '4px 8px', fontSize: '0.875rem' }}
+                      >
+                        <option value="auto">Auto-Selected Tier ({transportCalc.transport.vehicleConfig.label})</option>
+                        {Object.values(VEHICLE_CONFIGS).map((v) => (
+                          <option key={v.id} value={v.id}>
+                            {v.label} ({v.payloadTonnes}T payload · ₹{v.ratePerKm}/km)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4 Cost Cards: Trips, Cost/Trip, Transport/Tonne, Delivered/Tonne */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-md mb-md">
+                  <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
+                    <span className="text-muted body-sm">Required Trips</span>
+                    <div className="heading-lg text-forest mt-xs">{transportCalc.transport.trips} trip{transportCalc.transport.trips > 1 ? 's' : ''}</div>
+                    <span className="body-xs text-muted">Ceiling({normalizedListing.quantity}t ÷ {transportCalc.transport.vehicleConfig.payloadCapacity}t capacity)</span>
+                  </div>
+                  <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
+                    <span className="text-muted body-sm">Cost Per Trip</span>
+                    <div className="heading-lg text-forest mt-xs">₹{transportCalc.transport.costPerTrip.toLocaleString('en-IN')}</div>
+                    <span className="body-xs text-muted">Freight + tolls + handling</span>
+                  </div>
+                  <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
+                    <span className="text-muted body-sm">Transport Expense / Tonne</span>
+                    <div className="heading-lg text-forest mt-xs">₹{transportCalc.transport.costPerTonne.toLocaleString('en-IN')} / t</div>
+                    <span className="body-xs text-muted">Total: ₹{transportCalc.transport.totalTransportationCost.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="card" style={{ padding: 'var(--space-md)', background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
+                    <span className="text-muted body-sm font-medium">Final Delivered Rate</span>
+                    <div className="heading-lg text-forest mt-xs font-bold">₹{transportCalc.delivered.deliveredCostPerTonne.toLocaleString('en-IN')} / t</div>
+                    <span className="body-xs text-muted">Total Lot: ₹{transportCalc.delivered.totalDeliveredCost.toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+
+                {/* Delivered Cost Formula Breakdown */}
+                <div className="card" style={{ padding: 'var(--space-md)', background: '#FAFAFA', border: '1px solid #E5E7EB' }}>
+                  <span className="font-semibold body-sm">Final Delivered Cost Formula (Part 5):</span>
+                  <div className="body-sm mt-xs" style={{ fontFamily: 'monospace' }}>
+                    Final Delivered Cost = Purchase Rate (₹{transportCalc.delivered.purchasePricePerTonne.toLocaleString('en-IN')}/t) + Transport Cost (₹{transportCalc.delivered.transportCostPerTonne.toLocaleString('en-IN')}/t) + Other Charges (₹{transportCalc.delivered.otherChargesPerTonne}/t) = <strong>₹{transportCalc.delivered.deliveredCostPerTonne.toLocaleString('en-IN')} / tonne</strong>
+                  </div>
+                </div>
+
+                <div className="mt-md body-xs text-muted" style={{ fontStyle: 'italic' }}>
+                  <strong>Notice:</strong> Indicative Transportation Estimate — Confirm Final Price With Transporter.
+                </div>
+              </section>
+            )}
+
             {/* Location & Route Map */}
             <section className="card details-section">
               <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
@@ -448,7 +573,7 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Logistics Proximity (30% Weight)</span>
+                    <span className="font-medium body-sm">Proximity &amp; Transit Efficiency (30% Weight)</span>
                     <span className="font-semibold body-sm text-forest">
                       {Math.round((matchResult?.scores?.proximityFit || 0) * 100)}% ({matchResult?.weightedPoints?.proximity || 0} / 30 pts)
                     </span>
@@ -466,7 +591,7 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Yard Intake Capacity (20% Weight)</span>
+                    <span className="font-medium body-sm">Intake Capacity Headroom (20% Weight)</span>
                     <span className="font-semibold body-sm text-forest">
                       {Math.round((matchResult?.scores?.capacityFit || 0) * 100)}% ({matchResult?.weightedPoints?.capacity || 0} / 20 pts)
                     </span>
@@ -484,7 +609,7 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Circular Synergy (10% Weight)</span>
+                    <span className="font-medium body-sm">Industrial Transformation Synergy (10% Weight)</span>
                     <span className="font-semibold body-sm text-forest">
                       {Math.round((matchResult?.scores?.useCaseFit || 0) * 100)}% ({matchResult?.weightedPoints?.useCase || 0} / 10 pts)
                     </span>
@@ -500,56 +625,22 @@ export default function MatchDetails() {
                   </p>
                 </div>
               </div>
-
-              <div className="score-total-box mt-md">
-                <span className="font-semibold body-sm">Cumulative Algorithm Score:</span>
-                <span className="heading-md text-forest">
-                  {score}% ({matchResult?.weightedPoints?.total ?? score} / 100 pts)
-                </span>
-              </div>
-
-              {matchResult?.explanation?.summary && (
-                <div className="summary-alert mt-md">
-                  <span className="font-semibold text-forest">Assessment:</span> {matchResult.explanation.summary}
-                </div>
-              )}
             </section>
 
-            {/* Operational Parameters */}
+            {/* Accepted Feedstocks */}
             <section className="card details-section">
-              <h2 className="heading-md mb-md">Operational Parameters</h2>
-              <div className="spec-metric-grid">
-                <div className="spec-metric-cell">
-                  <span className="label">Required Batch Size</span>
-                  <div className="heading-lg text-forest">{normalizedBuyer.requiredQuantity} tonnes</div>
-                </div>
-                <div className="spec-metric-cell">
-                  <span className="label">Max Yard Intake</span>
-                  <div className="heading-lg text-forest">
-                    {normalizedBuyer.maxIntake ? `${normalizedBuyer.maxIntake} tonnes` : 'Flexible Capacity'}
-                  </div>
-                </div>
-                <div className="spec-metric-cell">
-                  <span className="label">Target Output</span>
-                  <div className="font-semibold mt-xs">{normalizedBuyer.intendedUse}</div>
-                </div>
-                <div className="spec-metric-cell">
-                  <span className="label">Intake Mode</span>
-                  <div className="font-semibold mt-xs">
-                    {normalizedBuyer.available ? 'Actively Receiving' : 'Intake On Standby'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-md pt-sm" style={{ borderTop: '1px solid var(--color-border-light)' }}>
-                <span className="label">Accepted Crop Residues</span>
-                <div className="tag-list mt-xs">
-                  {normalizedBuyer.acceptedTypes.map((t) => (
-                    <span key={t} className="badge badge-green">
-                      {t}
-                    </span>
-                  ))}
-                </div>
+              <h2 className="heading-md mb-sm">All Permitted Biomass Species</h2>
+              <div className="tag-list">
+                {normalizedBuyer.acceptedTypes.map((t) => (
+                  <span
+                    key={t}
+                    className={`badge ${normalizedListing?.residueType === t ? 'badge-green font-semibold' : 'badge-muted'}`}
+                    style={{ fontSize: '0.875rem', padding: '6px 12px' }}
+                  >
+                    {normalizedListing?.residueType === t && '✓ '}
+                    {t}
+                  </span>
+                ))}
               </div>
             </section>
           </FadeContent>

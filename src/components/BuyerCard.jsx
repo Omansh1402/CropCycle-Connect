@@ -29,6 +29,7 @@ export default function BuyerCard({
   const weighted = matchResult?.weightedPoints;
   const scores = matchResult?.scores;
   const warnings = explanation?.warnings || [];
+  const commercial = matchResult?.metadata?.commercial;
 
   return (
     <article className={`buyer-card card ${cardRankClass}`}>
@@ -42,6 +43,18 @@ export default function BuyerCard({
           ) : (
             <span className="badge badge-muted">
               {buyer.orgType || 'Commercial Buyer'}
+            </span>
+          )}
+
+          {buyer.purchasingPurpose && (
+            <span className="badge badge-warm">
+              {buyer.purchasingPurpose}
+            </span>
+          )}
+
+          {commercial?.isInterstate && (
+            <span className="badge badge-warm" style={{ backgroundColor: '#FEF3C7', color: '#92400E' }}>
+              Interstate Haulage
             </span>
           )}
 
@@ -69,7 +82,7 @@ export default function BuyerCard({
             {matchResult?.metadata?.estimatedDistanceKm != null && (
               <span className="distance-tag">
                 {matchResult.metadata.coordinateDistanceKm != null
-                  ? `${matchResult.metadata.coordinateDistanceKm} km`
+                  ? `${matchResult.metadata.coordinateDistanceKm} km road`
                   : `${matchResult.metadata.estimatedDistanceKm} km est.`}
               </span>
             )}
@@ -100,8 +113,8 @@ export default function BuyerCard({
       {/* Operational Specifications Grid */}
       <div className="buyer-card__spec-grid">
         <div className="spec-col">
-          <span className="spec-label">Target Application</span>
-          <span className="spec-val">{buyer.intendedUse}</span>
+          <span className="spec-label">Purchasing Purpose</span>
+          <span className="spec-val font-medium text-forest">{buyer.purchasingPurpose || buyer.intendedUse}</span>
         </div>
         <div className="spec-col">
           <span className="spec-label">Required Batch</span>
@@ -133,6 +146,52 @@ export default function BuyerCard({
           </span>
         </div>
       </div>
+
+      {/* Commercial Pricing & Transportation Breakdown (When Listing Linked) */}
+      {commercial && (
+        <div className="buyer-card__commercial-box" style={{
+          backgroundColor: '#F8FAF9',
+          border: '1px solid #E2E8F0',
+          borderRadius: 'var(--radius-sm)',
+          padding: 'var(--space-md)',
+          marginTop: 'var(--space-xs)'
+        }}>
+          <div className="flex justify-between items-center mb-xs flex-wrap gap-xs">
+            <span className="font-semibold body-sm text-forest">Commercial &amp; Logistics Breakdown</span>
+            <span className="badge badge-muted" style={{ fontSize: '0.6875rem' }}>
+              {commercial.isInterstate ? 'Interstate Delivery' : 'Intra-State / Local'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-sm body-sm mt-xs">
+            <div>
+              <span className="text-muted" style={{ fontSize: '0.75rem', display: 'block' }}>Farmer Asking Price</span>
+              <strong>{commercial.askingPricePerTonne != null ? `₹${commercial.askingPricePerTonne.toLocaleString('en-IN')} / t` : 'Negotiable directly'}</strong>
+            </div>
+            <div>
+              <span className="text-muted" style={{ fontSize: '0.75rem', display: 'block' }}>Buyer Offered Rate</span>
+              <strong className="text-forest">{commercial.offeredPricePerTonne != null ? `₹${commercial.offeredPricePerTonne.toLocaleString('en-IN')} / t` : 'Open to quotes'}</strong>
+            </div>
+            {commercial.transportEstimate && (
+              <>
+                <div>
+                  <span className="text-muted" style={{ fontSize: '0.75rem', display: 'block' }}>Est. Freight ({commercial.transportEstimate.vehicleName})</span>
+                  <span>₹{commercial.transportEstimate.transportCostPerTonne.toLocaleString('en-IN')} / t ({commercial.transportEstimate.trips} trip{commercial.transportEstimate.trips > 1 ? 's' : ''})</span>
+                </div>
+                <div>
+                  <span className="text-muted" style={{ fontSize: '0.75rem', display: 'block' }}>Delivered Cost</span>
+                  <strong className="text-forest">₹{commercial.transportEstimate.deliveredCostPerTonne.toLocaleString('en-IN')} / t</strong>
+                </div>
+              </>
+            )}
+          </div>
+          {commercial.transportEstimate?.disclaimer && (
+            <div className="mt-xs text-muted" style={{ fontSize: '0.6875rem', fontStyle: 'italic' }}>
+              {commercial.transportEstimate.disclaimer}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Accepted Feedstocks */}
       <div className="buyer-card__feedstocks">
@@ -247,8 +306,8 @@ export default function BuyerCard({
                     <span className="narrative-val">{explanation.capacity}</span>
                   </div>
                   <div className="narrative-row">
-                    <span className="narrative-key">Intended Use</span>
-                    <span className="narrative-val">{explanation.useCase}</span>
+                    <span className="narrative-key">Purchasing Purpose</span>
+                    <span className="narrative-val">{buyer.purchasingPurpose || explanation.useCase}</span>
                   </div>
                   {explanation.pricing && (
                     <div className="narrative-row">

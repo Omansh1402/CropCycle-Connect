@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { RESIDUE_TYPES, PICKUP_PREFERENCES } from '../data/sampleData';
 import { createFarmerListing, formatDbError } from '../lib/db';
 import { isConfigured } from '../lib/supabase';
+import { useTranslation } from '../lib/i18n';
 import { DbSetupBanner, DbErrorAlert, LoadingSpinner } from '../components/DbStatus';
 import SplitText from '../components/reactbits/SplitText';
 import FadeContent from '../components/reactbits/FadeContent';
@@ -23,10 +24,17 @@ const INITIAL_FORM = {
   notes: '',
   contactEmail: '',
   contactPhone: '',
+  // Commercial & Quality parameters
+  askingPricePerTonne: '',
+  isPriceNegotiable: true,
+  priceCondition: 'farm_gate',
+  moisturePercent: '',
+  residueForm: 'baled',
 };
 
 export default function Farmer() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [savedRecord, setSavedRecord] = useState(null);
@@ -57,12 +65,19 @@ export default function Farmer() {
       e.contactEmail = 'Enter a valid email address';
     if (form.contactPhone && !/^[0-9+\s()-]{7,15}$/.test(form.contactPhone.trim()))
       e.contactPhone = 'Enter a valid phone number';
+    if (form.askingPricePerTonne !== '' && Number(form.askingPricePerTonne) < 0)
+      e.askingPricePerTonne = 'Asking price cannot be negative';
+    if (form.moisturePercent !== '' && (Number(form.moisturePercent) < 0 || Number(form.moisturePercent) > 100))
+      e.moisturePercent = 'Moisture must be between 0% and 100%';
     return e;
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: undefined }));
     if (dbError) setDbError(null);
   };
@@ -172,12 +187,17 @@ export default function Farmer() {
                   <div className="spec-val">{form.location}{form.state ? `, ${form.state}` : ''}</div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Earliest Availability</span>
-                  <div className="spec-val">{form.availabilityDate}</div>
+                  <span className="label">Asking Rate</span>
+                  <div className="spec-val font-semibold text-forest">
+                    {form.askingPricePerTonne ? `₹${Number(form.askingPricePerTonne).toLocaleString('en-IN')} / tonne` : 'Negotiable directly'}
+                    {form.priceCondition && ` (${form.priceCondition.replace('_', ' ')})`}
+                  </div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Haulage Preference</span>
-                  <div className="spec-val">{form.pickupPreference}</div>
+                  <span className="label">Quality & Form</span>
+                  <div className="spec-val">
+                    {form.residueForm.toUpperCase()} {form.moisturePercent ? `| ${form.moisturePercent}% moisture` : ''}
+                  </div>
                 </div>
               </div>
             </div>
@@ -189,8 +209,8 @@ export default function Farmer() {
               >
                 Inspect Buyer Matches
               </button>
-              <button onClick={() => navigate('/dashboard')} className="btn btn-secondary btn-lg">
-                View Dashboard
+              <button onClick={() => navigate('/market-intelligence')} className="btn btn-secondary btn-lg">
+                View Market Intelligence
               </button>
               <button onClick={handleReset} className="btn btn-outline">
                 Submit Additional Lot
@@ -438,10 +458,114 @@ export default function Farmer() {
                 </div>
               </div>
 
-              {/* ── Section 04: Availability & Logistics ── */}
+              {/* ── Section 04: Commercial Terms & Pricing (NEW) ── */}
               <div className="form-section">
                 <div className="form-section-header">
                   <span className="form-section-num">04</span>
+                  <div>
+                    <h2 className="heading-md">Commercial Terms &amp; Residue Quality</h2>
+                    <p className="body-sm text-muted">Specify expected asking price, condition, moisture and physical form.</p>
+                  </div>
+                </div>
+
+                <div className="form-grid form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="askingPricePerTonne">
+                      {t('farmerAskingPrice')} (₹ / tonne)
+                    </label>
+                    <input
+                      id="askingPricePerTonne"
+                      name="askingPricePerTonne"
+                      type="number"
+                      min="0"
+                      step="50"
+                      className={`form-control ${errors.askingPricePerTonne ? 'form-control--error' : ''}`}
+                      placeholder="e.g. 2100 (Leave empty for direct negotiation)"
+                      value={form.askingPricePerTonne}
+                      onChange={handleChange}
+                      disabled={loading}
+                    />
+                    {errors.askingPricePerTonne && <span className="form-error" role="alert">{errors.askingPricePerTonne}</span>}
+                    <span className="form-hint">Enter your target price per metric tonne.</span>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="priceCondition">
+                      Price Quoted Condition
+                    </label>
+                    <select
+                      id="priceCondition"
+                      name="priceCondition"
+                      className="form-control"
+                      value={form.priceCondition}
+                      onChange={handleChange}
+                      disabled={loading}
+                    >
+                      <option value="farm_gate">{t('farmGate')}</option>
+                      <option value="ex_warehouse">{t('exWarehouse')}</option>
+                      <option value="delivered">{t('delivered')}</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="residueForm">
+                      Residue Physical Form
+                    </label>
+                    <select
+                      id="residueForm"
+                      name="residueForm"
+                      className="form-control"
+                      value={form.residueForm}
+                      onChange={handleChange}
+                      disabled={loading}
+                    >
+                      <option value="baled">Baled (Square / Round Bales)</option>
+                      <option value="loose">Loose / Unprocessed Field Biomass</option>
+                      <option value="shredded">Shredded / Chopped Straw</option>
+                      <option value="pelletized">Pelletized / Briquetted</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="moisturePercent">
+                      Moisture Content (%)
+                    </label>
+                    <input
+                      id="moisturePercent"
+                      name="moisturePercent"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.5"
+                      className={`form-control ${errors.moisturePercent ? 'form-control--error' : ''}`}
+                      placeholder="e.g. 12"
+                      value={form.moisturePercent}
+                      onChange={handleChange}
+                      disabled={loading}
+                    />
+                    {errors.moisturePercent && <span className="form-error" role="alert">{errors.moisturePercent}</span>}
+                    <span className="form-hint">Recommended under 16% for industrial boiler &amp; bio-CNG intake.</span>
+                  </div>
+
+                  <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                    <label className="flex items-center gap-xs cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="isPriceNegotiable"
+                        checked={form.isPriceNegotiable}
+                        onChange={handleChange}
+                        disabled={loading}
+                      />
+                      <span className="body-sm font-medium">Price is negotiable based on haulage distance and batch volume</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Section 05: Availability & Logistics ── */}
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-num">05</span>
                   <div>
                     <h2 className="heading-md">Availability Window &amp; Haulage Mode</h2>
                     <p className="body-sm text-muted">Field clearance timeline and preferred loading protocol.</p>
@@ -544,7 +668,7 @@ export default function Farmer() {
               <ul className="sidebar-checklist">
                 <li>Specify verified crop variety to optimize calorific mapping.</li>
                 <li>Report realistic dry-matter weights for accurate logistics sizing.</li>
-                <li>Include nearest arterial highway or landmark in location notes.</li>
+                <li>State asking price in ₹/tonne or select farm-gate for local collection.</li>
                 <li>Align harvest date with required field turnaround schedules.</li>
               </ul>
             </div>
@@ -553,7 +677,7 @@ export default function Farmer() {
               <h3 className="heading-sm mb-sm">System Workflow</h3>
               <ol className="sidebar-steps">
                 <li><strong>1. Lot Registration:</strong> Batch profile enters deterministic index.</li>
-                <li><strong>2. Algorithmic Ranking:</strong> Proximity &amp; volume fit scored on 100 pt scale.</li>
+                <li><strong>2. Algorithmic Ranking:</strong> Proximity, price &amp; volume fit scored on 100 pt scale.</li>
                 <li><strong>3. Direct Inquiries:</strong> Industrial buyers initiate transport requests.</li>
                 <li><strong>4. Clearance:</strong> Residue dispatched with verifiable audit trail.</li>
               </ol>
