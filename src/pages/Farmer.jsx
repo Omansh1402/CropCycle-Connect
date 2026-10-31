@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { RESIDUE_TYPES, PICKUP_PREFERENCES } from '../data/sampleData';
 import { createFarmerListing, formatDbError } from '../lib/db';
 import { isConfigured } from '../lib/supabase';
+import { useAuth } from '../context/useAuth';
 import { DbSetupBanner, DbErrorAlert, LoadingSpinner } from '../components/DbStatus';
 import SplitText from '../components/reactbits/SplitText';
 import FadeContent from '../components/reactbits/FadeContent';
@@ -26,7 +28,9 @@ const INITIAL_FORM = {
 };
 
 export default function Farmer() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [savedRecord, setSavedRecord] = useState(null);
@@ -34,29 +38,46 @@ export default function Farmer() {
   const [loading, setLoading] = useState(false);
   const [dbError, setDbError] = useState(null);
 
+  // Pre-fill profile info if logged in and form is untouched
+  useEffect(() => {
+    if (!user && !profile) return;
+    const timer = setTimeout(() => {
+      setForm((prev) => ({
+        ...prev,
+        farmerName: prev.farmerName || profile?.full_name || '',
+        contactEmail: prev.contactEmail || user?.email || '',
+        contactPhone: prev.contactPhone || profile?.phone || '',
+        location: prev.location || profile?.location || '',
+        district: prev.district || profile?.district || '',
+        state: prev.state || profile?.state || '',
+      }));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [user, profile]);
+
   // ── Validation ────────────────────────────────────────────────
   const validate = () => {
     const e = {};
     if (!form.farmerName.trim())
-      e.farmerName = 'Name is required';
+      e.farmerName = t('farmer.errName');
     if (!form.residueType)
-      e.residueType = 'Select a residue type';
+      e.residueType = t('farmer.errResidueType');
     if (!form.quantity || Number(form.quantity) <= 0)
-      e.quantity = 'Enter a valid quantity greater than zero';
+      e.quantity = t('farmer.errQtyPositive');
     if (Number(form.quantity) > 100000)
-      e.quantity = 'Quantity seems unrealistically large — please double-check';
+      e.quantity = t('farmer.errQtyLarge');
     if (!form.location.trim())
-      e.location = 'Village/farm location is required';
+      e.location = t('farmer.errLocation');
     if (!form.state.trim())
-      e.state = 'State is required';
+      e.state = t('farmer.errState');
     if (!form.availabilityDate)
-      e.availabilityDate = 'Pick an availability date';
+      e.availabilityDate = t('farmer.errDate');
     if (!form.pickupPreference)
-      e.pickupPreference = 'Select a pickup preference';
+      e.pickupPreference = t('farmer.errPickup');
     if (form.contactEmail && !/\S+@\S+\.\S+/.test(form.contactEmail))
-      e.contactEmail = 'Enter a valid email address';
+      e.contactEmail = t('farmer.errEmail');
     if (form.contactPhone && !/^[0-9+\s()-]{7,15}$/.test(form.contactPhone.trim()))
-      e.contactPhone = 'Enter a valid phone number';
+      e.contactPhone = t('farmer.errPhone');
     return e;
   };
 
@@ -82,7 +103,7 @@ export default function Farmer() {
 
     setLoading(true);
     try {
-      const { data, error } = await createFarmerListing(form);
+      const { data, error } = await createFarmerListing(form, user?.id);
 
       if (error) {
         if (error.code === 'NOT_CONFIGURED') {
@@ -100,7 +121,7 @@ export default function Farmer() {
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
-      setDbError('An unexpected error occurred. Please try again.');
+      setDbError(t('farmer.errUnexpected'));
     } finally {
       setLoading(false);
     }
@@ -117,17 +138,23 @@ export default function Farmer() {
   // ── Success state ─────────────────────────────────────────────
   if (submitted) {
     const displayQty = savedRecord
-      ? `${savedRecord.quantity_tonnes} tonnes (stored in database)`
-      : `${form.quantity} ${form.unit}`;
+      ? `${savedRecord.quantity_tonnes} ${t('common.tonnes', 'tonnes')}`
+      : `${form.quantity} ${t(`common.${form.unit}`, form.unit)}`;
 
     return (
       <main className="farmer-page">
         <header className="page-header">
           <div className="container">
-            <span className="section-eyebrow">Producer Registration Protocol</span>
-            <SplitText text="Listing Successfully Registered" tag="h1" className="display-lg" delay={0.03} />
+            <span className="section-eyebrow">{t('farmer.eyebrow')}</span>
+            <SplitText
+              key={`success-title-${i18n.language}`}
+              text={t('farmer.successTitle')}
+              tag="h1"
+              className="display-lg"
+              delay={0.03}
+            />
             <p className="body-md text-muted mt-xs">
-              Your agricultural residue lot has been registered into the active matching pool.
+              {t('farmer.successSubtitle')}
             </p>
           </div>
         </header>
@@ -137,47 +164,53 @@ export default function Farmer() {
             <div className="success-banner-box">
               <div className="success-badge">
                 <span className="success-dot" />
-                <span>Verified Listing Confirmation</span>
+                <span>{t('farmer.verifiedConfirmation')}</span>
               </div>
               <h2 className="heading-lg mt-xs">
-                {savedRecord ? 'Record Committed to PostgreSQL Database' : 'Listing Recorded in Session Memory'}
+                {savedRecord ? t('farmer.recordCommittedDb') : t('farmer.recordStoredLocal')}
               </h2>
               <p className="body-md text-muted mt-xs">
                 {savedRecord
-                  ? <>Reference Identifier: <code className="record-id">{savedRecord.id}</code>. Nearby verified buyers can now discover your lot.</>
-                  : 'Listing stored in local session. Connect Supabase credentials in .env.local to persist across multi-node workers.'}
+                  ? <>{t('farmer.refIdPrefix')}<code className="record-id">{savedRecord.id}</code>{t('farmer.refIdSuffix')}</>
+                  : t('farmer.localNotice')}
               </p>
             </div>
 
             <div className="farmer-success__summary card">
               <div className="summary-header">
-                <h3 className="heading-md">Registered Lot Specifications</h3>
-                <span className="badge badge-green">Status: {savedRecord?.status || 'Active'}</span>
+                <h3 className="heading-md">{t('farmer.summaryTitle')}</h3>
+                <span className="badge badge-green">
+                  {t('farmer.statusActive')}
+                </span>
               </div>
               <div className="spec-table-grid">
                 <div className="spec-item">
-                  <span className="label">Producer / Contact</span>
+                  <span className="label">{t('farmer.lblProducerContact')}</span>
                   <div className="spec-val">{form.farmerName}</div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Residue Species</span>
-                  <div className="spec-val text-forest font-semibold">{form.residueType}</div>
+                  <span className="label">{t('farmer.lblResidueSpecies')}</span>
+                  <div className="spec-val text-forest font-semibold">
+                    {t(`crops.${form.residueType}`, form.residueType)}
+                  </div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Batch Volume</span>
+                  <span className="label">{t('farmer.lblBatchVolume')}</span>
                   <div className="spec-val font-semibold">{displayQty}</div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Location & District</span>
+                  <span className="label">{t('farmer.lblLocationDistrict')}</span>
                   <div className="spec-val">{form.location}{form.state ? `, ${form.state}` : ''}</div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Earliest Availability</span>
+                  <span className="label">{t('farmer.lblEarliestAvailability')}</span>
                   <div className="spec-val">{form.availabilityDate}</div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Haulage Preference</span>
-                  <div className="spec-val">{form.pickupPreference}</div>
+                  <span className="label">{t('farmer.lblHaulagePreference')}</span>
+                  <div className="spec-val">
+                    {t(`pickup.${form.pickupPreference}`, form.pickupPreference)}
+                  </div>
                 </div>
               </div>
             </div>
@@ -187,13 +220,13 @@ export default function Farmer() {
                 onClick={() => navigate(savedRecord?.id ? `/matches?listing=${savedRecord.id}` : '/matches')}
                 className="btn btn-primary btn-lg"
               >
-                Inspect Buyer Matches
+                {t('farmer.btnInspectMatches')}
               </button>
               <button onClick={() => navigate('/dashboard')} className="btn btn-secondary btn-lg">
-                View Dashboard
+                {t('farmer.btnViewDashboard')}
               </button>
               <button onClick={handleReset} className="btn btn-outline">
-                Submit Additional Lot
+                {t('farmer.btnSubmitAdditional')}
               </button>
             </div>
           </FadeContent>
@@ -208,11 +241,16 @@ export default function Farmer() {
       <header className="page-header">
         <div className="container">
           <div className="page-header__inner">
-            <span className="section-eyebrow">Producer Registration Protocol</span>
-            <SplitText text="List Agricultural Residue" tag="h1" className="display-lg" delay={0.03} />
+            <span className="section-eyebrow">{t('farmer.eyebrow')}</span>
+            <SplitText
+              key={`farmer-heading-${i18n.language}`}
+              text={t('farmer.title')}
+              tag="h1"
+              className="display-lg"
+              delay={0.03}
+            />
             <p className="body-lg text-muted mt-xs" style={{ maxWidth: '600px' }}>
-              Register surplus harvest biomass into India’s national circular network.
-              The algorithmic matching engine evaluates nearby bio-CNG, paper, and industrial buyers.
+              {t('farmer.subtitle')}
             </p>
           </div>
         </div>
@@ -232,28 +270,28 @@ export default function Farmer() {
               />
             )}
 
-            <form onSubmit={handleSubmit} noValidate aria-label="Residue listing form">
+            <form onSubmit={handleSubmit} noValidate aria-label={t('farmer.title')}>
               {/* ── Section 01: Producer Information ── */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="form-section-num">01</span>
+                  <span className="form-section-num">{t('farmer.sec1Num')}</span>
                   <div>
-                    <h2 className="heading-md">Producer &amp; Point of Contact</h2>
-                    <p className="body-sm text-muted">Primary entity identification for logistics coordination.</p>
+                    <h2 className="heading-md">{t('farmer.sec1Title')}</h2>
+                    <p className="body-sm text-muted">{t('farmer.sec1Desc')}</p>
                   </div>
                 </div>
 
                 <div className="form-grid form-grid-2">
                   <div className="form-group">
                     <label className="form-label" htmlFor="farmerName">
-                      Producer / FPO Name <span className="required">*</span>
+                      {t('farmer.lblProducerName')} <span className="required">*</span>
                     </label>
                     <input
                       id="farmerName"
                       name="farmerName"
                       type="text"
                       className={`form-control ${errors.farmerName ? 'form-control--error' : ''}`}
-                      placeholder="e.g. Rajesh Patel or Anand FPO Cluster"
+                      placeholder={t('farmer.phProducerName')}
                       value={form.farmerName}
                       onChange={handleChange}
                       disabled={loading}
@@ -264,14 +302,14 @@ export default function Farmer() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="contactPhone">
-                      Contact Phone
+                      {t('farmer.lblContactPhone')}
                     </label>
                     <input
                       id="contactPhone"
                       name="contactPhone"
                       type="tel"
                       className={`form-control ${errors.contactPhone ? 'form-control--error' : ''}`}
-                      placeholder="e.g. 98765 43210"
+                      placeholder={t('farmer.phContactPhone')}
                       value={form.contactPhone}
                       onChange={handleChange}
                       disabled={loading}
@@ -282,21 +320,21 @@ export default function Farmer() {
 
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="form-label" htmlFor="contactEmail">
-                      Email Address (Optional)
+                      {t('farmer.lblEmail')}
                     </label>
                     <input
                       id="contactEmail"
                       name="contactEmail"
                       type="email"
                       className={`form-control ${errors.contactEmail ? 'form-control--error' : ''}`}
-                      placeholder="e.g. contact@cooperative.in"
+                      placeholder={t('farmer.phEmail')}
                       value={form.contactEmail}
                       onChange={handleChange}
                       disabled={loading}
                       maxLength={200}
                     />
                     {errors.contactEmail && <span className="form-error" role="alert">{errors.contactEmail}</span>}
-                    <span className="form-hint">Used strictly for automated pickup confirmation notices.</span>
+                    <span className="form-hint">{t('farmer.hintEmail')}</span>
                   </div>
                 </div>
               </div>
@@ -304,17 +342,17 @@ export default function Farmer() {
               {/* ── Section 02: Residue Specifications ── */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="form-section-num">02</span>
+                  <span className="form-section-num">{t('farmer.sec2Num')}</span>
                   <div>
-                    <h2 className="heading-md">Residue Specifications</h2>
-                    <p className="body-sm text-muted">Crop species, available tonnage, and batch volume.</p>
+                    <h2 className="heading-md">{t('farmer.sec2Title')}</h2>
+                    <p className="body-sm text-muted">{t('farmer.sec2Desc')}</p>
                   </div>
                 </div>
 
                 <div className="form-grid form-grid-2">
                   <div className="form-group">
                     <label className="form-label" htmlFor="residueType">
-                      Crop Residue Type <span className="required">*</span>
+                      {t('farmer.lblResidueType')} <span className="required">*</span>
                     </label>
                     <select
                       id="residueType"
@@ -324,9 +362,11 @@ export default function Farmer() {
                       onChange={handleChange}
                       disabled={loading}
                     >
-                      <option value="">— Select Crop Species —</option>
-                      {RESIDUE_TYPES.map((t) => (
-                        <option key={t} value={t}>{t}</option>
+                      <option value="">{t('farmer.selectCropSpecies')}</option>
+                      {RESIDUE_TYPES.map((cropKey) => (
+                        <option key={cropKey} value={cropKey}>
+                          {t(`crops.${cropKey}`, cropKey)}
+                        </option>
                       ))}
                     </select>
                     {errors.residueType && <span className="form-error" role="alert">{errors.residueType}</span>}
@@ -334,7 +374,7 @@ export default function Farmer() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="quantity">
-                      Estimated Lot Quantity <span className="required">*</span>
+                      {t('farmer.lblEstimatedQty')} <span className="required">*</span>
                     </label>
                     <div className="qty-input-wrap">
                       <input
@@ -344,7 +384,7 @@ export default function Farmer() {
                         min="0.1"
                         step="0.5"
                         className={`form-control ${errors.quantity ? 'form-control--error' : ''}`}
-                        placeholder="e.g. 25"
+                        placeholder={t('farmer.phEstimatedQty')}
                         value={form.quantity}
                         onChange={handleChange}
                         disabled={loading}
@@ -357,17 +397,19 @@ export default function Farmer() {
                         disabled={loading}
                         aria-label="Unit of measurement"
                       >
-                        <option value="tonnes">tonnes</option>
-                        <option value="quintals">quintals</option>
-                        <option value="kg">kg</option>
+                        <option value="tonnes">{t('common.tonnes', 'tonnes')}</option>
+                        <option value="quintals">{t('common.quintals', 'quintals')}</option>
+                        <option value="kg">{t('common.kg', 'kg')}</option>
                       </select>
                     </div>
                     {errors.quantity && <span className="form-error" role="alert">{errors.quantity}</span>}
                     {form.unit !== 'tonnes' && form.quantity > 0 && (
                       <span className="form-hint">
-                        Normalized equivalent: {form.unit === 'quintals'
-                          ? (Number(form.quantity) / 10).toFixed(2)
-                          : (Number(form.quantity) / 1000).toFixed(3)} tonnes stored in database.
+                        {t('farmer.normalizedTonnes', {
+                          count: form.unit === 'quintals'
+                            ? (Number(form.quantity) / 10).toFixed(2)
+                            : (Number(form.quantity) / 1000).toFixed(3)
+                        })}
                       </span>
                     )}
                   </div>
@@ -377,24 +419,24 @@ export default function Farmer() {
               {/* ── Section 03: Geographic Coordinates ── */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="form-section-num">03</span>
+                  <span className="form-section-num">{t('farmer.sec3Num')}</span>
                   <div>
-                    <h2 className="heading-md">Field Location &amp; Regional Cluster</h2>
-                    <p className="body-sm text-muted">Geographic data feeds the proximity and road-routing algorithm.</p>
+                    <h2 className="heading-md">{t('farmer.sec3Title')}</h2>
+                    <p className="body-sm text-muted">{t('farmer.sec3Desc')}</p>
                   </div>
                 </div>
 
                 <div className="form-grid form-grid-2">
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="form-label" htmlFor="location">
-                      Farm / Village Location <span className="required">*</span>
+                      {t('farmer.lblFarmLocation')} <span className="required">*</span>
                     </label>
                     <input
                       id="location"
                       name="location"
                       type="text"
                       className={`form-control ${errors.location ? 'form-control--error' : ''}`}
-                      placeholder="e.g. Khambhat village, Anand district"
+                      placeholder={t('farmer.phFarmLocation')}
                       value={form.location}
                       onChange={handleChange}
                       disabled={loading}
@@ -404,13 +446,13 @@ export default function Farmer() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="district">District</label>
+                    <label className="form-label" htmlFor="district">{t('farmer.lblDistrict')}</label>
                     <input
                       id="district"
                       name="district"
                       type="text"
                       className="form-control"
-                      placeholder="e.g. Anand"
+                      placeholder={t('farmer.phDistrict')}
                       value={form.district}
                       onChange={handleChange}
                       disabled={loading}
@@ -420,14 +462,14 @@ export default function Farmer() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="state">
-                      State <span className="required">*</span>
+                      {t('farmer.lblState')} <span className="required">*</span>
                     </label>
                     <input
                       id="state"
                       name="state"
                       type="text"
                       className={`form-control ${errors.state ? 'form-control--error' : ''}`}
-                      placeholder="e.g. Gujarat"
+                      placeholder={t('farmer.phState')}
                       value={form.state}
                       onChange={handleChange}
                       disabled={loading}
@@ -441,17 +483,17 @@ export default function Farmer() {
               {/* ── Section 04: Availability & Logistics ── */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="form-section-num">04</span>
+                  <span className="form-section-num">{t('farmer.sec4Num')}</span>
                   <div>
-                    <h2 className="heading-md">Availability Window &amp; Haulage Mode</h2>
-                    <p className="body-sm text-muted">Field clearance timeline and preferred loading protocol.</p>
+                    <h2 className="heading-md">{t('farmer.sec4Title')}</h2>
+                    <p className="body-sm text-muted">{t('farmer.sec4Desc')}</p>
                   </div>
                 </div>
 
                 <div className="form-grid form-grid-2">
                   <div className="form-group">
                     <label className="form-label" htmlFor="availabilityDate">
-                      Earliest Harvest Window <span className="required">*</span>
+                      {t('farmer.lblHarvestWindow')} <span className="required">*</span>
                     </label>
                     <input
                       id="availabilityDate"
@@ -468,7 +510,7 @@ export default function Farmer() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="pickupPreference">
-                      Haulage / Pickup Preference <span className="required">*</span>
+                      {t('farmer.lblPickupPreference')} <span className="required">*</span>
                     </label>
                     <select
                       id="pickupPreference"
@@ -478,9 +520,11 @@ export default function Farmer() {
                       onChange={handleChange}
                       disabled={loading}
                     >
-                      <option value="">— Select Pickup Mode —</option>
-                      {PICKUP_PREFERENCES.map((p) => (
-                        <option key={p} value={p}>{p}</option>
+                      <option value="">{t('farmer.selectPickupMode')}</option>
+                      {PICKUP_PREFERENCES.map((pref) => (
+                        <option key={pref} value={pref}>
+                          {t(`pickup.${pref}`, pref)}
+                        </option>
                       ))}
                     </select>
                     {errors.pickupPreference && <span className="form-error" role="alert">{errors.pickupPreference}</span>}
@@ -488,20 +532,20 @@ export default function Farmer() {
 
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="form-label" htmlFor="notes">
-                      Logistics Notes &amp; Baling Condition
+                      {t('farmer.lblLogisticsNotes')}
                     </label>
                     <textarea
                       id="notes"
                       name="notes"
                       className="form-control"
-                      placeholder="e.g. Moisture ~12%, road accessible for 16-wheel transport, baling machine available..."
+                      placeholder={t('farmer.phLogisticsNotes')}
                       value={form.notes}
                       onChange={handleChange}
                       disabled={loading}
                       rows={3}
                       maxLength={1000}
                     />
-                    <span className="form-hint">Details regarding baling, road clearance, or tractor loading.</span>
+                    <span className="form-hint">{t('farmer.hintLogisticsNotes')}</span>
                   </div>
                 </div>
               </div>
@@ -509,14 +553,14 @@ export default function Farmer() {
               {/* Form Action Controls */}
               <div className="farmer-form-footer">
                 <div className="footer-notice">
-                  Fields marked <span className="text-danger">*</span> are required for algorithm matching.
+                  {t('farmer.requiredFieldsNotice')}
                 </div>
                 <div className="flex gap-sm">
                   <button type="button" onClick={handleReset} className="btn btn-outline" disabled={loading}>
-                    Reset Form
+                    {t('farmer.btnReset')}
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? <LoadingSpinner label="Writing record…" /> : 'Submit Farm Listing'}
+                    {loading ? <LoadingSpinner label={t('farmer.writingRecord')} /> : t('farmer.btnSubmit')}
                   </button>
                 </div>
               </div>
@@ -529,33 +573,33 @@ export default function Farmer() {
               <div className="sidebar-card-header">
                 <span className="sidebar-dot" />
                 <span className="heading-sm">
-                  {isConfigured ? 'Live Database Active' : 'Local Standby Engine'}
+                  {isConfigured ? t('farmer.sidebarLiveDb') : t('farmer.sidebarLocalEngine')}
                 </span>
               </div>
               <p className="body-sm text-muted">
                 {isConfigured
-                  ? 'Active listings automatically sync with the live matching engine and persistent Supabase database.'
-                  : 'Demonstration environment. Submissions populate local memory and matching algorithms.'}
+                  ? t('farmer.sidebarLiveDbDesc')
+                  : t('farmer.sidebarLocalEngineDesc')}
               </p>
             </div>
 
             <div className="sidebar-card mt-lg">
-              <h3 className="heading-sm mb-sm">Listing Quality Standards</h3>
+              <h3 className="heading-sm mb-sm">{t('farmer.sidebarQualityStandards')}</h3>
               <ul className="sidebar-checklist">
-                <li>Specify verified crop variety to optimize calorific mapping.</li>
-                <li>Report realistic dry-matter weights for accurate logistics sizing.</li>
-                <li>Include nearest arterial highway or landmark in location notes.</li>
-                <li>Align harvest date with required field turnaround schedules.</li>
+                <li>{t('farmer.std1')}</li>
+                <li>{t('farmer.std2')}</li>
+                <li>{t('farmer.std3')}</li>
+                <li>{t('farmer.std4')}</li>
               </ul>
             </div>
 
             <div className="sidebar-card mt-lg">
-              <h3 className="heading-sm mb-sm">System Workflow</h3>
+              <h3 className="heading-sm mb-sm">{t('farmer.sidebarWorkflow')}</h3>
               <ol className="sidebar-steps">
-                <li><strong>1. Lot Registration:</strong> Batch profile enters deterministic index.</li>
-                <li><strong>2. Algorithmic Ranking:</strong> Proximity &amp; volume fit scored on 100 pt scale.</li>
-                <li><strong>3. Direct Inquiries:</strong> Industrial buyers initiate transport requests.</li>
-                <li><strong>4. Clearance:</strong> Residue dispatched with verifiable audit trail.</li>
+                <li><strong>{t('farmer.wf1Title')}</strong> {t('farmer.wf1Desc')}</li>
+                <li><strong>{t('farmer.wf2Title')}</strong> {t('farmer.wf2Desc')}</li>
+                <li><strong>{t('farmer.wf3Title')}</strong> {t('farmer.wf3Desc')}</li>
+                <li><strong>{t('farmer.wf4Title')}</strong> {t('farmer.wf4Desc')}</li>
               </ol>
             </div>
           </FadeContent>

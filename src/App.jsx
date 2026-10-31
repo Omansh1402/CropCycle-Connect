@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
+import { useTranslation } from 'react-i18next';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { LoadingSpinner } from './components/DbStatus';
+import { AuthProvider } from './context/AuthContext';
 import './App.css';
 
 // Route-level code splitting via React.lazy()
@@ -12,11 +14,30 @@ const Buyer = lazy(() => import('./pages/Buyer'));
 const Matches = lazy(() => import('./pages/Matches'));
 const MatchDetails = lazy(() => import('./pages/MatchDetails'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Auth = lazy(() => import('./pages/Auth'));
 
 function RouteLoadingFallback() {
+  const { t } = useTranslation();
   return (
     <div className="page-loading-shell" role="status" aria-live="polite">
-      <LoadingSpinner label="Loading application…" />
+      <LoadingSpinner label={t('common.loadingApp', 'Loading application…')} />
+    </div>
+  );
+}
+
+function NotFoundPage() {
+  const { t } = useTranslation();
+  return (
+    <div className="not-found-container">
+      <div className="not-found-code">404</div>
+      <h1 className="not-found-title">{t('common.pageNotFound', 'Page Not Found')}</h1>
+      <p className="not-found-desc">
+        {t('common.pageNotFoundDesc', 'The requested URL could not be found or has moved to an updated path in the agricultural marketplace.')}
+      </p>
+      <Link to="/" className="btn btn-primary">
+        {t('common.returnToHome', 'Return to Home')}
+      </Link>
     </div>
   );
 }
@@ -104,36 +125,27 @@ function Layout({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <ScrollRevealManager />
-      <Layout>
-        <Suspense fallback={<RouteLoadingFallback />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/farmer" element={<Farmer />} />
-            <Route path="/buyer" element={<Buyer />} />
-            <Route path="/matches" element={<Matches />} />
-            <Route path="/match-details/:buyerId" element={<MatchDetails />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            {/* 404 fallback */}
-            <Route
-              path="*"
-              element={
-                <div className="not-found-container">
-                  <div className="not-found-code">404</div>
-                  <h1 className="not-found-title">Page Not Found</h1>
-                  <p className="not-found-desc">
-                    The requested URL could not be found or has moved to an updated path in the agricultural marketplace.
-                  </p>
-                  <Link to="/" className="btn btn-primary">
-                    Return to Home
-                  </Link>
-                </div>
-              }
-            />
-          </Routes>
-        </Suspense>
-      </Layout>
+      <AuthProvider>
+        <ScrollToTop />
+        <ScrollRevealManager />
+        <Layout>
+          <Suspense fallback={<RouteLoadingFallback />}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/farmer" element={<Farmer />} />
+              <Route path="/buyer" element={<Buyer />} />
+              <Route path="/matches" element={<Matches />} />
+              <Route path="/match-details/:buyerId" element={<MatchDetails />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/login" element={<Auth />} />
+              <Route path="/auth" element={<Auth />} />
+              {/* 404 fallback */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Suspense>
+        </Layout>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

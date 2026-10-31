@@ -8,17 +8,19 @@
     "build": "vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node test/matchingEngine.test.js && node test/auditSuite.test.js"
+    "test": "node test/matchingEngine.test.js && node test/auditSuite.test.js && node test/authProfile.test.js && node test/i18nAudit.test.js"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@supabase/supabase-js": "^2.118.0",
     "framer-motion": "^14.9.0",
     "gsap": "^3.15.0",
+    "i18next": "^26.5.12",
     "leaflet": "^1.9.4",
     "motion": "^14.9.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "react-i18next": "^17.1.9",
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {

@@ -1,5 +1,6 @@
 // src/pages/Home.jsx
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import SplitText from '../components/reactbits/SplitText';
 import BlurText from '../components/reactbits/BlurText';
 import RotatingText from '../components/reactbits/RotatingText';
@@ -9,87 +10,97 @@ import CountUp from '../components/reactbits/CountUp';
 import FadeContent from '../components/reactbits/FadeContent';
 import './Home.css';
 
-const SYSTEM_STAGES = [
-  {
-    step: '01',
-    title: 'Cluster Supply Logging',
-    desc: 'Farmers and FPOs record available lot volumes, residue species, field coordinates, and harvest windows.',
-  },
-  {
-    step: '02',
-    title: 'Multi-Factor Engine',
-    desc: 'Our deterministic algorithm evaluates quantity fit (40%), distance (30%), intake capacity (20%), and use-case synergy (10%).',
-  },
-  {
-    step: '03',
-    title: 'Logistics Aggregation',
-    desc: 'Smallholder volumes within a 15 km radius are grouped into full freight batches to minimize transport overhead.',
-  },
-  {
-    step: '04',
-    title: 'Circular Conversion',
-    desc: 'Residue is routed to bio-CNG plants, paper mills, and animal feed units — eliminating open burning permanently.',
-  },
-];
-
-const FEEDSTOCK_SPECIFICATIONS = [
-  {
-    crop: 'Paddy Straw',
-    category: 'Cereal Residue',
-    calorific: '~3,200 kcal/kg',
-    moisture: '< 15%',
-    primaryUses: 'Bio-CNG, Bioethanol, Particle Board, Mushroom Beds',
-  },
-  {
-    crop: 'Wheat Straw',
-    category: 'Cereal Residue',
-    calorific: '~3,400 kcal/kg',
-    moisture: '< 12%',
-    primaryUses: 'Fodder Pellets, Cellulose Paper, Eco-Packaging',
-  },
-  {
-    crop: 'Sugarcane Bagasse',
-    category: 'Agro-Industrial',
-    calorific: '~2,200 kcal/kg (wet)',
-    moisture: '< 50%',
-    primaryUses: 'Cogeneration Power, Pulp & Paper, Molded Tableware',
-  },
-  {
-    crop: 'Cotton Stalks',
-    category: 'Woody Biomass',
-    calorific: '~3,900 kcal/kg',
-    moisture: '< 14%',
-    primaryUses: 'Industrial Pellets, Bio-Coal, Briquetting',
-  },
-  {
-    crop: 'Maize Stover',
-    category: 'Cereal Residue',
-    calorific: '~3,800 kcal/kg',
-    moisture: '< 15%',
-    primaryUses: 'Animal Fodder, Cellulosic Fuel, Biochar',
-  },
-  {
-    crop: 'Groundnut Shells',
-    category: 'Husk / Shell',
-    calorific: '~4,200 kcal/kg',
-    moisture: '< 10%',
-    primaryUses: 'High-Density Boiler Briquettes, Activated Carbon',
-  },
-];
-
-const TICKER_FEEDSTOCKS = [
-  { title: 'Paddy Straw', subtitle: '3,200 kcal/kg' },
-  { title: 'Bio-CNG Refineries', subtitle: 'SATAT Protocol' },
-  { title: 'Wheat Straw', subtitle: 'Cellulose & Fodder' },
-  { title: 'Cellulosic Paper Mills', subtitle: 'Recycled Packaging' },
-  { title: 'Sugarcane Bagasse', subtitle: 'Cogeneration Power' },
-  { title: 'Biochar Facilities', subtitle: 'Carbon Sequestration' },
-  { title: 'Cotton Stalks', subtitle: 'High-Density Pellets' },
-  { title: 'Maize Stover', subtitle: 'Biofuel & Feed' },
-  { title: 'Industrial Boilers', subtitle: 'Thermal Co-Firing' },
-];
-
 export default function Home() {
+  const { t, i18n } = useTranslation();
+
+  const stages = [
+    {
+      step: '01',
+      title: t('home.stage1Title'),
+      desc: t('home.stage1Desc'),
+    },
+    {
+      step: '02',
+      title: t('home.stage2Title'),
+      desc: t('home.stage2Desc'),
+    },
+    {
+      step: '03',
+      title: t('home.stage3Title'),
+      desc: t('home.stage3Desc'),
+    },
+    {
+      step: '04',
+      title: t('home.stage4Title'),
+      desc: t('home.stage4Desc'),
+    },
+  ];
+
+  const feedstockSpecs = [
+    {
+      crop: t('crops.Paddy Straw', 'Paddy Straw'),
+      category: t('categories.Cereal Residue', 'Cereal Residue'),
+      calorific: '~3,200 kcal/kg',
+      moisture: '< 15%',
+      primaryUses: t('home.usesPaddy', 'Bio-CNG, Bioethanol, Particle Board, Mushroom Beds'),
+    },
+    {
+      crop: t('crops.Wheat Straw', 'Wheat Straw'),
+      category: t('categories.Cereal Residue', 'Cereal Residue'),
+      calorific: '~3,400 kcal/kg',
+      moisture: '< 12%',
+      primaryUses: t('home.usesWheat', 'Fodder Pellets, Cellulose Paper, Eco-Packaging'),
+    },
+    {
+      crop: t('crops.Sugarcane Bagasse', 'Sugarcane Bagasse'),
+      category: t('categories.Agro-Industrial', 'Agro-Industrial'),
+      calorific: '~2,200 kcal/kg (wet)',
+      moisture: '< 50%',
+      primaryUses: t('home.usesBagasse', 'Cogeneration Power, Pulp & Paper, Molded Tableware'),
+    },
+    {
+      crop: t('crops.Cotton Stalks', 'Cotton Stalks'),
+      category: t('categories.Woody Biomass', 'Woody Biomass'),
+      calorific: '~3,900 kcal/kg',
+      moisture: '< 14%',
+      primaryUses: t('home.usesCotton', 'Industrial Pellets, Bio-Coal, Briquetting'),
+    },
+    {
+      crop: t('crops.Maize Stover', 'Maize Stover'),
+      category: t('categories.Cereal Residue', 'Cereal Residue'),
+      calorific: '~3,800 kcal/kg',
+      moisture: '< 15%',
+      primaryUses: t('home.usesMaize', 'Animal Fodder, Cellulosic Fuel, Biochar'),
+    },
+    {
+      crop: t('crops.Groundnut Shells', 'Groundnut Shells'),
+      category: t('categories.Husk / Shell', 'Husk / Shell'),
+      calorific: '~4,200 kcal/kg',
+      moisture: '< 10%',
+      primaryUses: t('home.usesGroundnut', 'High-Density Boiler Briquettes, Activated Carbon'),
+    },
+  ];
+
+  const tickerFeedstocks = [
+    { title: t('home.ticker.paddyStraw'), subtitle: t('home.ticker.paddyCal') },
+    { title: t('home.ticker.bioCng'), subtitle: t('home.ticker.satat') },
+    { title: t('home.ticker.wheatStraw'), subtitle: t('home.ticker.celluloseFodder') },
+    { title: t('home.ticker.paperMills'), subtitle: t('home.ticker.recycledPackaging') },
+    { title: t('home.ticker.bagasse'), subtitle: t('home.ticker.cogenPower') },
+    { title: t('home.ticker.biochar'), subtitle: t('home.ticker.carbonSeq') },
+    { title: t('home.ticker.cottonStalks'), subtitle: t('home.ticker.densePellets') },
+    { title: t('home.ticker.maizeStover'), subtitle: t('home.ticker.biofuelFeed') },
+    { title: t('home.ticker.boilers'), subtitle: t('home.ticker.thermalFiring') },
+  ];
+
+  const rotatingTexts = t('home.heroRotatingTexts', { returnObjects: true }) || [
+    'Bio-CNG Refineries',
+    'Cellulosic Ethanol Plants',
+    'Paper & Pulp Mills',
+    'Biochar Producers',
+    'Thermal Co-Firing Boilers',
+  ];
+
   return (
     <main className="home">
       {/* ── Editorial Hero with Subtle Waves Background & SplitText ── */}
@@ -106,11 +117,12 @@ export default function Home() {
           <div className="hero-grid">
             <div className="hero-content">
               <div className="section-eyebrow">
-                <span>National Agricultural Biomass Exchange</span>
+                <span>{t('home.heroEyebrow')}</span>
               </div>
 
               <SplitText
-                text="Architecting the circular supply chain for crop residue."
+                key={`hero-headline-${i18n.language}`}
+                text={t('home.heroHeadline')}
                 tag="h1"
                 className="display-xl hero-headline"
                 delay={0.03}
@@ -118,46 +130,40 @@ export default function Home() {
               />
 
               <div className="body-lg hero-subtext">
-                CropCycle Connect operates a verified marketplace and routing engine matching
-                agricultural cooperatives with{' '}
+                {t('home.heroSubtextPrefix')}{' '}
                 <RotatingText
-                  texts={[
-                    'Bio-CNG Refineries',
-                    'Cellulosic Ethanol Plants',
-                    'Paper & Pulp Mills',
-                    'Biochar Producers',
-                    'Thermal Co-Firing Boilers',
-                  ]}
+                  key={`rotating-${i18n.language}`}
+                  texts={Array.isArray(rotatingTexts) ? rotatingTexts : [rotatingTexts]}
                   highlight={true}
                   highlightColor="rgba(49, 91, 67, 0.12)"
                   style={{ color: '#193B2B', fontWeight: 700 }}
                   rotationInterval={2800}
                 />
-                {' '}— converting seasonal field burning into quantifiable economic and atmospheric value.
+                {' '}{t('home.heroSubtextSuffix')}
               </div>
 
               <FadeContent delay={0.2} distance={18}>
                 <div className="hero-cta">
                   <Link to="/farmer" className="btn btn-primary btn-lg">
-                    List Farm Residue
+                    {t('home.listResidue')}
                   </Link>
                   <Link to="/buyer" className="btn btn-secondary btn-lg">
-                    Register Demand
+                    {t('home.registerDemand')}
                   </Link>
                 </div>
 
                 <div className="hero-metadata">
                   <div className="hero-meta-item">
                     <span className="meta-dot" />
-                    <span>Verified Farm Coordinates</span>
+                    <span>{t('home.metaCoords')}</span>
                   </div>
                   <div className="hero-meta-item">
                     <span className="meta-dot" />
-                    <span>Real-Time Road Haulage Calculation</span>
+                    <span>{t('home.metaHaulage')}</span>
                   </div>
                   <div className="hero-meta-item">
                     <span className="meta-dot" />
-                    <span>Zero Commercial Intermediary Markups</span>
+                    <span>{t('home.metaMarkups')}</span>
                   </div>
                 </div>
               </FadeContent>
@@ -167,58 +173,58 @@ export default function Home() {
             <FadeContent delay={0.25} distance={20} className="hero-visual">
               <div className="architecture-diagram">
                 <div className="diagram-header">
-                  <span className="diagram-title">System Pipeline · Dual Sided Protocol</span>
-                  <span className="diagram-status">Online</span>
+                  <span className="diagram-title">{t('home.diagramTitle')}</span>
+                  <span className="diagram-status">{t('home.diagramOnline')}</span>
                 </div>
 
                 <div className="diagram-body">
                   <div className="diagram-node">
                     <span className="node-num">01</span>
                     <div className="node-info">
-                      <div className="node-label">Farm Supply Point</div>
-                      <div className="node-detail">Farmer & FPO Lot Registration · GPS & Moisture</div>
+                      <div className="node-label">{t('home.stage1Label')}</div>
+                      <div className="node-detail">{t('home.stage1Detail')}</div>
                     </div>
                   </div>
 
                   <div className="diagram-connector">
                     <div className="connector-line" />
-                    <span className="connector-tag">Aggregation & Batching</span>
+                    <span className="connector-tag">{t('home.connector1')}</span>
                   </div>
 
                   <div className="diagram-node diagram-node--engine">
                     <span className="node-num">02</span>
                     <div className="node-info">
-                      <div className="node-label">5-Dimension Matching Algorithm</div>
-                      <div className="node-detail">40% Quantity · 30% Proximity · 20% Capacity · 10% End-Use</div>
+                      <div className="node-label">{t('home.stage2Label')}</div>
+                      <div className="node-detail">{t('home.stage2Detail')}</div>
                     </div>
                   </div>
 
                   <div className="diagram-connector">
                     <div className="connector-line" />
-                    <span className="connector-tag">Road Routing API</span>
+                    <span className="connector-tag">{t('home.connector2')}</span>
                   </div>
 
                   <div className="diagram-node">
                     <span className="node-num">03</span>
                     <div className="node-info">
-                      <div className="node-label">Industrial Refinery Hub</div>
-                      <div className="node-detail">Bio-CNG · Paper Mill · Packaging · Livestock Feed</div>
+                      <div className="node-label">{t('home.stage3Label')}</div>
+                      <div className="node-detail">{t('home.stage3Detail')}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="diagram-footer">
                   <div className="diagram-stat">
-                    <span className="diagram-stat-label">Algorithmic Precision</span>
-                    <span className="diagram-stat-val">100 pt Scale</span>
+                    <span className="diagram-stat-label">{t('home.statPrecision')}</span>
+                    <span className="diagram-stat-val">{t('home.statPrecisionVal')}</span>
                   </div>
                   <div className="diagram-stat">
-                    <span className="diagram-stat-label">Haulage Efficiency</span>
-                    <span className="diagram-stat-val">Cluster Aggregation</span>
+                    <span className="diagram-stat-label">{t('home.statHaulage')}</span>
+                    <span className="diagram-stat-val">{t('home.statHaulageVal')}</span>
                   </div>
                   <div className="diagram-stat">
-                    <span className="diagram-stat-label">Residue Fate</span>
-                    <span className="diagram-stat-val">Zero Burning</span>
+                    <span className="diagram-stat-label">{t('home.statFate')}</span>
+                    <span className="diagram-stat-val">{t('home.statFateVal')}</span>
                   </div>
                 </div>
               </div>
@@ -231,25 +237,25 @@ export default function Home() {
               <div className="metric-num">
                 <CountUp to={700} suffix="M+" duration={1.8} />
               </div>
-              <div className="metric-desc">Tonnes of biomass residue produced annually in India</div>
+              <div className="metric-desc">{t('home.metricBiomassProduced')}</div>
             </div>
             <div className="metric-box">
               <div className="metric-num">
                 <CountUp to={141} suffix="M" duration={1.8} />
               </div>
-              <div className="metric-desc">Tonnes currently burned, generating seasonal air crises</div>
+              <div className="metric-desc">{t('home.metricBiomassBurned')}</div>
             </div>
             <div className="metric-box">
               <div className="metric-num">
                 <CountUp to={17} suffix="M" duration={2.0} />
               </div>
-              <div className="metric-desc">Tonnes CO₂ equivalent mitigation potential</div>
+              <div className="metric-desc">{t('home.metricCo2Potential')}</div>
             </div>
             <div className="metric-box">
               <div className="metric-num">
                 <CountUp to={0} prefix="₹" duration={1.0} />
               </div>
-              <div className="metric-desc">Traditional farmer revenue capture from burned straw</div>
+              <div className="metric-desc">{t('home.metricFarmerRevenue')}</div>
             </div>
           </FadeContent>
         </div>
@@ -259,9 +265,9 @@ export default function Home() {
       <section className="home-marquee-section">
         <div className="container">
           <div className="marquee-meta-header">
-            <span className="marquee-label">Verified Industrial Off-Take Channels & Standardized Feedstocks</span>
+            <span className="marquee-label">{t('home.marqueeLabel')}</span>
           </div>
-          <LogoLoop items={TICKER_FEEDSTOCKS} speed={40} gap={20} />
+          <LogoLoop items={tickerFeedstocks} speed={40} gap={20} />
         </div>
       </section>
 
@@ -269,15 +275,15 @@ export default function Home() {
       <section className="section home-actors">
         <div className="container">
           <FadeContent className="section-header">
-            <span className="section-eyebrow">Marketplace Participants</span>
+            <span className="section-eyebrow">{t('home.participantsEyebrow')}</span>
             <BlurText
-              text="Built for agricultural producers and industrial feedstock buyers."
+              key={`actors-headline-${i18n.language}`}
+              text={t('home.participantsHeadline')}
               className="display-md"
               delay={0.04}
             />
             <p className="body-lg text-muted mt-sm" style={{ maxWidth: '640px' }}>
-              CropCycle Connect provides dedicated portals tailored to the operational requirements
-              of agricultural cooperatives and industrial processing facilities.
+              {t('home.participantsDesc')}
             </p>
           </FadeContent>
 
@@ -285,11 +291,10 @@ export default function Home() {
             {/* Farmer Pillar */}
             <FadeContent delay={0.1} distance={24} className="actor-column">
               <div className="actor-header">
-                <span className="actor-tag">For Producers & FPOs</span>
-                <h3 className="heading-lg">Farmer Portal</h3>
+                <span className="actor-tag">{t('home.forFarmers')}</span>
+                <h3 className="heading-lg">{t('home.farmerPortal')}</h3>
                 <p className="body-md text-muted">
-                  Monetize harvest residue without burning. List surplus paddy, wheat, or sugarcane
-                  straw and connect directly with verified industrial purchasers.
+                  {t('home.farmerPortalDesc')}
                 </p>
               </div>
 
@@ -297,29 +302,29 @@ export default function Home() {
                 <div className="feature-item">
                   <div className="feature-marker">01</div>
                   <div>
-                    <strong>Rapid Listing Protocol:</strong> Log crop species, volume in tonnes, and harvest availability window.
+                    <strong>{t('home.farmerFeat1Title')}</strong> {t('home.farmerFeat1Desc')}
                   </div>
                 </div>
                 <div className="feature-item">
                   <div className="feature-marker">02</div>
                   <div>
-                    <strong>Automated Buyer Compatibility:</strong> Immediately receive ranked buyers based on geographic proximity and required lot sizes.
+                    <strong>{t('home.farmerFeat2Title')}</strong> {t('home.farmerFeat2Desc')}
                   </div>
                 </div>
                 <div className="feature-item">
                   <div className="feature-marker">03</div>
                   <div>
-                    <strong>Custom Logistics Preferences:</strong> Choose on-farm collection or cooperative depot delivery.
+                    <strong>{t('home.farmerFeat3Title')}</strong> {t('home.farmerFeat3Desc')}
                   </div>
                 </div>
               </div>
 
               <div className="actor-action">
                 <Link to="/farmer" className="btn btn-primary">
-                  Create Farm Listing
+                  {t('home.createListing')}
                 </Link>
                 <Link to="/matches" className="btn btn-outline">
-                  View Active Demand
+                  {t('home.viewActiveDemand')}
                 </Link>
               </div>
             </FadeContent>
@@ -327,11 +332,10 @@ export default function Home() {
             {/* Buyer Pillar */}
             <FadeContent delay={0.2} distance={24} className="actor-column">
               <div className="actor-header">
-                <span className="actor-tag">For Industrial Sourcing</span>
-                <h3 className="heading-lg">Buyer Portal</h3>
+                <span className="actor-tag">{t('home.forBuyers')}</span>
+                <h3 className="heading-lg">{t('home.buyerPortal')}</h3>
                 <p className="body-md text-muted">
-                  Secure consistent biomass raw material supplies. Define specifications, manage yard intake
-                  schedules, and aggregate nearby farm lots.
+                  {t('home.buyerPortalDesc')}
                 </p>
               </div>
 
@@ -339,29 +343,29 @@ export default function Home() {
                 <div className="feature-item">
                   <div className="feature-marker">01</div>
                   <div>
-                    <strong>Precision Feedstock Criteria:</strong> Specify accepted residue species, required batch tonnages, and maximum intake caps.
+                    <strong>{t('home.buyerFeat1Title')}</strong> {t('home.buyerFeat1Desc')}
                   </div>
                 </div>
                 <div className="feature-item">
                   <div className="feature-marker">02</div>
                   <div>
-                    <strong>Cluster Aggregation Opportunities:</strong> Automatically group multiple smallholder farms within 25 km into single freight deliveries.
+                    <strong>{t('home.buyerFeat2Title')}</strong> {t('home.buyerFeat2Desc')}
                   </div>
                 </div>
                 <div className="feature-item">
                   <div className="feature-marker">03</div>
                   <div>
-                    <strong>Road Haulage Analysis:</strong> Review turnkey route miles, estimated transit hours, and pickup coordination.
+                    <strong>{t('home.buyerFeat3Title')}</strong> {t('home.buyerFeat3Desc')}
                   </div>
                 </div>
               </div>
 
               <div className="actor-action">
                 <Link to="/buyer" className="btn btn-primary">
-                  Register Demand Profile
+                  {t('home.registerDemandProfile')}
                 </Link>
                 <Link to="/dashboard" className="btn btn-outline">
-                  Explore Sourcing Metrics
+                  {t('home.exploreMetrics')}
                 </Link>
               </div>
             </FadeContent>
@@ -373,12 +377,17 @@ export default function Home() {
       <section className="section home-process" id="how-it-works">
         <div className="container">
           <FadeContent className="section-header">
-            <span className="section-eyebrow">Operating Protocol</span>
-            <BlurText text="How the matching system executes." className="display-md" delay={0.04} />
+            <span className="section-eyebrow">{t('home.operatingProtocol')}</span>
+            <BlurText
+              key={`process-headline-${i18n.language}`}
+              text={t('home.howSystemExecutes')}
+              className="display-md"
+              delay={0.04}
+            />
           </FadeContent>
 
           <div className="process-timeline">
-            {SYSTEM_STAGES.map((s, i) => (
+            {stages.map((s, i) => (
               <FadeContent key={s.step} delay={i * 0.1} distance={20} className="process-node">
                 <div className="process-node__num">{s.step}</div>
                 <h3 className="process-node__title">{s.title}</h3>
@@ -393,10 +402,15 @@ export default function Home() {
       <section className="section home-feedstocks" id="feedstocks">
         <div className="container">
           <FadeContent className="section-header">
-            <span className="section-eyebrow">Technical Feedstock Specifications</span>
-            <BlurText text="Standardized agricultural biomass matrix." className="display-md" delay={0.04} />
+            <span className="section-eyebrow">{t('home.feedstockEyebrow')}</span>
+            <BlurText
+              key={`feedstocks-headline-${i18n.language}`}
+              text={t('home.feedstockHeadline')}
+              className="display-md"
+              delay={0.04}
+            />
             <p className="body-lg text-muted mt-sm">
-              Standardized feedstock catalog mapped to industrial processing thresholds and energetic outputs.
+              {t('home.feedstockDesc')}
             </p>
           </FadeContent>
 
@@ -404,15 +418,15 @@ export default function Home() {
             <table>
               <thead>
                 <tr>
-                  <th>Feedstock Species</th>
-                  <th>Classification</th>
-                  <th>Calorific Rating</th>
-                  <th>Target Moisture</th>
-                  <th>Targeted Industrial Applications</th>
+                  <th>{t('home.thSpecies')}</th>
+                  <th>{t('home.thClassification')}</th>
+                  <th>{t('home.thCalorific')}</th>
+                  <th>{t('home.thMoisture')}</th>
+                  <th>{t('home.thApplications')}</th>
                 </tr>
               </thead>
               <tbody>
-                {FEEDSTOCK_SPECIFICATIONS.map((item) => (
+                {feedstockSpecs.map((item) => (
                   <tr key={item.crop}>
                     <td className="font-semibold text-forest">{item.crop}</td>
                     <td><span className="badge badge-muted">{item.category}</span></td>
@@ -433,46 +447,42 @@ export default function Home() {
           <FadeContent delay={0.1} distance={24} className="impact-card">
             <div className="impact-text-side">
               <span className="section-eyebrow" style={{ color: 'var(--color-sage)' }}>
-                Atmospheric & Soil Stewardship
+                {t('home.impactEyebrow')}
               </span>
               <h2 className="display-md text-white mt-xs">
-                Redirecting 1 tonne of paddy straw prevents ~91 kg of greenhouse emissions.
+                {t('home.impactHeadline')}
               </h2>
               <p className="body-md mt-md" style={{ color: 'rgba(255, 255, 255, 0.8)', lineHeight: '1.65' }}>
-                Open-field residue burning disperses significant particulate matter (PM2.5, PM10),
-                carbon monoxide, and volatile organic compounds across northern agricultural belts.
-                By shifting agricultural biomass into industrial bioenergy and circular manufacturing,
-                CropCycle Connect eliminates field emissions while preserving topsoil microbial vitality.
+                {t('home.impactDesc')}
               </p>
 
               <div className="impact-metrics-row mt-xl">
                 <div className="impact-col">
-                  <div className="impact-col-val">3.0 kg</div>
-                  <div className="impact-col-lbl">Particulate matter eliminated per tonne</div>
+                  <div className="impact-col-val">{t('home.particulateMetric')}</div>
+                  <div className="impact-col-lbl">{t('home.particulateLabel')}</div>
                 </div>
                 <div className="impact-col">
-                  <div className="impact-col-val">60 kg</div>
-                  <div className="impact-col-lbl">Carbon monoxide prevented per tonne</div>
+                  <div className="impact-col-val">{t('home.coMetric')}</div>
+                  <div className="impact-col-lbl">{t('home.coLabel')}</div>
                 </div>
                 <div className="impact-col">
-                  <div className="impact-col-val">100%</div>
-                  <div className="impact-col-lbl">Direct supply traceability</div>
+                  <div className="impact-col-val">{t('home.traceabilityMetric')}</div>
+                  <div className="impact-col-lbl">{t('home.traceabilityLabel')}</div>
                 </div>
               </div>
             </div>
 
             <div className="impact-action-side">
-              <h3 className="heading-md text-white">Join the Circular Network</h3>
+              <h3 className="heading-md text-white">{t('home.joinNetwork')}</h3>
               <p className="body-sm text-white" style={{ opacity: 0.8, marginBottom: '1.5rem' }}>
-                Whether you manage agricultural acreage or oversee industrial biomass intake,
-                begin evaluating verified matches today.
+                {t('home.joinDesc')}
               </p>
               <div className="flex flex-col gap-sm">
                 <Link to="/matches" className="btn btn-secondary w-full">
-                  Explore Live Marketplace
+                  {t('home.exploreMarketplace')}
                 </Link>
                 <Link to="/dashboard" className="btn btn-outline w-full" style={{ color: '#FFFFFF', borderColor: 'rgba(255,255,255,0.3)' }}>
-                  View Network Dashboard
+                  {t('home.viewDashboard')}
                 </Link>
               </div>
             </div>

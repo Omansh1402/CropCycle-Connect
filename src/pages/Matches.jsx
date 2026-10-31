@@ -1,6 +1,7 @@
 // src/pages/Matches.jsx
 import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { sampleBuyers, sampleListings, RESIDUE_TYPES } from '../data/sampleData';
 import { fetchFarmerListings, fetchBuyerRequirements, formatDbError } from '../lib/db';
 import {
@@ -16,6 +17,7 @@ import FadeContent from '../components/reactbits/FadeContent';
 import './Matches.css';
 
 export default function Matches() {
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialListingId = searchParams.get('listing');
 
@@ -78,7 +80,7 @@ export default function Matches() {
         }
       } catch {
         if (isMounted) {
-          setDbError('Could not reach remote database. Using local sample catalog.');
+          setDbError(t('dashboard.couldNotReachRemote', 'Could not reach remote database. Using local sample catalog.'));
           setDataSource('sample');
         }
       } finally {
@@ -91,7 +93,7 @@ export default function Matches() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [t]);
 
   // ─── Unified listings pool with safe deterministic deduplication ───
   const combinedListings = useMemo(() => {
@@ -186,7 +188,7 @@ export default function Matches() {
     return matchListingWithBuyers(currentListing, combinedBuyers);
   }, [currentListing, combinedBuyers]);
 
-  // Compute Suggested Collection Opportunities (Feature 6)
+  // Compute Suggested Collection Opportunities
   const collectionOpportunities = useMemo(() => {
     return findCollectionGroupings(combinedListings, combinedBuyers);
   }, [combinedListings, combinedBuyers]);
@@ -223,11 +225,16 @@ export default function Matches() {
       <header className="page-header">
         <div className="container">
           <div className="page-header__inner">
-            <span className="section-eyebrow">Matching Engine v2.4</span>
-            <SplitText text="Algorithmic Feedstock Exchange" tag="h1" className="display-lg" delay={0.03} />
+            <span className="section-eyebrow">{t('matches.engineVersion')}</span>
+            <SplitText
+              key={`matches-headline-${i18n.language}`}
+              text={t('matches.title')}
+              tag="h1"
+              className="display-lg"
+              delay={0.03}
+            />
             <p className="body-lg text-muted mt-xs" style={{ maxWidth: '640px' }}>
-              Multi-factor algorithmic ranking evaluating batch volume fit (40%), logistics
-              proximity (30%), yard intake capacity (20%), and circular use-case synergy (10%).
+              {t('matches.subtitle')}
             </p>
           </div>
         </div>
@@ -244,20 +251,20 @@ export default function Matches() {
             />
             <span className="font-semibold">
               {dataSource === 'supabase'
-                ? 'Connected to Live PostgreSQL Database'
-                : 'Indexed Demonstration Feedstock Catalog'}
+                ? t('matches.connectedLive')
+                : t('matches.indexedDemo')}
             </span>
             <span className="text-muted">
-              ({matchReport.totalEvaluated} verified enterprise buyers evaluated)
+              {t('matches.buyersEvaluated', { count: matchReport.totalEvaluated })}
             </span>
           </div>
 
           <div className="flex items-center gap-sm">
             <span className="badge badge-green">
-              4-Factor Weighted Algorithm
+              {t('matches.fourFactorBadge')}
             </span>
             <span className="text-muted" style={{ fontSize: '0.75rem' }}>
-              Q:40% · P:30% · C:20% · U:10%
+              {t('matches.weightsBreakdown')}
             </span>
           </div>
         </div>
@@ -274,10 +281,10 @@ export default function Matches() {
             <div style={{ flex: 1 }}>
               <div className="flex items-center justify-between gap-md mb-sm flex-wrap">
                 <span className="label">
-                  Active Farm Listing Evaluated:
+                  {t('matches.activeListingEvaluated')}
                 </span>
                 <Link to="/farmer" className="btn btn-outline btn-sm">
-                  + Register New Listing
+                  {t('matches.registerNewListing')}
                 </Link>
               </div>
 
@@ -289,14 +296,16 @@ export default function Matches() {
                     onClick={() => handleSelectListing(l.id)}
                     type="button"
                   >
-                    <span className="font-medium">{l.residueType}</span>
+                    <span className="font-medium">{t(`crops.${l.residueType}`, l.residueType)}</span>
                     <span className="listing-chip-meta">
                       {l.quantity}t · {l.district || l.state || l.location}
                     </span>
                     {l.isDemo ? (
-                      <span className="chip-demo-tag">demo</span>
+                      <span className="chip-demo-tag">{t('matches.demoChip')}</span>
                     ) : (
-                      <span className="badge badge-green" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>live</span>
+                      <span className="badge badge-green" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>
+                        {t('matches.liveChip')}
+                      </span>
                     )}
                   </button>
                 ))}
@@ -307,27 +316,27 @@ export default function Matches() {
             {currentListing && (
               <div className="matches-listing-meta">
                 <div className="matches-listing-meta-item">
-                  <span className="label">Residue</span>
+                  <span className="label">{t('matches.residue')}</span>
                   <div className="heading-sm text-forest font-semibold mt-xs">
-                    {currentListing.residueType}
+                    {t(`crops.${currentListing.residueType}`, currentListing.residueType)}
                   </div>
                 </div>
                 <div className="matches-listing-meta-item">
-                  <span className="label">Batch Volume</span>
+                  <span className="label">{t('matches.batchVolume')}</span>
                   <div className="heading-sm font-semibold mt-xs">
-                    {currentListing.quantity} tonnes
+                    {currentListing.quantity} {t('common.tonnes', 'tonnes')}
                   </div>
                 </div>
                 <div className="matches-listing-meta-item">
-                  <span className="label">Origin</span>
+                  <span className="label">{t('matches.origin')}</span>
                   <div className="heading-sm mt-xs">
                     {currentListing.district ? `${currentListing.district}, ` : ''}{currentListing.state || currentListing.location}
                   </div>
                 </div>
                 <div className="matches-listing-meta-item">
-                  <span className="label">Haulage</span>
+                  <span className="label">{t('matches.haulage')}</span>
                   <div className="heading-sm mt-xs">
-                    {currentListing.pickupPreference}
+                    {t(`pickup.${currentListing.pickupPreference}`, currentListing.pickupPreference)}
                   </div>
                 </div>
               </div>
@@ -339,10 +348,10 @@ export default function Matches() {
             <div className="matches-sensitivity-box">
               <div className="matches-sensitivity-left">
                 <span className="heading-sm" style={{ fontSize: '0.84375rem' }}>
-                  Dynamic Sensitivity Simulation:
+                  {t('matches.sensitivityTitle')}
                 </span>
                 <span className="body-sm text-muted">
-                  Simulate modifying lot quantity to evaluate real-time score shifts:
+                  {t('matches.sensitivityDesc')}
                 </span>
               </div>
               <div className="slider-group">
@@ -353,7 +362,7 @@ export default function Matches() {
                   step={sliderStep}
                   value={currentListing.quantity}
                   onChange={(e) => setTestQuantityOverride(Number(e.target.value))}
-                  aria-label="Simulate lot quantity"
+                  aria-label={t('matches.sensitivityTitle')}
                   style={{ width: '130px', accentColor: 'var(--color-forest)' }}
                 />
                 <span className="heading-sm text-forest" style={{ minWidth: '60px' }}>
@@ -366,7 +375,7 @@ export default function Matches() {
                     style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                     onClick={() => setTestQuantityOverride(null)}
                   >
-                    Reset
+                    {t('common.reset', 'Reset')}
                   </button>
                 )}
               </div>
@@ -377,7 +386,7 @@ export default function Matches() {
         {/* Loading Spinner */}
         {loading && (
           <div className="flex justify-center p-xl">
-            <LoadingSpinner label="Evaluating real-time candidate matches…" />
+            <LoadingSpinner label={t('matches.evaluatingCandidates')} />
           </div>
         )}
 
@@ -389,15 +398,15 @@ export default function Matches() {
                 <div className="flex justify-between items-center flex-wrap gap-sm mb-md">
                   <div>
                     <span className="badge badge-warm">
-                      Logistics Aggregation
+                      {t('matches.logisticsAggregation')}
                     </span>
-                    <h2 className="heading-md mt-xs">Consolidated Cluster Freight Opportunities</h2>
+                    <h2 className="heading-md mt-xs">{t('matches.consolidatedTitle')}</h2>
                     <p className="body-sm text-muted">
-                      Algorithmic grouping of nearby smallholder farms within 25 km to fulfill commercial buyer intake minimums with shared haulage.
+                      {t('matches.consolidatedDesc')}
                     </p>
                   </div>
                   <span className="badge badge-muted">
-                    {collectionOpportunities.length} Grouping{collectionOpportunities.length > 1 ? 's' : ''}
+                    {collectionOpportunities.length} {t('common.groupings', 'Grouping(s)')}
                   </span>
                 </div>
 
@@ -407,7 +416,7 @@ export default function Matches() {
                       <div className="flex justify-between items-start gap-sm">
                         <div>
                           <span className="badge badge-green">
-                            {opp.residueType}
+                            {t(`crops.${opp.residueType}`, opp.residueType)}
                           </span>
                           <h4 className="heading-sm mt-xs">{opp.clusterLocation}</h4>
                         </div>
@@ -415,20 +424,20 @@ export default function Matches() {
                           <span className="text-forest font-semibold" style={{ fontSize: '1.25rem' }}>
                             {opp.totalQuantityTonnes}t
                           </span>
-                          <p className="body-sm text-muted">({opp.farmerCount} farmers)</p>
+                          <p className="body-sm text-muted">({opp.farmerCount} {t('common.farmers', 'farmers')})</p>
                         </div>
                       </div>
 
                       <div className="collection-target mt-sm">
-                        <span className="label">Target Industrial Demand:</span>
+                        <span className="label">{t('matches.targetIndustrialDemand')}</span>
                         <p className="font-semibold mt-xs">{opp.targetBuyer.orgName}</p>
                         <div className="flex items-center gap-xs mt-xs flex-wrap">
                           <span className="badge badge-muted">
-                            Intake Target: {opp.targetBuyer.requiredQuantity}t ({opp.fulfillmentPct}%)
+                            {t('matches.intakeTarget', { qty: opp.targetBuyer.requiredQuantity, pct: opp.fulfillmentPct })}
                           </span>
                           {opp.indicativeLotValue && (
                             <span className="badge badge-green">
-                              Est. Batch: ₹{opp.indicativeLotValue.toLocaleString('en-IN')}
+                              {t('matches.estBatch', { val: opp.indicativeLotValue.toLocaleString('en-IN') })}
                             </span>
                           )}
                         </div>
@@ -436,13 +445,13 @@ export default function Matches() {
 
                       <div className="collection-farmers mt-sm">
                         <span className="label" style={{ display: 'block', marginBottom: '4px' }}>
-                          Aggregated Farm Lots:
+                          {t('matches.aggregatedLots')}
                         </span>
                         <div className="flex flex-col gap-xs">
                           {opp.participatingListings.map((p) => (
                             <div key={p.id} className="participating-row">
                               <span>{p.farmerName} ({p.location})</span>
-                              <strong>{p.quantity} tonnes</strong>
+                              <strong>{p.quantity} {t('common.tonnes', 'tonnes')}</strong>
                             </div>
                           ))}
                         </div>
@@ -458,7 +467,7 @@ export default function Matches() {
                         to={`/match-details/${opp.targetBuyer.id}?listing=${opp.participatingListings[0].id}`}
                         className="btn btn-outline btn-sm w-full mt-sm"
                       >
-                        Inspect Route &amp; Buyer Profile →
+                        {t('matches.inspectRouteProfile')}
                       </Link>
                     </div>
                   ))}
@@ -471,14 +480,17 @@ export default function Matches() {
               <FadeContent delay={0.2} distance={20} className="top-matches-showcase mb-xl">
                 <div className="top-matches-header">
                   <div>
-                    <span className="section-eyebrow">Top Recommendations</span>
-                    <h2 className="heading-md mt-xs">Ranked Matching Candidates</h2>
+                    <span className="section-eyebrow">{t('matches.topRecommendations')}</span>
+                    <h2 className="heading-md mt-xs">{t('matches.rankedCandidates')}</h2>
                     <p className="body-sm text-muted">
-                      Highest multi-factor compatibility scores for {currentListing?.residueType} ({currentListing?.quantity} tonnes).
+                      {t('matches.topSubtitle', {
+                        type: currentListing ? t(`crops.${currentListing.residueType}`, currentListing.residueType) : '',
+                        qty: currentListing?.quantity || 0,
+                      })}
                     </p>
                   </div>
                   <div className="badge badge-green">
-                    Ranked by Composite Score
+                    {t('matches.rankedComposite')}
                   </div>
                 </div>
 
@@ -504,17 +516,17 @@ export default function Matches() {
             <div className="matches-filters">
               <div className="matches-filter-group">
                 <span className="label" style={{ marginRight: '6px', whiteSpace: 'nowrap' }}>
-                  Residue Filter:
+                  {t('matches.residueFilter')}
                 </span>
                 <div className="tag-list">
-                  {residueFilterOptions.map((t) => (
+                  {residueFilterOptions.map((tVal) => (
                     <button
-                      key={t}
+                      key={tVal}
                       type="button"
-                      className={`filter-tab ${filterType === t ? 'active' : ''}`}
-                      onClick={() => setFilterType(t)}
+                      className={`filter-tab ${filterType === tVal ? 'active' : ''}`}
+                      onClick={() => setFilterType(tVal)}
                     >
-                      {t}
+                      {tVal === 'All' ? t('common.all', 'All') : t(`crops.${tVal}`, tVal)}
                     </button>
                   ))}
                 </div>
@@ -528,9 +540,9 @@ export default function Matches() {
                   onChange={(e) => setFilterAvail(e.target.value)}
                   aria-label="Filter by availability"
                 >
-                  <option value="All">All Intakes</option>
-                  <option value="Active">Active Intake Only</option>
-                  <option value="Unavailable">Intake On Hold</option>
+                  <option value="All">{t('matches.allIntakes')}</option>
+                  <option value="Active">{t('matches.activeIntakeOnly')}</option>
+                  <option value="Unavailable">{t('matches.intakeOnHold')}</option>
                 </select>
 
                 <select
@@ -540,10 +552,10 @@ export default function Matches() {
                   onChange={(e) => setSortBy(e.target.value)}
                   aria-label="Sort candidates"
                 >
-                  <option value="matchScore">Sort: Compatibility Score</option>
-                  <option value="proximity">Sort: Closest Proximity</option>
-                  <option value="quantity">Sort: Required Batch Size</option>
-                  <option value="name">Sort: Organisation A–Z</option>
+                  <option value="matchScore">{t('matches.sortScore')}</option>
+                  <option value="proximity">{t('matches.sortProximity')}</option>
+                  <option value="quantity">{t('matches.sortQuantity')}</option>
+                  <option value="name">{t('matches.sortName')}</option>
                 </select>
               </div>
             </div>
@@ -552,14 +564,16 @@ export default function Matches() {
             <div className="matches-count flex items-center justify-between flex-wrap gap-md mb-md">
               <div className="flex items-center gap-sm">
                 <h3 className="heading-md">
-                  All Compatible Buyers ({filteredMatches.length})
+                  {t('matches.allCompatibleBuyers', { count: filteredMatches.length })}
                 </h3>
                 {filterType !== 'All' && (
-                  <span className="badge badge-green">Filtering: {filterType}</span>
+                  <span className="badge badge-green">
+                    {t('matches.filteringBadge', { type: t(`crops.${filterType}`, filterType) })}
+                  </span>
                 )}
               </div>
               <span className="body-sm text-muted">
-                Candidates passing verification checks
+                {t('matches.passingVerification')}
               </span>
             </div>
 
@@ -583,11 +597,11 @@ export default function Matches() {
             ) : (
               /* Edge Case — No compatible buyers */
               <div className="matches-empty card">
-                <h3 className="heading-md">No Compatible Buyers Found</h3>
+                <h3 className="heading-md">{t('matches.noCompatibleTitle')}</h3>
                 <p className="body-md text-muted" style={{ maxWidth: '480px' }}>
-                  No active buyers in the directory currently accept{' '}
-                  <strong>{currentListing?.residueType || 'this residue'}</strong> or meet the
-                  active intake availability criteria.
+                  {t('matches.noCompatibleDesc', {
+                    type: currentListing ? t(`crops.${currentListing.residueType}`, currentListing.residueType) : t('matches.thisResidue'),
+                  })}
                 </p>
                 <div className="flex gap-sm mt-md flex-wrap justify-center">
                   <button
@@ -598,10 +612,10 @@ export default function Matches() {
                       setFilterAvail('All');
                     }}
                   >
-                    Reset Filter Constraints
+                    {t('matches.resetFilters')}
                   </button>
                   <Link to="/farmer" className="btn btn-primary">
-                    Register Alternate Crop Listing
+                    {t('matches.registerAlternate')}
                   </Link>
                 </div>
               </div>
@@ -617,18 +631,18 @@ export default function Matches() {
                   aria-expanded={showIncompatible}
                 >
                   <div className="incompatible-toggle-left">
-                    <span className="incompatible-badge">Excluded</span>
+                    <span className="incompatible-badge">{t('matches.excludedBadge')}</span>
                     <div>
                       <h4 className="heading-sm">
-                        Incompatible Directory Candidates ({matchReport.incompatibleBuyers.length})
+                        {t('matches.excludedTitle', { count: matchReport.incompatibleBuyers.length })}
                       </h4>
                       <p className="body-sm text-muted">
-                        Organizations excluded by residue non-acceptance, intake hold, or batch mismatch.
+                        {t('matches.excludedDesc')}
                       </p>
                     </div>
                   </div>
                   <span className="btn btn-outline btn-sm">
-                    {showIncompatible ? 'Hide Excluded' : 'Inspect Criteria'}
+                    {showIncompatible ? t('matches.hideExcluded') : t('matches.inspectCriteria')}
                   </span>
                 </button>
 
@@ -641,7 +655,7 @@ export default function Matches() {
                             {buyer.orgName}
                           </span>
                           <span className="body-sm text-muted">
-                            {buyer.location || 'Location unlisted'} · Output: {buyer.intendedUse}
+                            {buyer.location || t('buyerCard.locationUnlisted')} · {t('matches.outputLabel', { use: buyer.intendedUse ? t(`uses.${buyer.intendedUse}`, buyer.intendedUse) : '—' })}
                           </span>
                         </div>
                         <div className="flex items-center gap-xs flex-wrap">

@@ -1,6 +1,7 @@
 // src/components/BuyerCard.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import CountUp from './reactbits/CountUp';
 import './BuyerCard.css';
 
@@ -14,6 +15,7 @@ export default function BuyerCard({
   highlightedResidue = '',
   defaultExpanded = false,
 }) {
+  const { t } = useTranslation();
   const [showExplanation, setShowExplanation] = useState(defaultExpanded || rank === 1);
 
   // Determine score and styling
@@ -41,20 +43,20 @@ export default function BuyerCard({
             </span>
           ) : (
             <span className="badge badge-muted">
-              {buyer.orgType || 'Commercial Buyer'}
+              {buyer.orgType ? t(`orgTypes.${buyer.orgType}`, buyer.orgType) : t('buyerCard.commercialBuyer')}
             </span>
           )}
 
           {buyer.isDemo && (
             <span className="badge badge-muted">
-              Verified Reference Record
+              {t('buyerCard.verifiedRecord')}
             </span>
           )}
         </div>
 
         <span className={`status-pill ${buyer.available ? 'status-pill--active' : 'status-pill--standby'}`}>
           <span className="status-dot-mini" />
-          {buyer.available ? 'Active Intake' : 'Intake Standby'}
+          {buyer.available ? t('buyerCard.activeIntake') : t('buyerCard.intakeStandby')}
         </span>
       </div>
 
@@ -65,12 +67,12 @@ export default function BuyerCard({
             {buyer.orgName}
           </h3>
           <div className="buyer-card__location">
-            <span>{buyer.location || 'Location unlisted'}</span>
+            <span>{buyer.location || t('buyerCard.locationUnlisted')}</span>
             {matchResult?.metadata?.estimatedDistanceKm != null && (
               <span className="distance-tag">
                 {matchResult.metadata.coordinateDistanceKm != null
-                  ? `${matchResult.metadata.coordinateDistanceKm} km`
-                  : `${matchResult.metadata.estimatedDistanceKm} km est.`}
+                  ? t('buyerCard.exactDistance', { km: matchResult.metadata.coordinateDistanceKm })
+                  : t('buyerCard.estDistance', { km: matchResult.metadata.estimatedDistanceKm })}
               </span>
             )}
           </div>
@@ -78,14 +80,18 @@ export default function BuyerCard({
 
         {/* Compatibility Score Display */}
         <div className="buyer-card__score-box">
-          <div className={`score-pill ${scoreBadgeClass}`} title="5-Dimension algorithm compatibility rating">
+          <div className={`score-pill ${scoreBadgeClass}`} title={t('buyerCard.scoreTitle')}>
             <span className="score-val">
               <CountUp to={score} duration={1.2} />
             </span>
             <span className="score-unit">%</span>
           </div>
           <span className="score-label">
-            {score >= 80 ? 'Optimal Match' : score >= 60 ? 'Compatible' : 'Low Alignment'}
+            {score >= 80
+              ? t('buyerCard.optimalMatch')
+              : score >= 60
+              ? t('buyerCard.compatible')
+              : t('buyerCard.lowAlignment')}
           </span>
         </div>
       </div>
@@ -100,21 +106,23 @@ export default function BuyerCard({
       {/* Operational Specifications Grid */}
       <div className="buyer-card__spec-grid">
         <div className="spec-col">
-          <span className="spec-label">Target Application</span>
-          <span className="spec-val">{buyer.intendedUse}</span>
-        </div>
-        <div className="spec-col">
-          <span className="spec-label">Required Batch</span>
-          <span className="spec-val">{buyer.requiredQuantity} tonnes</span>
-        </div>
-        <div className="spec-col">
-          <span className="spec-label">Facility Max Intake</span>
+          <span className="spec-label">{t('buyerCard.targetApplication')}</span>
           <span className="spec-val">
-            {buyer.maxIntake ? `${buyer.maxIntake} tonnes` : 'Flexible Capacity'}
+            {buyer.intendedUse ? t(`uses.${buyer.intendedUse}`, buyer.intendedUse) : '—'}
           </span>
         </div>
         <div className="spec-col">
-          <span className="spec-label">Indicative Lot Value</span>
+          <span className="spec-label">{t('buyerCard.requiredBatch')}</span>
+          <span className="spec-val">{buyer.requiredQuantity} {t('common.tonnes', 'tonnes')}</span>
+        </div>
+        <div className="spec-col">
+          <span className="spec-label">{t('buyerCard.facilityMaxIntake')}</span>
+          <span className="spec-val">
+            {buyer.maxIntake ? `${buyer.maxIntake} ${t('common.tonnes', 'tonnes')}` : t('buyer.flexibleCapacity', 'Flexible Capacity')}
+          </span>
+        </div>
+        <div className="spec-col">
+          <span className="spec-label">{t('buyerCard.indicativeLotValue')}</span>
           <span className="spec-val">
             {matchResult?.metadata?.pricing?.pricePerTonne != null ? (
               <span className="flex items-center gap-xs">
@@ -127,7 +135,7 @@ export default function BuyerCard({
               </span>
             ) : (
               <span className="badge badge-muted">
-                Price upon inquiry
+                {t('buyerCard.priceUponInquiry')}
               </span>
             )}
           </span>
@@ -137,7 +145,7 @@ export default function BuyerCard({
       {/* Accepted Feedstocks */}
       <div className="buyer-card__feedstocks">
         <span className="spec-label" style={{ marginBottom: '6px', display: 'block' }}>
-          Accepted Crop Residues
+          {t('buyerCard.acceptedResidues')}
         </span>
         <div className="tag-list">
           {buyer.acceptedTypes.map((type) => {
@@ -148,7 +156,7 @@ export default function BuyerCard({
                 className={`feedstock-chip ${isMatch ? 'feedstock-chip--matched' : ''}`}
               >
                 {isMatch && <span className="matched-check">✓</span>}
-                {type}
+                {t(`crops.${type}`, type)}
               </span>
             );
           })}
@@ -165,9 +173,9 @@ export default function BuyerCard({
             aria-expanded={showExplanation}
           >
             <span className="toggle-label">
-              Algorithm Score Breakdown ({score}/100)
+              {t('buyerCard.scoreBreakdown', { score })}
             </span>
-            <span className="toggle-arrow">{showExplanation ? 'Hide' : 'Inspect'}</span>
+            <span className="toggle-arrow">{showExplanation ? t('buyerCard.hide') : t('buyerCard.inspect')}</span>
           </button>
 
           {showExplanation && (
@@ -176,8 +184,8 @@ export default function BuyerCard({
               <div className="breakdown-grid">
                 <div className="breakdown-item">
                   <div className="breakdown-header">
-                    <span>Quantity Fit (40%)</span>
-                    <strong>{weighted?.quantity || 0}/40 pts</strong>
+                    <span>{t('buyerCard.quantityFit')}</span>
+                    <strong>{weighted?.quantity || 0}/40 {t('common.pts', 'pts')}</strong>
                   </div>
                   <div className="breakdown-track">
                     <div
@@ -189,8 +197,8 @@ export default function BuyerCard({
 
                 <div className="breakdown-item">
                   <div className="breakdown-header">
-                    <span>Proximity (30%)</span>
-                    <strong>{weighted?.proximity || 0}/30 pts</strong>
+                    <span>{t('buyerCard.proximityFit')}</span>
+                    <strong>{weighted?.proximity || 0}/30 {t('common.pts', 'pts')}</strong>
                   </div>
                   <div className="breakdown-track">
                     <div
@@ -202,8 +210,8 @@ export default function BuyerCard({
 
                 <div className="breakdown-item">
                   <div className="breakdown-header">
-                    <span>Capacity (20%)</span>
-                    <strong>{weighted?.capacity || 0}/20 pts</strong>
+                    <span>{t('buyerCard.capacityFit')}</span>
+                    <strong>{weighted?.capacity || 0}/20 {t('common.pts', 'pts')}</strong>
                   </div>
                   <div className="breakdown-track">
                     <div
@@ -215,8 +223,8 @@ export default function BuyerCard({
 
                 <div className="breakdown-item">
                   <div className="breakdown-header">
-                    <span>Use-Case (10%)</span>
-                    <strong>{weighted?.useCase || 0}/10 pts</strong>
+                    <span>{t('buyerCard.useCaseFit')}</span>
+                    <strong>{weighted?.useCase || 0}/10 {t('common.pts', 'pts')}</strong>
                   </div>
                   <div className="breakdown-track">
                     <div
@@ -231,28 +239,28 @@ export default function BuyerCard({
               {explanation && (
                 <div className="breakdown-narratives">
                   <div className="narrative-row">
-                    <span className="narrative-key">Residue</span>
+                    <span className="narrative-key">{t('buyerCard.residueKey')}</span>
                     <span className="narrative-val">{explanation.residue}</span>
                   </div>
                   <div className="narrative-row">
-                    <span className="narrative-key">Quantity</span>
+                    <span className="narrative-key">{t('buyerCard.quantityKey')}</span>
                     <span className="narrative-val">{explanation.quantity}</span>
                   </div>
                   <div className="narrative-row">
-                    <span className="narrative-key">Distance</span>
+                    <span className="narrative-key">{t('buyerCard.distanceKey')}</span>
                     <span className="narrative-val">{explanation.distance}</span>
                   </div>
                   <div className="narrative-row">
-                    <span className="narrative-key">Capacity</span>
+                    <span className="narrative-key">{t('buyerCard.capacityKey')}</span>
                     <span className="narrative-val">{explanation.capacity}</span>
                   </div>
                   <div className="narrative-row">
-                    <span className="narrative-key">Intended Use</span>
+                    <span className="narrative-key">{t('buyerCard.useCaseKey')}</span>
                     <span className="narrative-val">{explanation.useCase}</span>
                   </div>
                   {explanation.pricing && (
                     <div className="narrative-row">
-                      <span className="narrative-key">Pricing</span>
+                      <span className="narrative-key">{t('buyerCard.pricingKey')}</span>
                       <span className="narrative-val">{explanation.pricing}</span>
                     </div>
                   )}
@@ -281,18 +289,18 @@ export default function BuyerCard({
           to={`/match-details/${buyer.id}${listingId ? `?listing=${listingId}` : ''}`}
           className="btn btn-primary btn-sm"
         >
-          View Route & Profile
+          {t('buyerCard.btnViewRoute')}
         </Link>
         <Link
           to={`/match-details/${buyer.id}${listingId ? `?listing=${listingId}` : ''}#contact`}
           className="btn btn-secondary btn-sm"
         >
-          Send Pickup Request
+          {t('buyerCard.btnSendRequest')}
         </Link>
       </div>
 
       <div className="buyer-card__footnote">
-        Algorithm compatibility score is computed based on distance and batch specifications. Non-binding advisory.
+        {t('buyerCard.footnote')}
       </div>
     </article>
   );

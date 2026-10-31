@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { sampleBuyers, sampleListings } from '../data/sampleData';
 import {
   fetchBuyerById,
@@ -19,6 +20,7 @@ import './MatchDetails.css';
 const RouteMap = lazy(() => import('../components/RouteMap'));
 
 export default function MatchDetails() {
+  const { t, i18n } = useTranslation();
   const { buyerId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const listingId = searchParams.get('listing');
@@ -134,7 +136,7 @@ export default function MatchDetails() {
     return (
       <main className="match-details-page">
         <div className="container section flex justify-center">
-          <LoadingSpinner label="Retrieving buyer profile…" />
+          <LoadingSpinner label={t('matchDetails.loadingProfile')} />
         </div>
       </main>
     );
@@ -145,12 +147,12 @@ export default function MatchDetails() {
       <main className="match-details-page">
         <div className="container section">
           <div className="card text-center" style={{ padding: 'var(--space-3xl) var(--space-xl)' }}>
-            <h1 className="heading-lg">Enterprise Profile Not Found</h1>
+            <h1 className="heading-lg">{t('matchDetails.notFoundTitle')}</h1>
             <p className="body-md text-muted mt-sm mb-lg">
-              The requested buyer record does not exist in the active directory.
+              {t('matchDetails.notFoundDesc')}
             </p>
             <Link to="/matches" className="btn btn-primary">
-              Return to Marketplace
+              {t('matchDetails.returnMarketplace')}
             </Link>
           </div>
         </div>
@@ -167,7 +169,7 @@ export default function MatchDetails() {
     setMsgError('');
 
     if (!message.trim() || message.trim().length < 10) {
-      setMsgError('Please enter a descriptive message (at least 10 characters)');
+      setMsgError(t('matchDetails.errMessageLength'));
       return;
     }
 
@@ -196,7 +198,7 @@ export default function MatchDetails() {
       setSavedRequestId(data?.id ?? null);
       setRequestSent(true);
     } catch {
-      setDbError('An unexpected error occurred. Please try again.');
+      setDbError(t('farmer.errUnexpected', 'An unexpected error occurred. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -208,9 +210,9 @@ export default function MatchDetails() {
       <nav className="details-breadcrumb" aria-label="Breadcrumb">
         <div className="container">
           <div className="breadcrumb-inner">
-            <Link to="/" className="breadcrumb-link">Overview</Link>
+            <Link to="/" className="breadcrumb-link">{t('matchDetails.overview')}</Link>
             <span className="breadcrumb-sep">/</span>
-            <Link to="/matches" className="breadcrumb-link">Marketplace</Link>
+            <Link to="/matches" className="breadcrumb-link">{t('matchDetails.marketplace')}</Link>
             <span className="breadcrumb-sep">/</span>
             <span className="breadcrumb-curr">{normalizedBuyer.orgName}</span>
           </div>
@@ -222,18 +224,24 @@ export default function MatchDetails() {
         <div className="container">
           <div className="details-header-flex">
             <div className="details-header-info">
-              <span className="section-eyebrow">Enterprise Procurement Dossier</span>
-              <SplitText text={normalizedBuyer.orgName} tag="h1" className="display-lg" delay={0.03} />
+              <span className="section-eyebrow">{t('matchDetails.dossier')}</span>
+              <SplitText
+                key={`buyer-dossier-${i18n.language}`}
+                text={normalizedBuyer.orgName}
+                tag="h1"
+                className="display-lg"
+                delay={0.03}
+              />
               <div className="details-meta-row mt-sm">
                 <span className="details-meta-tag font-medium">
                   {normalizedBuyer.location} {normalizedBuyer.state ? `(${normalizedBuyer.state})` : ''}
                 </span>
                 <span className={`status-pill ${normalizedBuyer.available ? 'status-pill--active' : 'status-pill--standby'}`}>
                   <span className="status-dot-mini" />
-                  {normalizedBuyer.available ? 'Actively Receiving Biomass' : 'Intake On Standby'}
+                  {normalizedBuyer.available ? t('matchDetails.activelyReceiving') : t('matchDetails.intakeOnStandby')}
                 </span>
                 <span className="badge badge-muted">
-                  {normalizedBuyer.orgType}
+                  {normalizedBuyer.orgType ? t(`orgTypes.${normalizedBuyer.orgType}`, normalizedBuyer.orgType) : t('buyerCard.commercialBuyer')}
                 </span>
               </div>
             </div>
@@ -245,7 +253,7 @@ export default function MatchDetails() {
                 </span>
                 <span className="score-lg-unit">%</span>
               </div>
-              <span className="score-summary-label">Algorithm Compatibility</span>
+              <span className="score-summary-label">{t('matchDetails.algoCompatibility')}</span>
             </div>
           </div>
         </div>
@@ -257,13 +265,13 @@ export default function MatchDetails() {
           <div className="listing-selector-banner card mb-xl">
             <div className="flex items-center justify-between gap-md flex-wrap">
               <div>
-                <span className="badge badge-warm">No Farm Listing Selected</span>
-                <h3 className="heading-md mt-xs">Select a Farm Listing to Evaluate Exact Fit</h3>
+                <span className="badge badge-warm">{t('matchDetails.noListingSelected')}</span>
+                <h3 className="heading-md mt-xs">{t('matchDetails.selectListingTitle')}</h3>
                 <p className="body-sm text-muted mt-xs">
-                  Choose an available residue lot to calculate batch fulfillment, road haulage distance, and lot valuation.
+                  {t('matchDetails.selectListingDesc')}
                 </p>
               </div>
-              <Link to="/farmer" className="btn btn-primary btn-sm">+ Post Farm Listing</Link>
+              <Link to="/farmer" className="btn btn-primary btn-sm">{t('matchDetails.postListing')}</Link>
             </div>
             <div className="listing-chips-container mt-md">
               {availableListings.map((l) => {
@@ -277,14 +285,16 @@ export default function MatchDetails() {
                     }}
                     type="button"
                   >
-                    <span>{norm.residueType}</span>
+                    <span>{t(`crops.${norm.residueType}`, norm.residueType)}</span>
                     <span className="listing-chip-meta">
                       {norm.quantity}t · {norm.district || norm.state || norm.location}
                     </span>
                     {norm.isDemo ? (
-                      <span className="chip-demo-tag">demo</span>
+                      <span className="chip-demo-tag">{t('matches.demoChip')}</span>
                     ) : (
-                      <span className="badge badge-green" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>real</span>
+                      <span className="badge badge-green" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>
+                        {t('matches.liveChip')}
+                      </span>
                     )}
                   </button>
                 );
@@ -295,22 +305,22 @@ export default function MatchDetails() {
           <div className="listing-selector-banner card mb-xl">
             <div className="flex items-center justify-between gap-md flex-wrap">
               <div className="flex items-center gap-md flex-wrap">
-                <span className="badge badge-green">Evaluated Listing</span>
+                <span className="badge badge-green">{t('matchDetails.evaluatedListing')}</span>
                 <span className="heading-sm">
-                  {normalizedListing.residueType} ({normalizedListing.quantity} tonnes)
+                  {t(`crops.${normalizedListing.residueType}`, normalizedListing.residueType)} ({normalizedListing.quantity} {t('common.tonnes', 'tonnes')})
                 </span>
                 <span className="body-sm text-muted">
                   {normalizedListing.district ? `${normalizedListing.district}, ` : ''}{normalizedListing.state || normalizedListing.location}
                 </span>
               </div>
               <div className="flex items-center gap-sm">
-                <Link to="/matches" className="btn btn-outline btn-sm">All Matches</Link>
+                <Link to="/matches" className="btn btn-outline btn-sm">{t('matchDetails.allMatches')}</Link>
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
                   onClick={() => setSearchParams({})}
                 >
-                  Change Farm Lot
+                  {t('matchDetails.changeFarmLot')}
                 </button>
               </div>
             </div>
@@ -322,52 +332,52 @@ export default function MatchDetails() {
           <FadeContent delay={0.1} distance={20} className="details-main">
             {normalizedBuyer.isDemo && (
               <div className="alert-box mb-lg">
-                <span className="font-semibold text-forest">Verified Reference Record:</span> {normalizedBuyer.orgName} represents an indexed regional industrial processor.
+                <span className="font-semibold text-forest">{t('matchDetails.verifiedRecordLabel')}</span> {t('matchDetails.verifiedRecordText', { orgName: normalizedBuyer.orgName })}
               </div>
             )}
 
             {/* About Section */}
             <section className="card details-section">
-              <h2 className="heading-md mb-sm">Enterprise Facility Overview</h2>
+              <h2 className="heading-md mb-sm">{t('matchDetails.facilityOverview')}</h2>
               <p className="body-md" style={{ lineHeight: '1.65' }}>
-                {normalizedBuyer.notes || 'Operating commercial conversion facilities for agricultural residues.'}
+                {normalizedBuyer.notes || t('matchDetails.facilityOverviewDefault')}
               </p>
             </section>
 
             {/* Commercial Lot Valuation */}
             <section className="card details-section">
               <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
-                <h2 className="heading-md">Commercial Lot Valuation</h2>
+                <h2 className="heading-md">{t('matchDetails.lotValuation')}</h2>
                 {matchResult?.metadata?.pricing?.pricePerTonne != null ? (
-                  <span className="badge badge-green">Calculated Value</span>
+                  <span className="badge badge-green">{t('matchDetails.calculatedValue')}</span>
                 ) : (
-                  <span className="badge badge-muted">Price Upon Inquiry</span>
+                  <span className="badge badge-muted">{t('matchDetails.priceUponInquiry')}</span>
                 )}
               </div>
 
               <div className="spec-metric-grid">
                 <div className="spec-metric-cell">
-                  <span className="label">Buyer Intake Price</span>
+                  <span className="label">{t('matchDetails.buyerIntakePrice')}</span>
                   {matchResult?.metadata?.pricing?.pricePerTonne != null ? (
                     <div>
                       <div className="display-md text-forest">
                         ₹{matchResult.metadata.pricing.pricePerTonne.toLocaleString('en-IN')}{' '}
-                        <span style={{ fontSize: '0.875rem', fontWeight: 400 }}>/ tonne</span>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 400 }}>{t('matchDetails.perTonne')}</span>
                       </div>
                       {matchResult.metadata.pricing.isDemoPrice && (
-                        <span className="badge badge-warm mt-xs">Reference Quotation</span>
+                        <span className="badge badge-warm mt-xs">{t('matchDetails.refQuotation')}</span>
                       )}
                     </div>
                   ) : (
                     <div>
-                      <span className="badge badge-muted">Price upon inquiry</span>
-                      <p className="body-sm text-muted mt-xs">Submit inquiry below for commercial terms</p>
+                      <span className="badge badge-muted">{t('matchDetails.priceUponInquiry')}</span>
+                      <p className="body-sm text-muted mt-xs">{t('matchDetails.submitInquiryBelow')}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="spec-metric-cell">
-                  <span className="label">Estimated Batch Lot Value</span>
+                  <span className="label">{t('matchDetails.estimatedBatchValue')}</span>
                   {matchResult?.metadata?.pricing?.indicativeValue != null ? (
                     <div>
                       <div className="display-md text-forest">
@@ -379,33 +389,36 @@ export default function MatchDetails() {
                     </div>
                   ) : (
                     <div>
-                      <div className="heading-lg text-muted">Quote Required</div>
-                      <p className="body-sm text-muted mt-xs">Direct quote required for this residue variety.</p>
+                      <div className="heading-lg text-muted">{t('matchDetails.quoteRequired')}</div>
+                      <p className="body-sm text-muted mt-xs">{t('matchDetails.quoteRequiredDesc')}</p>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="disclaimer-text mt-md">
-                Indicative value represents estimated gross proceeds. Final pricing depends on moisture thresholds (&lt; 15%), baling condition, and agreed haulage logistics.
+                {t('matchDetails.disclaimerPricing')}
               </div>
             </section>
 
             {/* Location & Route Map */}
             <section className="card details-section">
               <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
-                <h2 className="heading-md">Haulage Route &amp; Transit Analysis</h2>
-                <span className="badge badge-muted">OpenStreetMap Compatible</span>
+                <h2 className="heading-md">{t('matchDetails.haulageRoute')}</h2>
+                <span className="badge badge-muted">{t('matchDetails.osmCompatible')}</span>
               </div>
 
               <p className="body-sm text-muted mb-md">
-                Origin point ({normalizedListing?.location || 'Origin Farm'}) mapped against delivery yard ({normalizedBuyer.location}).
+                {t('matchDetails.routeMappingDesc', {
+                  origin: normalizedListing?.location || t('routeMap.origin'),
+                  dest: normalizedBuyer.location,
+                })}
               </p>
 
               <Suspense
                 fallback={
                   <div className="route-map-loading">
-                    <LoadingSpinner label="Loading interactive haulage map…" />
+                    <LoadingSpinner label={t('matchDetails.loadingMap')} />
                   </div>
                 }
               >
@@ -421,18 +434,18 @@ export default function MatchDetails() {
             {/* Score Breakdown (5 Dimensions) */}
             <section className="card details-section">
               <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
-                <h2 className="heading-md">5-Dimension Algorithmic Evaluation</h2>
+                <h2 className="heading-md">{t('matchDetails.fiveDimensionEval')}</h2>
                 <span className="badge badge-green">
-                  Formula: 40% Q + 30% P + 20% C + 10% U
+                  {t('matchDetails.formulaLabel')}
                 </span>
               </div>
 
               <div className="match-factors">
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Batch Quantity Alignment (40% Weight)</span>
+                    <span className="font-medium body-sm">{t('matchDetails.dimQuantity')}</span>
                     <span className="font-semibold body-sm text-forest">
-                      {Math.round((matchResult?.scores?.quantityFit || 0) * 100)}% ({matchResult?.weightedPoints?.quantity || 0} / 40 pts)
+                      {Math.round((matchResult?.scores?.quantityFit || 0) * 100)}% ({matchResult?.weightedPoints?.quantity || 0} / 40 {t('common.pts', 'pts')})
                     </span>
                   </div>
                   <div className="factor-bar-track">
@@ -448,9 +461,9 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Logistics Proximity (30% Weight)</span>
+                    <span className="font-medium body-sm">{t('matchDetails.dimProximity')}</span>
                     <span className="font-semibold body-sm text-forest">
-                      {Math.round((matchResult?.scores?.proximityFit || 0) * 100)}% ({matchResult?.weightedPoints?.proximity || 0} / 30 pts)
+                      {Math.round((matchResult?.scores?.proximityFit || 0) * 100)}% ({matchResult?.weightedPoints?.proximity || 0} / 30 {t('common.pts', 'pts')})
                     </span>
                   </div>
                   <div className="factor-bar-track">
@@ -466,9 +479,9 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Yard Intake Capacity (20% Weight)</span>
+                    <span className="font-medium body-sm">{t('matchDetails.dimCapacity')}</span>
                     <span className="font-semibold body-sm text-forest">
-                      {Math.round((matchResult?.scores?.capacityFit || 0) * 100)}% ({matchResult?.weightedPoints?.capacity || 0} / 20 pts)
+                      {Math.round((matchResult?.scores?.capacityFit || 0) * 100)}% ({matchResult?.weightedPoints?.capacity || 0} / 20 {t('common.pts', 'pts')})
                     </span>
                   </div>
                   <div className="factor-bar-track">
@@ -484,9 +497,9 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Circular Synergy (10% Weight)</span>
+                    <span className="font-medium body-sm">{t('matchDetails.dimSynergy')}</span>
                     <span className="font-semibold body-sm text-forest">
-                      {Math.round((matchResult?.scores?.useCaseFit || 0) * 100)}% ({matchResult?.weightedPoints?.useCase || 0} / 10 pts)
+                      {Math.round((matchResult?.scores?.useCaseFit || 0) * 100)}% ({matchResult?.weightedPoints?.useCase || 0} / 10 {t('common.pts', 'pts')})
                     </span>
                   </div>
                   <div className="factor-bar-track">
@@ -502,51 +515,53 @@ export default function MatchDetails() {
               </div>
 
               <div className="score-total-box mt-md">
-                <span className="font-semibold body-sm">Cumulative Algorithm Score:</span>
+                <span className="font-semibold body-sm">{t('matchDetails.cumulativeScore')}</span>
                 <span className="heading-md text-forest">
-                  {score}% ({matchResult?.weightedPoints?.total ?? score} / 100 pts)
+                  {score}% ({matchResult?.weightedPoints?.total ?? score} / 100 {t('common.pts', 'pts')})
                 </span>
               </div>
 
               {matchResult?.explanation?.summary && (
                 <div className="summary-alert mt-md">
-                  <span className="font-semibold text-forest">Assessment:</span> {matchResult.explanation.summary}
+                  <span className="font-semibold text-forest">{t('matchDetails.assessment')}</span> {matchResult.explanation.summary}
                 </div>
               )}
             </section>
 
             {/* Operational Parameters */}
             <section className="card details-section">
-              <h2 className="heading-md mb-md">Operational Parameters</h2>
+              <h2 className="heading-md mb-md">{t('matchDetails.operationalParameters')}</h2>
               <div className="spec-metric-grid">
                 <div className="spec-metric-cell">
-                  <span className="label">Required Batch Size</span>
-                  <div className="heading-lg text-forest">{normalizedBuyer.requiredQuantity} tonnes</div>
+                  <span className="label">{t('matchDetails.requiredBatchSize')}</span>
+                  <div className="heading-lg text-forest">{normalizedBuyer.requiredQuantity} {t('common.tonnes', 'tonnes')}</div>
                 </div>
                 <div className="spec-metric-cell">
-                  <span className="label">Max Yard Intake</span>
+                  <span className="label">{t('matchDetails.maxYardIntake')}</span>
                   <div className="heading-lg text-forest">
-                    {normalizedBuyer.maxIntake ? `${normalizedBuyer.maxIntake} tonnes` : 'Flexible Capacity'}
+                    {normalizedBuyer.maxIntake ? `${normalizedBuyer.maxIntake} ${t('common.tonnes', 'tonnes')}` : t('buyer.flexibleCapacity')}
                   </div>
                 </div>
                 <div className="spec-metric-cell">
-                  <span className="label">Target Output</span>
-                  <div className="font-semibold mt-xs">{normalizedBuyer.intendedUse}</div>
+                  <span className="label">{t('matchDetails.targetOutput')}</span>
+                  <div className="font-semibold mt-xs">
+                    {normalizedBuyer.intendedUse ? t(`uses.${normalizedBuyer.intendedUse}`, normalizedBuyer.intendedUse) : '—'}
+                  </div>
                 </div>
                 <div className="spec-metric-cell">
-                  <span className="label">Intake Mode</span>
+                  <span className="label">{t('matchDetails.intakeMode')}</span>
                   <div className="font-semibold mt-xs">
-                    {normalizedBuyer.available ? 'Actively Receiving' : 'Intake On Standby'}
+                    {normalizedBuyer.available ? t('matchDetails.activelyReceivingShort') : t('matchDetails.intakeStandbyShort')}
                   </div>
                 </div>
               </div>
 
               <div className="mt-md pt-sm" style={{ borderTop: '1px solid var(--color-border-light)' }}>
-                <span className="label">Accepted Crop Residues</span>
+                <span className="label">{t('matchDetails.acceptedResidues')}</span>
                 <div className="tag-list mt-xs">
-                  {normalizedBuyer.acceptedTypes.map((t) => (
-                    <span key={t} className="badge badge-green">
-                      {t}
+                  {normalizedBuyer.acceptedTypes.map((typeKey) => (
+                    <span key={typeKey} className="badge badge-green">
+                      {t(`crops.${typeKey}`, typeKey)}
                     </span>
                   ))}
                 </div>
@@ -561,20 +576,26 @@ export default function MatchDetails() {
                 <div className="contact-success">
                   <div className="success-badge">
                     <span className="success-dot" />
-                    <span>Inquiry Logged</span>
+                    <span>{t('matchDetails.inquiryLogged')}</span>
                   </div>
-                  <h3 className="heading-md text-forest mt-xs">Inquiry Transmitted</h3>
+                  <h3 className="heading-md text-forest mt-xs">{t('matchDetails.inquiryTransmitted')}</h3>
                   <p className="body-sm text-muted mt-xs">
-                    Your {requestType === 'pickup' ? 'pickup dispatch request' : requestType === 'quote' ? 'quote inquiry' : 'message'}{' '}
-                    has been {savedRequestId ? 'persisted into the database.' : 'recorded for this demo session.'}
+                    {t('matchDetails.inquiryTransmittedDesc', {
+                      type: requestType === 'pickup'
+                        ? t('matchDetails.optPickup')
+                        : requestType === 'quote'
+                        ? t('matchDetails.optQuote')
+                        : t('matchDetails.optContact'),
+                      dest: savedRequestId ? t('farmer.recordCommittedDb') : t('farmer.recordStoredLocal'),
+                    })}
                   </p>
                   {savedRequestId && (
                     <p className="body-sm text-muted mt-xs">
-                      Reference ID: <code className="record-id">{savedRequestId}</code>
+                      {t('matchDetails.referenceId')} <code className="record-id">{savedRequestId}</code>
                     </p>
                   )}
                   <Link to="/dashboard" className="btn btn-primary w-full mt-md">
-                    Open Operations Dashboard
+                    {t('matchDetails.openDashboard')}
                   </Link>
                   <button
                     onClick={() => {
@@ -586,21 +607,21 @@ export default function MatchDetails() {
                     }}
                     className="btn btn-outline w-full mt-xs"
                   >
-                    Submit Additional Notice
+                    {t('matchDetails.submitAdditional')}
                   </button>
                 </div>
               ) : (
                 <>
-                  <h3 className="heading-md mb-xs">Submit Sourcing Inquiry</h3>
+                  <h3 className="heading-md mb-xs">{t('matchDetails.submitInquiry')}</h3>
                   <p className="body-sm text-muted mb-md">
-                    Direct outreach to {normalizedBuyer.orgName}. Sourcing requests are securely indexed in Supabase.
+                    {t('matchDetails.directOutreach', { orgName: normalizedBuyer.orgName })}
                   </p>
 
                   {dbError && <DbErrorAlert message={dbError} onRetry={() => setDbError(null)} />}
 
                   <form onSubmit={handleSendRequest}>
                     <div className="form-group mb-sm">
-                      <label className="form-label" htmlFor="requestType">Inquiry Protocol</label>
+                      <label className="form-label" htmlFor="requestType">{t('matchDetails.inquiryProtocol')}</label>
                       <select
                         id="requestType"
                         className="form-control"
@@ -608,19 +629,19 @@ export default function MatchDetails() {
                         onChange={(e) => setRequestType(e.target.value)}
                         disabled={loading}
                       >
-                        <option value="pickup">Schedule Residue Haulage / Pickup</option>
-                        <option value="quote">Request Offtake Price Quote</option>
-                        <option value="contact">General Commercial Inquiry</option>
+                        <option value="pickup">{t('matchDetails.optPickup')}</option>
+                        <option value="quote">{t('matchDetails.optQuote')}</option>
+                        <option value="contact">{t('matchDetails.optContact')}</option>
                       </select>
                     </div>
 
                     <div className="form-group mb-sm">
-                      <label className="form-label" htmlFor="requester-name">Representative Name</label>
+                      <label className="form-label" htmlFor="requester-name">{t('matchDetails.representativeName')}</label>
                       <input
                         id="requester-name"
                         type="text"
                         className="form-control"
-                        placeholder="e.g. Ramesh Kumar (Cooperative Lead)"
+                        placeholder={t('matchDetails.phRepresentative')}
                         value={requesterName}
                         onChange={(e) => setRequesterName(e.target.value)}
                         disabled={loading}
@@ -629,12 +650,12 @@ export default function MatchDetails() {
                     </div>
 
                     <div className="form-group mb-sm">
-                      <label className="form-label" htmlFor="requester-email">Official Email</label>
+                      <label className="form-label" htmlFor="requester-email">{t('matchDetails.officialEmail')}</label>
                       <input
                         id="requester-email"
                         type="email"
                         className="form-control"
-                        placeholder="e.g. ramesh@cooperative.in"
+                        placeholder={t('matchDetails.phOfficialEmail')}
                         value={requesterEmail}
                         onChange={(e) => setRequesterEmail(e.target.value)}
                         disabled={loading}
@@ -644,35 +665,39 @@ export default function MatchDetails() {
 
                     <div className="form-group mb-md">
                       <label className="form-label" htmlFor="contact-message">
-                        Logistics Specifications <span className="required">*</span>
+                        {t('matchDetails.logisticsSpecs')} <span className="required">*</span>
                       </label>
                       <textarea
                         id="contact-message"
                         className={`form-control ${msgError ? 'form-control--error' : ''}`}
                         rows={4}
-                        placeholder={`We have ${normalizedListing?.quantity ?? '25'} tonnes of ${normalizedListing?.residueType ?? 'Paddy Straw'} ready for dispatch at ${normalizedListing?.location ?? normalizedBuyer.location}. Requesting available pickup schedule.`}
+                        placeholder={t('matchDetails.phLogisticsSpecs', {
+                          qty: normalizedListing?.quantity ?? '25',
+                          type: normalizedListing ? t(`crops.${normalizedListing.residueType}`, normalizedListing.residueType) : t('crops.Paddy Straw', 'Paddy Straw'),
+                          location: normalizedListing?.location ?? normalizedBuyer.location,
+                        })}
                         value={message}
                         onChange={(e) => { setMessage(e.target.value); setMsgError(''); }}
                         disabled={loading}
                         maxLength={2000}
                       />
                       {msgError && <span className="form-error" role="alert">{msgError}</span>}
-                      <span className="form-hint">{message.length}/2000 characters (minimum 10)</span>
+                      <span className="form-hint">{t('matchDetails.charLimit', { count: message.length })}</span>
                     </div>
 
                     <button type="submit" className="btn btn-primary w-full" disabled={loading}>
-                      {loading ? <LoadingSpinner label="Sending inquiry…" /> : 'Transmit Sourcing Request'}
+                      {loading ? <LoadingSpinner label={t('matchDetails.transmitting')} /> : t('matchDetails.btnTransmit')}
                     </button>
                   </form>
 
                   <div className="divider" style={{ marginBlock: 'var(--space-md)' }} />
                   <div className="contact-info">
-                    <span className="label">Registered Point of Contact</span>
+                    <span className="label">{t('matchDetails.registeredPoc')}</span>
                     <p className="body-sm text-muted mt-xs">
-                      <strong>Email:</strong> {normalizedBuyer.contact || 'procurement@buyer.in'}
+                      <strong>{t('matchDetails.emailLabel')}</strong> {normalizedBuyer.contact || 'procurement@buyer.in'}
                     </p>
                     <p className="body-sm text-muted">
-                      <strong>Phone:</strong> {normalizedBuyer.phone || '+91 98765 43210'}
+                      <strong>{t('matchDetails.phoneLabel')}</strong> {normalizedBuyer.phone || '+91 98765 43210'}
                     </p>
                   </div>
                 </>
@@ -681,7 +706,7 @@ export default function MatchDetails() {
 
             <div className="mt-md">
               <Link to="/matches" className="btn btn-outline w-full">
-                ← Return to Matches Catalog
+                {t('matchDetails.returnMatches')}
               </Link>
             </div>
           </FadeContent>

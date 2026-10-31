@@ -1,18 +1,31 @@
 // src/components/Navbar.jsx
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../context/useAuth';
+import LanguageSelector from './LanguageSelector';
 import './Navbar.css';
 
-const navLinks = [
-  { path: '/', label: 'Overview' },
-  { path: '/farmer', label: 'Farmer Portal' },
-  { path: '/buyer', label: 'Buyer Requirements' },
-  { path: '/matches', label: 'Marketplace' },
-  { path: '/dashboard', label: 'Dashboard' },
+const navItems = [
+  { path: '/', key: 'overview', defaultLabel: 'Overview' },
+  { path: '/farmer', key: 'farmer', defaultLabel: 'Farmer Portal' },
+  { path: '/buyer', key: 'buyer', defaultLabel: 'Buyer Requirements' },
+  { path: '/matches', key: 'matches', defaultLabel: 'Marketplace' },
+  { path: '/dashboard', key: 'dashboard', defaultLabel: 'Dashboard' },
+  { path: '/profile', key: 'profile', defaultLabel: 'Profile' },
 ];
 
+function getInitials(name) {
+  if (!name) return 'CC';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function Navbar() {
+  const { t } = useTranslation();
   const location = useLocation();
+  const { user, profile, signOut } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -32,11 +45,14 @@ export default function Navbar() {
     setMenuOpen(false);
   }
 
+  const displayName = profile?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || t('nav.user', 'User');
+  const userInitials = getInitials(profile?.full_name || user?.email);
+
   return (
     <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
       <div className="container navbar__inner">
         {/* Brand Identity */}
-        <Link to="/" className="navbar__logo" aria-label="CropCycle Connect Home">
+        <Link to="/" className="navbar__logo" aria-label={t('nav.homeAria', 'CropCycle Connect Home')}>
           <div className="logo-symbol" aria-hidden="true">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
               <path
@@ -52,14 +68,14 @@ export default function Navbar() {
             </svg>
           </div>
           <div className="logo-text">
-            <span className="logo-title">CropCycle</span>
-            <span className="logo-badge">Connect</span>
+            <span className="logo-title">{t('nav.brandTitle', 'CropCycle')}</span>
+            <span className="logo-badge">{t('nav.brandBadge', 'Connect')}</span>
           </div>
         </Link>
 
         {/* Main Desktop Navigation */}
-        <nav className="navbar__nav" role="navigation" aria-label="Main Navigation">
-          {navLinks.map(({ path, label }) => {
+        <nav className="navbar__nav" role="navigation" aria-label={t('nav.mainNavAria', 'Main Navigation')}>
+          {navItems.map(({ path, key, defaultLabel }) => {
             const isActive = location.pathname === path;
             return (
               <Link
@@ -68,7 +84,7 @@ export default function Navbar() {
                 className={`navbar__link ${isActive ? 'navbar__link--active' : ''}`}
                 aria-current={isActive ? 'page' : undefined}
               >
-                {label}
+                {t(`nav.${key}`, defaultLabel)}
               </Link>
             );
           })}
@@ -76,16 +92,46 @@ export default function Navbar() {
 
         {/* Right CTA Actions */}
         <div className="navbar__actions">
-          <Link to="/matches" className="navbar__link-subtle">
-            Browse Supply
-          </Link>
+          {/* Language Selector Dropdown */}
+          <LanguageSelector variant="desktop" />
+
+          {user ? (
+            /* Logged In User Chip */
+            <Link
+              to="/profile"
+              className={`navbar__user-chip ${location.pathname === '/profile' ? 'navbar__user-chip--active' : ''}`}
+              title={t('nav.signedInAs', { email: user.email, defaultValue: `Signed in as ${user.email} (View Profile)` })}
+            >
+              <div className="navbar__user-avatar">
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="" className="navbar__user-avatar-img" />
+                ) : (
+                  <span className="navbar__user-initials">{userInitials}</span>
+                )}
+              </div>
+              <span className="navbar__user-name">{displayName}</span>
+            </Link>
+          ) : (
+            /* Logged Out: Clean Sign In Option */
+            <Link
+              to="/login"
+              className={`navbar__link-subtle navbar__auth-link ${location.pathname === '/login' ? 'navbar__auth-link--active' : ''}`}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span>{t('nav.signIn', 'Sign In')}</span>
+            </Link>
+          )}
+
           <Link to="/farmer" className="btn btn-primary btn-sm">
-            List Residue
+            {t('nav.listResidue', 'List Residue')}
           </Link>
 
           <button
             className="navbar__hamburger"
-            aria-label="Toggle navigation menu"
+            aria-label={t('nav.toggleMenu', 'Toggle navigation menu')}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(!menuOpen)}
           >
@@ -99,8 +145,51 @@ export default function Navbar() {
       {/* Mobile Menu Dropdown */}
       <div className={`navbar__mobile ${menuOpen ? 'navbar__mobile--open' : ''}`}>
         <div className="container navbar__mobile-inner">
+          {/* User Status Bar in Mobile Menu */}
+          {user ? (
+            <div className="navbar__mobile-user-status">
+              <Link to="/profile" className="mobile-user-info">
+                <div className="navbar__user-avatar navbar__user-avatar--mobile">
+                  {profile?.avatar_url ? (
+                    <img src={profile.avatar_url} alt="" className="navbar__user-avatar-img" />
+                  ) : (
+                    <span className="navbar__user-initials">{userInitials}</span>
+                  )}
+                </div>
+                <div className="mobile-user-details">
+                  <div className="mobile-user-name">{profile?.full_name || displayName}</div>
+                  <div className="mobile-user-role">
+                    {(profile?.role || 'farmer') === 'buyer'
+                      ? t('nav.buyerRole', 'Biomass Buyer')
+                      : t('nav.farmerRole', 'Agricultural Producer')}
+                  </div>
+                </div>
+              </Link>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={signOut}
+              >
+                {t('nav.signOut', 'Sign Out')}
+              </button>
+            </div>
+          ) : (
+            <div className="navbar__mobile-auth-prompt">
+              <Link to="/login" className="btn btn-secondary w-full">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span>{t('nav.signInOrRegister', 'Sign In / Create Account')}</span>
+              </Link>
+            </div>
+          )}
+
+          {/* Mobile Language Selector */}
+          <LanguageSelector variant="mobile" />
+
           <nav className="navbar__mobile-links">
-            {navLinks.map(({ path, label }) => {
+            {navItems.map(({ path, key, defaultLabel }) => {
               const isActive = location.pathname === path;
               return (
                 <Link
@@ -108,17 +197,17 @@ export default function Navbar() {
                   to={path}
                   className={`navbar__mobile-link ${isActive ? 'navbar__mobile-link--active' : ''}`}
                 >
-                  {label}
+                  {t(`nav.${key}`, defaultLabel)}
                 </Link>
               );
             })}
           </nav>
           <div className="navbar__mobile-actions">
             <Link to="/farmer" className="btn btn-primary w-full">
-              List Residue
+              {t('nav.listResidue', 'List Residue')}
             </Link>
             <Link to="/buyer" className="btn btn-secondary w-full">
-              Register Buyer Demand
+              {t('nav.registerDemand', 'Register Buyer Demand')}
             </Link>
           </div>
         </div>

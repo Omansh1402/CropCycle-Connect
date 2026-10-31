@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   fetchFarmerListings,
   fetchBuyerRequirements,
@@ -89,6 +90,7 @@ function useDbData() {
 }
 
 export default function Dashboard() {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
   const [filterScope, setFilterScope] = useState('all'); // 'all' | 'real' | 'demo'
   const { listings, buyers, requests, kpis, loading, error, refetch } = useDbData();
@@ -232,47 +234,47 @@ export default function Dashboard() {
     if (r.demo_buyer_ref) {
       const sample = sampleBuyers.find((b) => b.id === r.demo_buyer_ref);
       if (sample?.orgName) return sample.orgName;
-      return `Sample Buyer (${r.demo_buyer_ref})`;
+      return `${t('common.sampleBuyer', 'Sample Buyer')} (${r.demo_buyer_ref})`;
     }
-    return 'Registered Buyer';
+    return t('common.registeredBuyer', 'Registered Buyer');
   };
 
   const activeKpis = useMemo(() => {
     if (filterScope === 'real') {
       return {
         listings: liveKpis.real?.listings ?? 0,
-        listingsBreakdown: 'Live entries in PostgreSQL database',
+        listingsBreakdown: t('dashboard.kpiLiveLotsDesc', 'Live entries in PostgreSQL database'),
         buyers: liveKpis.real?.buyers ?? 0,
-        buyersBreakdown: 'Verified industrial buyer entities',
+        buyersBreakdown: t('dashboard.kpiLiveBuyersDesc', 'Verified industrial buyer entities'),
         requests: liveKpis.real?.requests ?? 0,
-        requestsBreakdown: 'Active sourcing inquiries',
+        requestsBreakdown: t('dashboard.kpiLiveRequestsDesc', 'Active sourcing inquiries'),
         volume: `${liveKpis.real?.quantityTonnes ?? 0}t`,
-        volumeBreakdown: 'Active harvest volume listed',
+        volumeBreakdown: t('dashboard.kpiLiveVolumeDesc', 'Active harvest volume listed'),
       };
     }
     if (filterScope === 'demo') {
       return {
         listings: liveKpis.demo?.listings ?? 0,
-        listingsBreakdown: 'Demonstration seed lots',
+        listingsBreakdown: t('dashboard.kpiDemoLotsDesc', 'Demonstration seed lots'),
         buyers: liveKpis.demo?.buyers ?? 0,
-        buyersBreakdown: 'Reference industrial accounts',
+        buyersBreakdown: t('dashboard.kpiDemoBuyersDesc', 'Reference industrial accounts'),
         requests: liveKpis.demo?.requests ?? 0,
-        requestsBreakdown: 'Simulated haulage requests',
+        requestsBreakdown: t('dashboard.kpiDemoRequestsDesc', 'Simulated haulage requests'),
         volume: `${liveKpis.demo?.quantityTonnes ?? 0}t`,
-        volumeBreakdown: 'Demonstration baseline capacity',
+        volumeBreakdown: t('dashboard.kpiDemoVolumeDesc', 'Demonstration baseline capacity'),
       };
     }
     return {
       listings: liveKpis.totalListings,
-      listingsBreakdown: `${liveKpis.real?.listings ?? 0} live · ${liveKpis.demo?.listings ?? 0} reference`,
+      listingsBreakdown: `${liveKpis.real?.listings ?? 0} ${t('dashboard.badgeLive')} · ${liveKpis.demo?.listings ?? 0} ${t('dashboard.badgeReference')}`,
       buyers: liveKpis.totalBuyers,
-      buyersBreakdown: `${liveKpis.real?.buyers ?? 0} live · ${liveKpis.demo?.buyers ?? 0} reference`,
+      buyersBreakdown: `${liveKpis.real?.buyers ?? 0} ${t('dashboard.badgeLive')} · ${liveKpis.demo?.buyers ?? 0} ${t('dashboard.badgeReference')}`,
       requests: liveKpis.totalRequests,
-      requestsBreakdown: `${liveKpis.real?.requests ?? 0} live · ${liveKpis.demo?.requests ?? 0} reference`,
+      requestsBreakdown: `${liveKpis.real?.requests ?? 0} ${t('dashboard.badgeLive')} · ${liveKpis.demo?.requests ?? 0} ${t('dashboard.badgeReference')}`,
       volume: `${liveKpis.totalQuantityTonnes ?? liveKpis.tonsRedirected}t`,
-      volumeBreakdown: `${liveKpis.real?.quantityTonnes ?? 0}t live · ${liveKpis.demo?.quantityTonnes ?? 0}t reference`,
+      volumeBreakdown: `${liveKpis.real?.quantityTonnes ?? 0}t ${t('dashboard.badgeLive')} · ${liveKpis.demo?.quantityTonnes ?? 0}t ${t('dashboard.badgeReference')}`,
     };
-  }, [liveKpis, filterScope]);
+  }, [liveKpis, filterScope, t]);
 
   const groupings = useMemo(() => {
     return findCollectionGroupings(displayListings, displayBuyers);
@@ -300,11 +302,11 @@ export default function Dashboard() {
   }, [displayRequests, filterScope]);
 
   const tabs = [
-    { id: 'overview',    label: 'Network Overview' },
-    { id: 'listings',    label: `Supply Listings (${filteredListings.length})` },
-    { id: 'requests',    label: `Sourcing Inquiries (${filteredRequests.length})` },
-    { id: 'buyers',      label: `Industrial Buyers (${filteredBuyers.length})` },
-    { id: 'collections', label: `Cluster Freight (${groupings.length})` },
+    { id: 'overview',    label: t('dashboard.tabOverview') },
+    { id: 'listings',    label: `${t('dashboard.tabListings')} (${filteredListings.length})` },
+    { id: 'requests',    label: `${t('dashboard.tabRequests')} (${filteredRequests.length})` },
+    { id: 'buyers',      label: `${t('dashboard.tabBuyers')} (${filteredBuyers.length})` },
+    { id: 'collections', label: `${t('dashboard.tabCollections')} (${groupings.length})` },
   ];
 
   return (
@@ -312,12 +314,18 @@ export default function Dashboard() {
       <header className="page-header">
         <div className="container">
           <div className="page-header__inner">
-            <span className="section-eyebrow">Enterprise Supply Chain Console</span>
-            <SplitText text="Operations Dashboard" tag="h1" className="display-lg" delay={0.03} />
+            <span className="section-eyebrow">{t('dashboard.consoleEyebrow')}</span>
+            <SplitText
+              key={`dash-title-${i18n.language}`}
+              text={t('dashboard.title')}
+              tag="h1"
+              className="display-lg"
+              delay={0.03}
+            />
             <p className="body-lg text-muted mt-xs" style={{ maxWidth: '640px' }}>
               {isLiveData
-                ? 'Connected to live Supabase cluster — auditing supply volume, verified demands, and haulage transitions.'
-                : 'Demonstration environment active — explore aggregated network telemetry and pipeline operations.'}
+                ? t('dashboard.liveConnectedDesc')
+                : t('dashboard.demoDesc')}
             </p>
           </div>
         </div>
@@ -332,19 +340,19 @@ export default function Dashboard() {
           <div className="flex items-center gap-sm">
             <span className={`db-dot-sm ${isLiveData ? 'db-dot-sm--live' : 'db-dot-sm--demo'}`} />
             <span className="body-sm font-semibold">
-              {isLiveData ? 'Active PostgreSQL Database Connection' : 'Demonstration Data Catalog'}
+              {isLiveData ? t('dashboard.activePostgres') : t('dashboard.demoCatalog')}
             </span>
             {isLiveData && (
-              <span className="body-sm text-muted">· Real-time sync active</span>
+              <span className="body-sm text-muted">· {t('dashboard.realtimeSync')}</span>
             )}
           </div>
           <div className="flex items-center gap-md">
             {isLiveData && !loading && (
               <button onClick={refetch} className="btn btn-outline btn-sm">
-                Refresh Records
+                {t('dashboard.refreshRecords')}
               </button>
             )}
-            {loading && <LoadingSpinner label="Querying database…" />}
+            {loading && <LoadingSpinner label={t('dashboard.queryingDb')} />}
           </div>
         </div>
 
@@ -353,34 +361,43 @@ export default function Dashboard() {
           <div className="flex justify-between items-center flex-wrap gap-md">
             <div className="flex items-center gap-sm flex-wrap">
               <span className="badge badge-green">
-                Live Data: {liveKpis.real?.listings ?? 0} lots ({liveKpis.real?.quantityTonnes ?? 0}t) · {liveKpis.real?.buyers ?? 0} buyers · {liveKpis.real?.requests ?? 0} inquiries
+                {t('dashboard.liveDataBadge', {
+                  listings: liveKpis.real?.listings ?? 0,
+                  qty: liveKpis.real?.quantityTonnes ?? 0,
+                  buyers: liveKpis.real?.buyers ?? 0,
+                  requests: liveKpis.real?.requests ?? 0,
+                })}
               </span>
               <span className="badge badge-muted">
-                Reference Data: {liveKpis.demo?.listings ?? 0} lots ({liveKpis.demo?.quantityTonnes ?? 0}t) · {liveKpis.demo?.buyers ?? 0} buyers
+                {t('dashboard.referenceDataBadge', {
+                  listings: liveKpis.demo?.listings ?? 0,
+                  qty: liveKpis.demo?.quantityTonnes ?? 0,
+                  buyers: liveKpis.demo?.buyers ?? 0,
+                })}
               </span>
             </div>
             <div className="scope-btn-group">
-              <span className="label" style={{ marginRight: '4px' }}>Scope:</span>
+              <span className="label" style={{ marginRight: '4px' }}>{t('dashboard.scopeLabel')}</span>
               <button
                 type="button"
                 className={`scope-btn ${filterScope === 'all' ? 'active' : ''}`}
                 onClick={() => setFilterScope('all')}
               >
-                All Records
+                {t('dashboard.allRecords')}
               </button>
               <button
                 type="button"
                 className={`scope-btn ${filterScope === 'real' ? 'active' : ''}`}
                 onClick={() => setFilterScope('real')}
               >
-                Live Only
+                {t('dashboard.liveOnly')}
               </button>
               <button
                 type="button"
                 className={`scope-btn ${filterScope === 'demo' ? 'active' : ''}`}
                 onClick={() => setFilterScope('demo')}
               >
-                Reference Only
+                {t('dashboard.referenceOnly')}
               </button>
             </div>
           </div>
@@ -392,37 +409,37 @@ export default function Dashboard() {
             <div className="stat-value">
               {loading ? '—' : typeof activeKpis.listings === 'number' ? <CountUp to={activeKpis.listings} duration={1.4} /> : activeKpis.listings}
             </div>
-            <div className="label">Supply Listings</div>
+            <div className="label">{t('dashboard.supplyListings')}</div>
             <div className="stat-label mt-xs">{activeKpis.listingsBreakdown}</div>
-            <Link to="/farmer" className="stat-action-link mt-sm">Post listing →</Link>
+            <Link to="/farmer" className="stat-action-link mt-sm">{t('dashboard.postListingArrow')}</Link>
           </div>
 
           <div className="stat-card">
             <div className="stat-value">
               {loading ? '—' : typeof activeKpis.buyers === 'number' ? <CountUp to={activeKpis.buyers} duration={1.4} /> : activeKpis.buyers}
             </div>
-            <div className="label">Industrial Buyers</div>
+            <div className="label">{t('dashboard.industrialBuyers')}</div>
             <div className="stat-label mt-xs">{activeKpis.buyersBreakdown}</div>
-            <Link to="/buyer" className="stat-action-link mt-sm">Register demand →</Link>
+            <Link to="/buyer" className="stat-action-link mt-sm">{t('dashboard.registerDemandArrow')}</Link>
           </div>
 
           <div className="stat-card">
             <div className="stat-value">
               {loading ? '—' : typeof activeKpis.requests === 'number' ? <CountUp to={activeKpis.requests} duration={1.4} /> : activeKpis.requests}
             </div>
-            <div className="label">Sourcing Inquiries</div>
+            <div className="label">{t('dashboard.sourcingInquiries')}</div>
             <div className="stat-label mt-xs">{activeKpis.requestsBreakdown}</div>
-            <Link to="/matches" className="stat-action-link mt-sm">Inspect matches →</Link>
+            <Link to="/matches" className="stat-action-link mt-sm">{t('dashboard.inspectMatchesArrow')}</Link>
           </div>
 
           <div className="stat-card">
             <div className="stat-value">
               {loading ? '—' : typeof activeKpis.volume === 'number' ? <CountUp to={activeKpis.volume} suffix="t" duration={1.6} /> : activeKpis.volume}
             </div>
-            <div className="label">Biomass Volume</div>
+            <div className="label">{t('dashboard.biomassVolume')}</div>
             <div className="stat-label mt-xs">{activeKpis.volumeBreakdown}</div>
             <span className="stat-label mt-sm" style={{ display: 'block', color: 'var(--color-forest)' }}>
-              Avoided Burn: {typeof liveKpis.tonsRedirected === 'number' ? <CountUp to={liveKpis.tonsRedirected} suffix="t" duration={1.6} /> : `${liveKpis.tonsRedirected}t`}
+              {t('dashboard.avoidedBurn')}: {typeof liveKpis.tonsRedirected === 'number' ? <CountUp to={liveKpis.tonsRedirected} suffix="t" duration={1.6} /> : `${liveKpis.tonsRedirected}t`}
             </span>
           </div>
         </FadeContent>
@@ -449,7 +466,7 @@ export default function Dashboard() {
               className="btn btn-outline btn-sm"
               onClick={() => setActionSuccess(null)}
             >
-              Dismiss
+              {t('dashboard.dismiss')}
             </button>
           </div>
         )}
@@ -470,18 +487,18 @@ export default function Dashboard() {
                 {/* Recent listings */}
                 <div className="card dashboard-panel">
                   <div className="panel-header">
-                    <h2 className="heading-md">Recent Supply Listings</h2>
-                    <Link to="/farmer" className="btn btn-primary btn-sm">+ Post Listing</Link>
+                    <h2 className="heading-md">{t('dashboard.recentSupplyListings')}</h2>
+                    <Link to="/farmer" className="btn btn-primary btn-sm">{t('dashboard.postListingBtn')}</Link>
                   </div>
                   <div className="table-wrapper mt-md">
                     <table>
                       <thead>
                         <tr>
-                          <th>Producer</th>
-                          <th>Residue Variety</th>
-                          <th>Tonnage</th>
-                          <th>Status</th>
-                          {isLiveData && <th>Scope</th>}
+                          <th>{t('dashboard.thProducer')}</th>
+                          <th>{t('dashboard.thResidue')}</th>
+                          <th>{t('dashboard.thTonnage')}</th>
+                          <th>{t('dashboard.thStatus')}</th>
+                          {isLiveData && <th>{t('dashboard.thScope')}</th>}
                         </tr>
                       </thead>
                       <tbody>
@@ -492,17 +509,17 @@ export default function Dashboard() {
                                 <div className="font-semibold">{l.farmer_name ?? l.farmerName}</div>
                                 <div className="body-sm text-muted">{l.location}</div>
                               </td>
-                              <td>{l.residue_type ?? l.residueType}</td>
+                              <td>{t(`crops.${l.residue_type ?? l.residueType}`, l.residue_type ?? l.residueType)}</td>
                               <td><strong>{l.quantity_tonnes ?? l.quantity} t</strong></td>
                               <td>
                                 <span className={`badge ${STATUS_BADGE[l.status] ?? 'badge-muted'}`}>
-                                  {l.status}
+                                  {t(`common.${l.status}`, l.status)}
                                 </span>
                               </td>
                               {isLiveData && (
                                 <td>
                                   <span className={`badge ${l.is_demo ? 'badge-muted' : 'badge-green'}`}>
-                                    {l.is_demo ? 'Reference' : 'Live'}
+                                    {l.is_demo ? t('dashboard.badgeReference') : t('dashboard.badgeLive')}
                                   </span>
                                 </td>
                               )}
@@ -511,7 +528,7 @@ export default function Dashboard() {
                         ) : (
                           <tr>
                             <td colSpan={isLiveData ? 5 : 4} className="text-center text-muted" style={{ padding: 'var(--space-xl)' }}>
-                              No listings found matching the active scope.
+                              {t('dashboard.noListingsActive')}
                             </td>
                           </tr>
                         )}
@@ -523,8 +540,8 @@ export default function Dashboard() {
                 {/* Recent requests */}
                 <div className="card dashboard-panel">
                   <div className="panel-header">
-                    <h2 className="heading-md">{isLiveData ? 'Recent Inquiries' : 'Recent Matches'}</h2>
-                    <Link to="/matches" className="btn btn-outline btn-sm">Inspect Catalog</Link>
+                    <h2 className="heading-md">{isLiveData ? t('dashboard.recentInquiries') : t('dashboard.recentMatches')}</h2>
+                    <Link to="/matches" className="btn btn-outline btn-sm">{t('dashboard.inspectCatalog')}</Link>
                   </div>
                   <div className="match-list mt-md">
                     {isLiveData ? (
@@ -533,23 +550,23 @@ export default function Dashboard() {
                           <div key={r.id} className="match-row">
                             <div className="match-row-info">
                               <div className="font-semibold text-forest">
-                                {r.request_type ? `${r.request_type.toUpperCase()} Protocol` : 'Haulage Request'}
+                                {r.request_type ? t('dashboard.protocolLabel', { type: r.request_type.toUpperCase() }) : t('dashboard.protocolLabel', { type: 'HAULAGE' })}
                               </div>
                               <div className="body-sm text-muted">
-                                Target: {getBuyerDisplayName(r)} · From: {r.requester_name || 'Cooperative Lead'}
+                                {t('dashboard.targetLabel')}: {getBuyerDisplayName(r)} · {t('dashboard.fromLabel')}: {r.requester_name || 'Cooperative Lead'}
                               </div>
                               <div className="body-sm text-muted">
                                 {new Date(r.created_at).toLocaleDateString('en-IN')}
                               </div>
                             </div>
                             <span className={`badge ${STATUS_BADGE[`${r.status}-req`] ?? STATUS_BADGE[r.status] ?? 'badge-muted'}`}>
-                              {r.status}
+                              {t(`common.${r.status}`, r.status)}
                             </span>
                           </div>
                         ))
                       ) : (
                         <p className="body-sm text-muted text-center" style={{ padding: 'var(--space-xl)' }}>
-                          No inquiries found matching the active scope.
+                          {t('dashboard.noInquiriesActive')}
                         </p>
                       )
                     ) : (
@@ -563,18 +580,18 @@ export default function Dashboard() {
                                 {m.matchScore}%
                               </div>
                               <div className="match-row-info">
-                                <div className="font-semibold">{listing?.residueType} → {buyer?.orgName}</div>
+                                <div className="font-semibold">{listing ? t(`crops.${listing.residueType}`, listing.residueType) : ''} → {buyer?.orgName}</div>
                                 <div className="body-sm text-muted">{m.notes}</div>
                               </div>
                               <span className={`badge ${STATUS_BADGE[m.status] ?? 'badge-muted'}`}>
-                                {m.status}
+                                {t(`common.${m.status}`, m.status)}
                               </span>
                             </div>
                           );
                         })
                       ) : (
                         <p className="body-sm text-muted text-center" style={{ padding: 'var(--space-xl)' }}>
-                          No matches available.
+                          {t('dashboard.noMatchesAvailable')}
                         </p>
                       )
                     )}
@@ -584,24 +601,24 @@ export default function Dashboard() {
 
               {/* Quick actions bar */}
               <div className="mt-2xl">
-                <h3 className="heading-md mb-md">Marketplace Actions</h3>
+                <h3 className="heading-md mb-md">{t('dashboard.marketplaceActions')}</h3>
                 <div className="quick-action-grid">
                   <Link to="/farmer" className="quick-action-card card">
-                    <span className="label">Farm Supply</span>
-                    <h4 className="heading-sm mt-xs">Post Residue Listing</h4>
-                    <p className="body-sm text-muted mt-xs">Log new harvest tonnage for matching.</p>
+                    <span className="label">{t('dashboard.farmSupply')}</span>
+                    <h4 className="heading-sm mt-xs">{t('dashboard.postResidueListing')}</h4>
+                    <p className="body-sm text-muted mt-xs">{t('dashboard.postResidueDesc')}</p>
                   </Link>
 
                   <Link to="/buyer" className="quick-action-card card">
-                    <span className="label">Industrial Sourcing</span>
-                    <h4 className="heading-sm mt-xs">Register Buyer Demand</h4>
-                    <p className="body-sm text-muted mt-xs">Define feedstock criteria and yard intake.</p>
+                    <span className="label">{t('dashboard.industrialSourcing')}</span>
+                    <h4 className="heading-sm mt-xs">{t('dashboard.registerBuyerDemand')}</h4>
+                    <p className="body-sm text-muted mt-xs">{t('dashboard.registerBuyerDesc')}</p>
                   </Link>
 
                   <Link to="/matches" className="quick-action-card card">
-                    <span className="label">Algorithmic Index</span>
-                    <h4 className="heading-sm mt-xs">Inspect Marketplace</h4>
-                    <p className="body-sm text-muted mt-xs">Evaluate multi-factor compatibility rankings.</p>
+                    <span className="label">{t('dashboard.algorithmicIndex')}</span>
+                    <h4 className="heading-sm mt-xs">{t('dashboard.inspectMarketplace')}</h4>
+                    <p className="body-sm text-muted mt-xs">{t('dashboard.inspectMarketplaceDesc')}</p>
                   </Link>
                 </div>
               </div>
@@ -614,27 +631,27 @@ export default function Dashboard() {
               <div className="panel-header">
                 <div>
                   <h2 className="heading-md">
-                    Agricultural Supply Listings
+                    {t('dashboard.agriSupplyListings')}
                     <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{filteredListings.length}</span>
                   </h2>
                   <p className="body-sm text-muted mt-xs">
-                    Indexed farmer lots ready for industrial dispatch.
+                    {t('dashboard.indexedLotsDesc')}
                   </p>
                 </div>
-                <Link to="/farmer" className="btn btn-primary btn-sm">+ Post Listing</Link>
+                <Link to="/farmer" className="btn btn-primary btn-sm">{t('dashboard.postListingBtn')}</Link>
               </div>
 
               {filteredListings.length === 0 ? (
                 <div className="dashboard-empty-state">
-                  <h3 className="heading-md">No Crop Residue Listings Found</h3>
+                  <h3 className="heading-md">{t('dashboard.noListingsTitle')}</h3>
                   <p className="body-md text-muted">
-                    No listings match the current scope filter. Register a farm listing to populate the directory.
+                    {t('dashboard.noListingsDesc')}
                   </p>
                   <div className="empty-state-actions">
-                    <Link to="/farmer" className="btn btn-primary">+ Post Farmer Listing</Link>
+                    <Link to="/farmer" className="btn btn-primary">{t('dashboard.postListingBtn')}</Link>
                     {filterScope !== 'all' && (
                       <button type="button" className="btn btn-outline" onClick={() => setFilterScope('all')}>
-                        Show All Records
+                        {t('dashboard.showAllRecords')}
                       </button>
                     )}
                   </div>
@@ -644,15 +661,15 @@ export default function Dashboard() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Classification</th>
-                        <th>Producer</th>
-                        <th>Residue Variety</th>
-                        <th>Quantity</th>
-                        <th>Location</th>
-                        <th>Harvest Window</th>
-                        <th>Logistics Mode</th>
-                        <th>Status</th>
-                        <th>Action</th>
+                        <th>{t('dashboard.thClassification')}</th>
+                        <th>{t('dashboard.thProducer')}</th>
+                        <th>{t('dashboard.thResidue')}</th>
+                        <th>{t('dashboard.thTonnage')}</th>
+                        <th>{t('dashboard.thLocation')}</th>
+                        <th>{t('dashboard.thHarvestWindow')}</th>
+                        <th>{t('dashboard.thLogisticsMode')}</th>
+                        <th>{t('dashboard.thStatus')}</th>
+                        <th>{t('dashboard.thAction')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -660,21 +677,21 @@ export default function Dashboard() {
                         <tr key={l.id}>
                           <td>
                             <span className={`badge ${l.is_demo || l.isDemo ? 'badge-muted' : 'badge-green'}`}>
-                              {l.is_demo || l.isDemo ? 'Reference' : 'Live'}
+                              {l.is_demo || l.isDemo ? t('dashboard.badgeReference') : t('dashboard.badgeLive')}
                             </span>
                           </td>
                           <td>
                             <div className="font-semibold">{l.farmer_name ?? l.farmerName}</div>
                             <div className="body-sm text-muted">{l.created_at ? new Date(l.created_at).toLocaleDateString('en-IN') : l.postedDate}</div>
                           </td>
-                          <td>{l.residue_type ?? l.residueType}</td>
+                          <td>{t(`crops.${l.residue_type ?? l.residueType}`, l.residue_type ?? l.residueType)}</td>
                           <td><strong>{l.quantity_tonnes ?? l.quantity} t</strong></td>
                           <td>{l.location}{l.state ? `, ${l.state}` : ''}</td>
                           <td>{l.availability_date ?? l.availabilityDate}</td>
-                          <td className="body-sm">{l.pickup_preference ?? l.pickupPreference}</td>
+                          <td className="body-sm">{t(`pickup.${l.pickup_preference ?? l.pickupPreference}`, l.pickup_preference ?? l.pickupPreference)}</td>
                           <td>
                             <span className={`badge ${STATUS_BADGE[l.status] ?? 'badge-muted'}`}>
-                              {l.status}
+                              {t(`common.${l.status}`, l.status)}
                             </span>
                           </td>
                           <td>
@@ -685,7 +702,7 @@ export default function Dashboard() {
                                 disabled={actionState.loading && actionState.id === l.id}
                                 onClick={() => handleUpdateListingStatus(l.id, 'active', l.is_demo || l.isDemo)}
                               >
-                                Reactivate
+                                {t('dashboard.btnReactivate')}
                               </button>
                             ) : (
                               <button
@@ -694,7 +711,7 @@ export default function Dashboard() {
                                 disabled={actionState.loading && actionState.id === l.id}
                                 onClick={() => handleUpdateListingStatus(l.id, 'matched', l.is_demo || l.isDemo)}
                               >
-                                Mark Matched
+                                {t('dashboard.btnMarkMatched')}
                               </button>
                             )}
                           </td>
@@ -713,37 +730,37 @@ export default function Dashboard() {
               <div className="panel-header">
                 <div>
                   <h2 className="heading-md">
-                    Sourcing Inquiries &amp; Haulage Requests
+                    {t('dashboard.sourcingInquiriesTitle')}
                     <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{filteredRequests.length}</span>
                   </h2>
                   <p className="body-sm text-muted mt-xs">
-                    Recorded communications between farm producers and commercial purchasers.
+                    {t('dashboard.recordedCommsDesc')}
                   </p>
                 </div>
-                <Link to="/matches" className="btn btn-outline btn-sm">Inspect Matches</Link>
+                <Link to="/matches" className="btn btn-outline btn-sm">{t('dashboard.inspectMatchesArrow')}</Link>
               </div>
 
               {filteredRequests.length === 0 ? (
                 <div className="dashboard-empty-state">
-                  <h3 className="heading-md">No Sourcing Inquiries Recorded</h3>
+                  <h3 className="heading-md">{t('dashboard.noRequestsTitle')}</h3>
                   <p className="body-md text-muted">
-                    No requests have been submitted yet. Transmit an inquiry from any Buyer Profile on the Matches page.
+                    {t('dashboard.noRequestsDesc')}
                   </p>
-                  <Link to="/matches" className="btn btn-primary mt-sm">Find Compatible Buyers</Link>
+                  <Link to="/matches" className="btn btn-primary mt-sm">{t('dashboard.findCompatibleBuyers')}</Link>
                 </div>
               ) : isLiveData ? (
                 <div className="table-wrapper mt-md">
                   <table>
                     <thead>
                       <tr>
-                        <th>Record Scope</th>
-                        <th>Inquiry Protocol</th>
-                        <th>Requester</th>
-                        <th>Target Buyer</th>
-                        <th>Specification Notes</th>
-                        <th>Status</th>
-                        <th>Date</th>
-                        <th>Action</th>
+                        <th>{t('dashboard.thRecordScope')}</th>
+                        <th>{t('dashboard.thInquiryProtocol')}</th>
+                        <th>{t('dashboard.thRequester')}</th>
+                        <th>{t('dashboard.thTargetBuyer')}</th>
+                        <th>{t('dashboard.thSpecNotes')}</th>
+                        <th>{t('dashboard.thStatus')}</th>
+                        <th>{t('dashboard.thDate')}</th>
+                        <th>{t('dashboard.thAction')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -751,7 +768,7 @@ export default function Dashboard() {
                         <tr key={r.id}>
                           <td>
                             <span className={`badge ${r.is_demo || r.demo_buyer_ref ? 'badge-muted' : 'badge-green'}`}>
-                              {r.is_demo || r.demo_buyer_ref ? 'Reference' : 'Live'}
+                              {r.is_demo || r.demo_buyer_ref ? t('dashboard.badgeReference') : t('dashboard.badgeLive')}
                             </span>
                           </td>
                           <td><span className="badge badge-blue">{r.request_type}</span></td>
@@ -769,7 +786,7 @@ export default function Dashboard() {
                           </td>
                           <td>
                             <span className={`badge ${STATUS_BADGE[r.status] ?? 'badge-muted'}`}>
-                              {r.status}
+                              {t(`common.${r.status}`, r.status)}
                             </span>
                           </td>
                           <td className="body-sm text-muted">
@@ -784,7 +801,7 @@ export default function Dashboard() {
                                   disabled={actionState.loading && actionState.id === r.id}
                                   onClick={() => handleUpdateContactRequest(r.id, 'accepted', r.is_demo || !!r.demo_buyer_ref)}
                                 >
-                                  Accept
+                                  {t('dashboard.btnAccept')}
                                 </button>
                                 <button
                                   type="button"
@@ -792,7 +809,7 @@ export default function Dashboard() {
                                   disabled={actionState.loading && actionState.id === r.id}
                                   onClick={() => handleUpdateContactRequest(r.id, 'rejected', r.is_demo || !!r.demo_buyer_ref)}
                                 >
-                                  Reject
+                                  {t('dashboard.btnReject')}
                                 </button>
                               </div>
                             ) : r.status === 'accepted' ? (
@@ -802,10 +819,10 @@ export default function Dashboard() {
                                 disabled={actionState.loading && actionState.id === r.id}
                                 onClick={() => handleUpdateContactRequest(r.id, 'completed', r.is_demo || !!r.demo_buyer_ref)}
                               >
-                                Complete Haulage
+                                {t('dashboard.btnCompleteHaulage')}
                               </button>
                             ) : (
-                              <span className="body-sm text-muted">Settled</span>
+                              <span className="body-sm text-muted">{t('dashboard.statusSettled')}</span>
                             )}
                           </td>
                         </tr>
@@ -826,12 +843,12 @@ export default function Dashboard() {
                         return (
                           <tr key={m.id}>
                             <td>
-                              <div className="font-semibold">{listing?.residueType} → {buyer?.orgName}</div>
+                              <div className="font-semibold">{listing ? t(`crops.${listing.residueType}`, listing.residueType) : ''} → {buyer?.orgName}</div>
                               <div className="body-sm text-muted">{listing?.location}</div>
                             </td>
                             <td><span className="badge badge-green">{m.matchScore}%</span></td>
                             <td><div className="body-sm">{m.notes}</div></td>
-                            <td><span className={`badge ${STATUS_BADGE[m.status] ?? 'badge-muted'}`}>{m.status}</span></td>
+                            <td><span className={`badge ${STATUS_BADGE[m.status] ?? 'badge-muted'}`}>{t(`common.${m.status}`, m.status)}</span></td>
                           </tr>
                         );
                       })}
@@ -848,37 +865,37 @@ export default function Dashboard() {
               <div className="panel-header">
                 <div>
                   <h2 className="heading-md">
-                    Industrial Buyer Demands
+                    {t('dashboard.industrialBuyersTitle')}
                     <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{filteredBuyers.length}</span>
                   </h2>
                   <p className="body-sm text-muted mt-xs">
-                    Registered enterprise processing entities and commercial feedstock intake facilities.
+                    {t('dashboard.registeredProcessorsDesc')}
                   </p>
                 </div>
-                <Link to="/buyer" className="btn btn-primary btn-sm">+ Register Buyer</Link>
+                <Link to="/buyer" className="btn btn-primary btn-sm">{t('dashboard.registerBuyerBtn')}</Link>
               </div>
 
               {filteredBuyers.length === 0 ? (
                 <div className="dashboard-empty-state">
-                  <h3 className="heading-md">No Industrial Demands Found</h3>
+                  <h3 className="heading-md">{t('dashboard.noBuyersTitle')}</h3>
                   <p className="body-md text-muted">
-                    No buyer requirement profiles match the active scope. Register an industrial buyer profile to begin sourcing.
+                    {t('dashboard.noBuyersDesc')}
                   </p>
-                  <Link to="/buyer" className="btn btn-primary mt-sm">+ Register Demand Profile</Link>
+                  <Link to="/buyer" className="btn btn-primary mt-sm">{t('dashboard.registerDemandBtn')}</Link>
                 </div>
               ) : (
                 <div className="table-wrapper mt-md">
                   <table>
                     <thead>
                       <tr>
-                        <th>Scope</th>
-                        <th>Organisation</th>
-                        <th>Facility Location</th>
-                        <th>Target Output</th>
-                        <th>Batch Size</th>
-                        <th>Monthly Cap</th>
-                        <th>Intake Status</th>
-                        <th>Action</th>
+                        <th>{t('dashboard.thRecordScope')}</th>
+                        <th>{t('dashboard.thOrganisation')}</th>
+                        <th>{t('dashboard.thFacilityLocation')}</th>
+                        <th>{t('dashboard.thTargetOutput')}</th>
+                        <th>{t('dashboard.thBatchSize')}</th>
+                        <th>{t('dashboard.thMonthlyCap')}</th>
+                        <th>{t('dashboard.thIntakeStatus')}</th>
+                        <th>{t('dashboard.thAction')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -886,28 +903,28 @@ export default function Dashboard() {
                         <tr key={b.id}>
                           <td>
                             <span className={`badge ${b.is_demo || b.isDemo ? 'badge-muted' : 'badge-green'}`}>
-                              {b.is_demo || b.isDemo ? 'Reference' : 'Live'}
+                              {b.is_demo || b.isDemo ? t('dashboard.badgeReference') : t('dashboard.badgeLive')}
                             </span>
                           </td>
                           <td>
                             <div className="font-semibold">{b.org_name ?? b.orgName}</div>
                             <div className="tag-list mt-xs">
-                              {((b.accepted_types || b.acceptedTypes) ?? []).slice(0, 2).map((t) => (
-                                <span key={t} className="badge badge-green">{t}</span>
+                              {((b.accepted_types || b.acceptedTypes) ?? []).slice(0, 2).map((tVal) => (
+                                <span key={tVal} className="badge badge-green">{t(`crops.${tVal}`, tVal)}</span>
                               ))}
                             </div>
                           </td>
                           <td>{b.location}{b.state ? `, ${b.state}` : ''}</td>
-                          <td>{b.intended_use ?? b.intendedUse}</td>
+                          <td>{b.intended_use ? t(`uses.${b.intended_use}`, b.intended_use) : (b.intendedUse ? t(`uses.${b.intendedUse}`, b.intendedUse) : '—')}</td>
                           <td><strong>{b.required_quantity_tonnes ?? b.requiredQuantity} t</strong></td>
-                          <td>{b.max_intake_tonnes ?? b.maxIntake ?? 'Flexible'}</td>
+                          <td>{b.max_intake_tonnes ?? b.maxIntake ?? t('buyer.flexibleCapacity')}</td>
                           <td>
                             <span className={`badge ${(b.availability_status === 'yes' || b.available) ? 'badge-green' : 'badge-muted'}`}>
-                              {(b.availability_status === 'yes' || b.available) ? 'Active' : 'On Hold'}
+                              {(b.availability_status === 'yes' || b.available) ? t('common.active') : t('common.onHold')}
                             </span>
                           </td>
                           <td>
-                            <Link to={`/match-details/${b.id}`} className="btn btn-outline btn-sm">Profile</Link>
+                            <Link to={`/match-details/${b.id}`} className="btn btn-outline btn-sm">{t('dashboard.btnProfile')}</Link>
                           </td>
                         </tr>
                       ))}
@@ -924,23 +941,23 @@ export default function Dashboard() {
               <div className="panel-header">
                 <div>
                   <h2 className="heading-md">
-                    Consolidated Cluster Freight Opportunities
-                    <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{groupings.length} Opportunities</span>
+                    {t('dashboard.consolidatedClusterTitle')}
+                    <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{groupings.length} {t('common.opportunities', 'Opportunities')}</span>
                   </h2>
                   <p className="body-sm text-muted mt-xs">
-                    Multi-farm pooling within a 25 km radius to meet commercial buyer batch volumes.
+                    {t('dashboard.multiFarmPoolingDesc')}
                   </p>
                 </div>
-                <Link to="/matches" className="btn btn-outline btn-sm">Inspect Marketplace</Link>
+                <Link to="/matches" className="btn btn-outline btn-sm">{t('dashboard.inspectMarketplace')}</Link>
               </div>
 
               {groupings.length === 0 ? (
                 <div className="dashboard-empty-state">
-                  <h3 className="heading-md">No Cluster Groupings Available</h3>
+                  <h3 className="heading-md">{t('dashboard.noClusterTitle')}</h3>
                   <p className="body-md text-muted">
-                    Cluster groupings automatically activate when multiple smallholder farms within 25 km combine to fulfill larger industrial batches (50+ tonnes).
+                    {t('dashboard.noClusterDesc')}
                   </p>
-                  <Link to="/matches" className="btn btn-primary mt-sm">Browse Direct Matches</Link>
+                  <Link to="/matches" className="btn btn-primary mt-sm">{t('dashboard.browseDirectMatches')}</Link>
                 </div>
               ) : (
                 <div className="collection-grid mt-lg">
@@ -949,7 +966,7 @@ export default function Dashboard() {
                       <div className="flex justify-between items-start gap-sm">
                         <div>
                           <span className="badge badge-green">
-                            {grp.residueType}
+                            {t(`crops.${grp.residueType}`, grp.residueType)}
                           </span>
                           <h4 className="heading-sm mt-xs">{grp.clusterLocation}</h4>
                         </div>
@@ -957,20 +974,20 @@ export default function Dashboard() {
                           <span className="font-semibold text-forest" style={{ fontSize: '1.25rem' }}>
                             {grp.totalQuantityTonnes}t
                           </span>
-                          <p className="body-sm text-muted">({grp.farmerCount} farmers)</p>
+                          <p className="body-sm text-muted">({grp.farmerCount} {t('common.farmers', 'farmers')})</p>
                         </div>
                       </div>
 
                       <div className="collection-target mt-sm">
-                        <span className="label">Target Industrial Demand:</span>
+                        <span className="label">{t('matches.targetIndustrialDemand')}</span>
                         <p className="font-semibold mt-xs">{grp.targetBuyer.orgName}</p>
                         <div className="flex items-center gap-xs mt-xs flex-wrap">
                           <span className="badge badge-muted">
-                            Target: {grp.targetBuyer.requiredQuantity}t ({grp.fulfillmentPct}%)
+                            {t('matches.intakeTarget', { qty: grp.targetBuyer.requiredQuantity, pct: grp.fulfillmentPct })}
                           </span>
                           {grp.indicativeLotValue && (
                             <span className="badge badge-green">
-                              Est. Value: ₹{grp.indicativeLotValue.toLocaleString('en-IN')}
+                              {t('matches.estBatch', { val: grp.indicativeLotValue.toLocaleString('en-IN') })}
                             </span>
                           )}
                         </div>
@@ -978,13 +995,13 @@ export default function Dashboard() {
 
                       <div className="collection-farmers mt-sm">
                         <span className="label" style={{ display: 'block', marginBottom: '4px' }}>
-                          Aggregated Farmer Listings:
+                          {t('dashboard.aggregatedFarmerListings', 'Aggregated Farmer Listings:')}
                         </span>
                         <div className="flex flex-col gap-xs">
                           {grp.participatingListings.map((p) => (
                             <div key={p.id} className="participating-row">
                               <span>{p.farmerName}</span>
-                              <strong>{p.quantity} tonnes</strong>
+                              <strong>{p.quantity} {t('common.tonnes', 'tonnes')}</strong>
                             </div>
                           ))}
                         </div>
@@ -1000,7 +1017,7 @@ export default function Dashboard() {
                         to={`/match-details/${grp.targetBuyer.id}?listing=${grp.participatingListings[0].id}`}
                         className="btn btn-outline btn-sm w-full mt-sm"
                       >
-                        View Buyer Dossier →
+                        {t('dashboard.btnViewBuyerDossier')}
                       </Link>
                     </div>
                   ))}
@@ -1016,27 +1033,27 @@ export default function Dashboard() {
             <div className="security-modal-card card">
               <div className="security-modal-header">
                 <div>
-                  <span className="label text-forest">Security Architecture Requirement</span>
+                  <span className="label text-forest">{t('dashboard.securityArchReq')}</span>
                   <h3 id="security-modal-title" className="heading-md mt-xs">{securityNotice.title}</h3>
                 </div>
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
                   onClick={() => setSecurityNotice(null)}
-                  aria-label="Close dialog"
+                  aria-label={t('dashboard.btnClose')}
                 >
-                  Close
+                  {t('dashboard.btnClose')}
                 </button>
               </div>
 
               <p className="body-md font-medium text-forest mt-md">{securityNotice.message}</p>
 
               <div className="security-modal-tech-box mt-md">
-                <strong>Technical Detail:</strong> {securityNotice.technicalDetails}
+                <strong>{t('dashboard.technicalDetailLabel')}</strong> {securityNotice.technicalDetails}
               </div>
 
               <div className="security-modal-steps mt-md">
-                <strong>Resolution Requirement:</strong>
+                <strong>{t('dashboard.resolutionReqLabel')}</strong>
                 <p className="body-sm text-muted mt-xs" style={{ lineHeight: 1.55 }}>
                   {securityNotice.resolution}
                 </p>
@@ -1048,7 +1065,7 @@ export default function Dashboard() {
                   className="btn btn-primary btn-sm"
                   onClick={() => setSecurityNotice(null)}
                 >
-                  Understood
+                  {t('dashboard.btnUnderstood')}
                 </button>
               </div>
             </div>

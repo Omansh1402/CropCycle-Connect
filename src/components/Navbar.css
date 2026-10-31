@@ -117,6 +117,79 @@
   color: var(--color-forest);
 }
 
+.navbar__auth-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.navbar__auth-link svg {
+  color: var(--color-forest-mid);
+}
+
+.navbar__auth-link--active {
+  color: var(--color-forest);
+  font-weight: 600;
+}
+
+/* User Profile Chip */
+.navbar__user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px 3px 4px;
+  background-color: var(--color-offwhite);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+.navbar__user-chip:hover {
+  border-color: var(--color-forest);
+  background-color: #F2F6F1;
+}
+
+.navbar__user-chip--active {
+  border-color: var(--color-forest);
+  background-color: #EEF3ED;
+}
+
+.navbar__user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-pill);
+  background: var(--color-forest);
+  color: var(--color-white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.navbar__user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.navbar__user-initials {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.navbar__user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-forest-dark);
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Hamburger */
 .navbar__hamburger {
   display: none;
@@ -178,7 +251,44 @@
 .navbar__mobile-inner {
   display: flex;
   flex-direction: column;
-  gap: var(--space-lg);
+  gap: var(--space-md);
+}
+
+.navbar__mobile-user-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background-color: var(--color-offwhite);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.mobile-user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.navbar__user-avatar--mobile {
+  width: 32px;
+  height: 32px;
+}
+
+.mobile-user-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-forest-dark);
+}
+
+.mobile-user-role {
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+}
+
+.navbar__mobile-auth-prompt {
+  margin-bottom: var(--space-xs);
 }
 
 .navbar__mobile-links {

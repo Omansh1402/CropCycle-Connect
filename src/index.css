@@ -24,7 +24,7 @@
   --color-danger-light:    #FDF2F2;
 
   /* ── Typography ── */
-  --font-sans:     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-sans:     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Nirmala UI', Roboto, Helvetica, Arial, sans-serif;
   --font-display:  'Plus Jakarta Sans', var(--font-sans);
 
   /* ── Spacing Scale ── */

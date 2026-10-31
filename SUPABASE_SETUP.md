@@ -111,19 +111,38 @@ FROM contact_requests ORDER BY created_at DESC LIMIT 10;
 
 ---
 
-## Access limitations (no auth)
+---
 
-This demo uses **no authentication**. The anon key allows public read + insert only.
+## User Profiles & Authentication Setup
 
-| Action | Status |
-|---|---|
-| Any visitor can submit a listing / buyer profile | YES |
-| Any visitor can read all records | YES |
-| Any visitor can submit a contact request | YES |
-| Records are privately scoped per user | NO |
-| Frontend can UPDATE or DELETE records | NO |
+A dedicated User Profile system has been added to provide authenticated identities for **Farmers** and **Buyers / Organizations**.
 
-To add user isolation later, add `auth.uid() = user_id` RLS policies after implementing Supabase Auth.
+### Step 5: Run the User Profiles SQL Schema
+
+1. Go to your **Supabase Dashboard** → **SQL Editor** → **New query**.
+2. Open `supabase/profiles_schema.sql` from this project root.
+3. Paste the contents and click **Run**.
+
+This migration script establishes:
+- `public.profiles` table:
+  - `id` (references `auth.users(id)` ON DELETE CASCADE)
+  - `full_name` (text, min length 2)
+  - `email` (text)
+  - `phone` (text)
+  - `role` ('farmer' | 'buyer')
+  - `location` (text)
+  - `district` (text)
+  - `state` (text)
+  - `avatar_url` (text)
+  - `created_at` and `updated_at` (timestamptz with auto-update trigger)
+- **Row Level Security (RLS)**:
+  - `SELECT`: Restricted to `auth.uid() = id` (private profile data).
+  - `INSERT`: Restricted to `auth.uid() = id`.
+  - `UPDATE`: Restricted to `auth.uid() = id`.
+- **Automatic User Signup Trigger**:
+  - `handle_new_user()` trigger on `auth.users` automatically creates the initial `public.profiles` row from metadata when a user registers.
+- **Table Association Columns**:
+  - Adds optional `user_id uuid REFERENCES auth.users(id)` to `farmer_listings`, `buyer_requirements`, and `contact_requests`.
 
 ---
 
@@ -131,13 +150,13 @@ To add user isolation later, add `auth.uid() = user_id` RLS policies after imple
 
 | File | Change |
 |---|---|
-| `src/lib/supabase.js` | Client with `isConfigured` guard |
-| `src/lib/db.js` | CRUD functions for all 3 tables |
-| `src/components/DbStatus.jsx` | Setup banner, error alert, spinner |
-| `src/pages/Farmer.jsx` | Async submit, loading/error states, DB indicator |
-| `src/pages/Buyer.jsx` | Async submit, loading/error states, cross-validation |
-| `src/pages/MatchDetails.jsx` | Contact form persists to DB |
-| `src/pages/Dashboard.jsx` | Fetches live data, falls back to sample data |
-| `supabase/schema.sql` | Tables, RLS, triggers, seed data |
-| `.env.example` | Exact env var names documented |
-| `.gitignore` | `.env.local` excluded from git |
+| `supabase/profiles_schema.sql` | SQL migration for `profiles` table, strict private RLS, triggers, and foreign keys |
+| `src/context/AuthContext.jsx` | React context providing Supabase auth session, reactive profile state, login, signup, logout, and password recovery |
+| `src/pages/Profile.jsx` / `Profile.css` | User profile page with view mode, edit mode, validation, avatar initials, and quick links |
+| `src/pages/Auth.jsx` / `Auth.css` | Authentication page with Sign In, Sign Up (Farmer / Buyer selector), and Forgot Password |
+| `src/components/Navbar.jsx` / `Navbar.css` | Desktop and mobile nav with Profile link, user avatar chip when logged in, clean SVG user icons, and Sign In action |
+| `src/lib/db.js` | Added `fetchUserProfile`, `upsertUserProfile`, `updateUserProfile`, `fetchUserListings`, and safe `user_id` association |
+| `src/pages/Farmer.jsx` | Auto pre-fills contact details when user is logged in; associates listings with authenticated `user_id` |
+| `src/pages/Buyer.jsx` | Auto pre-fills organization details when user is logged in; associates buyer demands with authenticated `user_id` |
+| `src/App.jsx` | Wrapped application in `AuthProvider` and registered `/profile`, `/login`, and `/auth` routes |
+

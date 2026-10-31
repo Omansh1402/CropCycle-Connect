@@ -20,7 +20,7 @@ const NOT_CONFIGURED = {
  * Insert a new farmer residue listing.
  * quantity is always stored as tonnes (conversion handled here).
  */
-export async function createFarmerListing(formData) {
+export async function createFarmerListing(formData, userId = null) {
   if (!isConfigured) return NOT_CONFIGURED;
 
   const quantityTonnes = toTonnes(Number(formData.quantity), formData.unit);
@@ -41,11 +41,28 @@ export async function createFarmerListing(formData) {
     is_demo:            false,
   };
 
-  const { data, error } = await supabase
+  const effectiveUserId = userId || formData.userId;
+  if (effectiveUserId) {
+    payload.user_id = effectiveUserId;
+  }
+
+  let { data, error } = await supabase
     .from('farmer_listings')
     .insert(payload)
     .select()
     .single();
+
+  // Gracefully fallback if user_id column does not exist yet on existing tables
+  if (error && payload.user_id && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('user_id'))) {
+    delete payload.user_id;
+    const retry = await supabase
+      .from('farmer_listings')
+      .insert(payload)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   return { data, error };
 }
@@ -105,7 +122,7 @@ export async function updateListingStatus(id, status) {
 /**
  * Insert a new buyer demand profile.
  */
-export async function createBuyerRequirement(formData) {
+export async function createBuyerRequirement(formData, userId = null) {
   if (!isConfigured) return NOT_CONFIGURED;
 
   const payload = {
@@ -125,11 +142,28 @@ export async function createBuyerRequirement(formData) {
     is_demo:                    false,
   };
 
-  const { data, error } = await supabase
+  const effectiveUserId = userId || formData.userId;
+  if (effectiveUserId) {
+    payload.user_id = effectiveUserId;
+  }
+
+  let { data, error } = await supabase
     .from('buyer_requirements')
     .insert(payload)
     .select()
     .single();
+
+  // Gracefully fallback if user_id column does not exist yet on existing tables
+  if (error && payload.user_id && (error.code === '42703' || error.code === 'PGRST204' || error.message?.includes('user_id'))) {
+    delete payload.user_id;
+    const retry = await supabase
+      .from('buyer_requirements')
+      .insert(payload)
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   return { data, error };
 }
@@ -326,6 +360,124 @@ export async function fetchDashboardStats() {
     },
     error: null,
   };
+}
+
+// ─── User Profiles & Auth ────────────────────────────────────────
+
+/**
+ * Fetch a user profile by authenticated user UUID.
+ */
+export async function fetchUserProfile(userId) {
+  if (!isConfigured || !supabase || !userId) return NOT_CONFIGURED;
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .maybeSingle();
+
+  return { data, error };
+}
+
+/**
+ * Upsert user profile (used during signup or automatic synchronization).
+ */
+export async function upsertUserProfile(profileData) {
+  if (!isConfigured || !supabase || !profileData?.id) return NOT_CONFIGURED;
+
+  const fullName = profileData.full_name?.trim() || profileData.fullName?.trim() || 'Member';
+  const payload = {
+    id: profileData.id,
+    full_name: fullName,
+    email: profileData.email?.trim() || null,
+    phone: profileData.phone?.trim() || null,
+    role: profileData.role || 'farmer',
+    location: profileData.location?.trim() || null,
+    district: profileData.district?.trim() || null,
+    state: profileData.state?.trim() || null,
+    avatar_url: profileData.avatar_url || profileData.avatarUrl || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert(payload, { onConflict: 'id' })
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Update an existing user profile with partial fields.
+ */
+export async function updateUserProfile(userId, updates) {
+  if (!isConfigured || !supabase || !userId) return NOT_CONFIGURED;
+
+  const payload = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (updates.full_name !== undefined || updates.fullName !== undefined) {
+    payload.full_name = (updates.full_name || updates.fullName).trim();
+  }
+  if (updates.phone !== undefined) {
+    payload.phone = updates.phone ? updates.phone.trim() : null;
+  }
+  if (updates.role !== undefined) {
+    payload.role = updates.role;
+  }
+  if (updates.location !== undefined) {
+    payload.location = updates.location ? updates.location.trim() : null;
+  }
+  if (updates.district !== undefined) {
+    payload.district = updates.district ? updates.district.trim() : null;
+  }
+  if (updates.state !== undefined) {
+    payload.state = updates.state ? updates.state.trim() : null;
+  }
+  if (updates.avatar_url !== undefined || updates.avatarUrl !== undefined) {
+    payload.avatar_url = (updates.avatar_url || updates.avatarUrl)?.trim() || null;
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(payload)
+    .eq('id', userId)
+    .select()
+    .single();
+
+  return { data, error };
+}
+
+/**
+ * Fetch all listings created by a specific user.
+ */
+export async function fetchUserListings(userId) {
+  if (!isConfigured || !supabase || !userId) return NOT_CONFIGURED;
+
+  const { data, error } = await supabase
+    .from('farmer_listings')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  return { data, error };
+}
+
+/**
+ * Fetch all buyer requirements registered by a specific user.
+ */
+export async function fetchUserBuyerDemands(userId) {
+  if (!isConfigured || !supabase || !userId) return NOT_CONFIGURED;
+
+  const { data, error } = await supabase
+    .from('buyer_requirements')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+
+  return { data, error };
 }
 
 // ─── Utility ─────────────────────────────────────────────────────

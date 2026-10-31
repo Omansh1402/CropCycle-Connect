@@ -1,7 +1,10 @@
 // src/components/DbStatus.jsx
+import { useTranslation } from 'react-i18next';
 import './DbStatus.css';
 
 export function DbSetupBanner() {
+  const { t } = useTranslation();
+
   return (
     <div className="db-setup-banner" role="alert">
       <div className="db-setup-banner__icon" aria-hidden="true">
@@ -13,12 +16,18 @@ export function DbSetupBanner() {
       </div>
       <div className="db-setup-banner__body">
         <div className="db-setup-banner__header">
-          <h4 className="db-setup-banner__title">Remote Database Connection Standby</h4>
-          <span className="badge badge-muted">Local Demo Mode Active</span>
+          <h4 className="db-setup-banner__title">
+            {t('dbStatus.standbyTitle', 'Remote Database Connection Standby')}
+          </h4>
+          <span className="badge badge-muted">
+            {t('dbStatus.localModeActive', 'Local Demo Mode Active')}
+          </span>
         </div>
         <p className="db-setup-banner__text">
-          Listings and contact requests are currently operating in local storage mode. To activate
-          persistent PostgreSQL syncing, verify your Supabase environment configuration:
+          {t(
+            'dbStatus.standbyText',
+            'Listings and contact requests are currently operating in local storage mode. To activate persistent PostgreSQL syncing, verify your Supabase environment configuration:'
+          )}
         </p>
         <ol className="db-setup-steps">
           <li>
@@ -37,6 +46,8 @@ export function DbSetupBanner() {
 }
 
 export function DbErrorAlert({ message, onRetry }) {
+  const { t } = useTranslation();
+
   return (
     <div className="db-error-alert" role="alert">
       <div className="db-error-alert__icon" aria-hidden="true">
@@ -47,11 +58,11 @@ export function DbErrorAlert({ message, onRetry }) {
         </svg>
       </div>
       <div className="db-error-alert__body">
-        <span className="db-error-alert__title">Database Error:</span> {message}
+        <span className="db-error-alert__title">{t('common.databaseError', 'Database Error:')}</span> {message}
       </div>
       {onRetry && (
         <button onClick={onRetry} className="btn btn-outline btn-sm db-error-alert__retry">
-          Retry Request
+          {t('common.retryRequest', 'Retry Request')}
         </button>
       )}
     </div>
@@ -59,6 +70,8 @@ export function DbErrorAlert({ message, onRetry }) {
 }
 
 export function DbSuccessBanner({ message }) {
+  const { t } = useTranslation();
+
   return (
     <div className="db-success-banner" role="status">
       <div className="db-success-banner__icon" aria-hidden="true">
@@ -67,16 +80,19 @@ export function DbSuccessBanner({ message }) {
           <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
       </div>
-      <span>{message || 'Record successfully committed to database.'}</span>
+      <span>{message || t('common.recordCommitted', 'Record successfully committed to database.')}</span>
     </div>
   );
 }
 
-export function LoadingSpinner({ label = 'Processing…' }) {
+export function LoadingSpinner({ label }) {
+  const { t } = useTranslation();
+  const displayLabel = label || t('common.processing', 'Processing…');
+
   return (
-    <div className="db-spinner" aria-label={label}>
+    <div className="db-spinner" aria-label={displayLabel}>
       <span className="db-spinner__ring" />
-      <span className="db-spinner__label">{label}</span>
+      <span className="db-spinner__label">{displayLabel}</span>
     </div>
   );
 }

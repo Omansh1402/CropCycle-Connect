@@ -1,9 +1,11 @@
 // src/pages/Buyer.jsx
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { RESIDUE_TYPES, INTENDED_USES } from '../data/sampleData';
 import { createBuyerRequirement, formatDbError } from '../lib/db';
 import { isConfigured } from '../lib/supabase';
+import { useAuth } from '../context/useAuth';
 import { DbSetupBanner, DbErrorAlert, LoadingSpinner } from '../components/DbStatus';
 import SplitText from '../components/reactbits/SplitText';
 import FadeContent from '../components/reactbits/FadeContent';
@@ -35,7 +37,9 @@ const ORG_TYPES = [
 ];
 
 export default function Buyer() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
   const [form, setForm] = useState(INITIAL_FORM);
   const [submitted, setSubmitted] = useState(false);
   const [savedRecord, setSavedRecord] = useState(null);
@@ -43,27 +47,44 @@ export default function Buyer() {
   const [loading, setLoading] = useState(false);
   const [dbError, setDbError] = useState(null);
 
+  // Pre-fill profile info if logged in and form is untouched
+  useEffect(() => {
+    if (!user && !profile) return;
+    const timer = setTimeout(() => {
+      setForm((prev) => ({
+        ...prev,
+        orgName: prev.orgName || profile?.full_name || '',
+        contactPerson: prev.contactPerson || profile?.full_name || '',
+        contactEmail: prev.contactEmail || user?.email || '',
+        contactPhone: prev.contactPhone || profile?.phone || '',
+        location: prev.location || profile?.location || '',
+        state: prev.state || profile?.state || '',
+      }));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [user, profile]);
+
   // ── Validation ────────────────────────────────────────────────
   const validate = () => {
     const e = {};
     if (!form.orgName.trim())
-      e.orgName = 'Organisation / name is required';
+      e.orgName = t('buyer.errOrgName');
     if (form.acceptedTypes.length === 0)
-      e.acceptedTypes = 'Select at least one residue type';
+      e.acceptedTypes = t('buyer.errTypes');
     if (!form.requiredQuantity || Number(form.requiredQuantity) <= 0)
-      e.requiredQuantity = 'Enter a required quantity greater than zero';
+      e.requiredQuantity = t('buyer.errQty');
     if (form.maxIntake && Number(form.maxIntake) < Number(form.requiredQuantity))
-      e.maxIntake = 'Max intake cannot be less than required quantity';
+      e.maxIntake = t('buyer.errMaxIntake');
     if (!form.location.trim())
-      e.location = 'Facility location is required';
+      e.location = t('buyer.errLocation');
     if (!form.state.trim())
-      e.state = 'State is required';
+      e.state = t('buyer.errState');
     if (!form.intendedUse)
-      e.intendedUse = 'Select intended use';
+      e.intendedUse = t('buyer.errUse');
     if (form.contactEmail && !/\S+@\S+\.\S+/.test(form.contactEmail))
-      e.contactEmail = 'Enter a valid email address';
+      e.contactEmail = t('buyer.errEmail');
     if (form.contactPhone && !/^[0-9+\s()-]{7,15}$/.test(form.contactPhone.trim()))
-      e.contactPhone = 'Enter a valid phone number';
+      e.contactPhone = t('buyer.errPhone');
     return e;
   };
 
@@ -80,7 +101,7 @@ export default function Buyer() {
       return {
         ...prev,
         acceptedTypes: has
-          ? prev.acceptedTypes.filter((t) => t !== type)
+          ? prev.acceptedTypes.filter((tVal) => tVal !== type)
           : [...prev.acceptedTypes, type],
       };
     });
@@ -102,7 +123,7 @@ export default function Buyer() {
 
     setLoading(true);
     try {
-      const { data, error } = await createBuyerRequirement(form);
+      const { data, error } = await createBuyerRequirement(form, user?.id);
 
       if (error) {
         if (error.code === 'NOT_CONFIGURED') {
@@ -120,7 +141,7 @@ export default function Buyer() {
       setSubmitted(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
-      setDbError('An unexpected error occurred. Please try again.');
+      setDbError(t('farmer.errUnexpected', 'An unexpected error occurred. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -140,10 +161,16 @@ export default function Buyer() {
       <main className="buyer-page">
         <header className="page-header">
           <div className="container">
-            <span className="section-eyebrow">Enterprise Sourcing Protocol</span>
-            <SplitText text="Demand Profile Registered" tag="h1" className="display-lg" delay={0.03} />
+            <span className="section-eyebrow">{t('buyer.eyebrow')}</span>
+            <SplitText
+              key={`buyer-success-${i18n.language}`}
+              text={t('buyer.successTitle')}
+              tag="h1"
+              className="display-lg"
+              delay={0.03}
+            />
             <p className="body-md text-muted mt-xs">
-              Your feedstock procurement criteria are now indexed for nearby farmer cluster matching.
+              {t('buyer.successSubtitle')}
             </p>
           </div>
         </header>
@@ -153,59 +180,67 @@ export default function Buyer() {
             <div className="success-banner-box">
               <div className="success-badge">
                 <span className="success-dot" />
-                <span>Demand Profile Registered</span>
+                <span>{t('buyer.registeredBadge')}</span>
               </div>
               <h2 className="heading-lg mt-xs">
-                {savedRecord ? 'Record Committed to Database' : 'Demand Profile Stored in Local Session'}
+                {savedRecord ? t('buyer.dbCommitted') : t('buyer.localStored')}
               </h2>
               <p className="body-md text-muted mt-xs">
                 {savedRecord
-                  ? <>Reference Identifier: <code className="record-id">{savedRecord.id}</code>. Farming clusters within haulage radius can now view matching inquiries.</>
-                  : `Requirement criteria recorded. Farming clusters near ${form.location} will be ranked against your intake capacity.`}
+                  ? <>{t('buyer.refIdPrefix')}<code className="record-id">{savedRecord.id}</code>{t('buyer.refIdSuffix')}</>
+                  : t('buyer.localNotice', { location: form.location })}
               </p>
             </div>
 
             <div className="buyer-success__summary card">
               <div className="summary-header">
-                <h3 className="heading-md">Registered Feedstock Profile</h3>
-                <span className="badge badge-green">Intake Mode: Active</span>
+                <h3 className="heading-md">{t('buyer.profileSummary')}</h3>
+                <span className="badge badge-green">{t('buyer.intakeActive')}</span>
               </div>
               <div className="spec-table-grid">
                 <div className="spec-item">
-                  <span className="label">Enterprise</span>
+                  <span className="label">{t('buyer.lblEnterprise')}</span>
                   <div className="spec-val font-semibold">{form.orgName}</div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Facility Location</span>
+                  <span className="label">{t('buyer.lblFacilityLocation')}</span>
                   <div className="spec-val">{form.location}, {form.state}</div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Target Batch Volume</span>
-                  <div className="spec-val font-semibold text-forest">{form.requiredQuantity} tonnes</div>
+                  <span className="label">{t('buyer.lblTargetBatch')}</span>
+                  <div className="spec-val font-semibold text-forest">
+                    {form.requiredQuantity} {t('common.tonnes', 'tonnes')}
+                  </div>
                 </div>
                 <div className="spec-item">
-                  <span className="label">Yard Intake Limit</span>
-                  <div className="spec-val">{form.maxIntake ? `${form.maxIntake} tonnes` : 'Flexible Capacity'}</div>
-                </div>
-                <div className="spec-item">
-                  <span className="label">Target Transformation</span>
-                  <div className="spec-val">{form.intendedUse}</div>
-                </div>
-                <div className="spec-item">
-                  <span className="label">Intake Availability</span>
+                  <span className="label">{t('buyer.lblYardLimit')}</span>
                   <div className="spec-val">
-                    {form.available === 'yes' ? 'Accepting Supply'
-                     : form.available === 'limited' ? 'Limited Capacity'
-                     : 'Intake on Standby'}
+                    {form.maxIntake ? `${form.maxIntake} ${t('common.tonnes', 'tonnes')}` : t('buyer.flexibleCapacity')}
+                  </div>
+                </div>
+                <div className="spec-item">
+                  <span className="label">{t('buyer.lblTransformation')}</span>
+                  <div className="spec-val">
+                    {form.intendedUse ? t(`uses.${form.intendedUse}`, form.intendedUse) : '—'}
+                  </div>
+                </div>
+                <div className="spec-item">
+                  <span className="label">{t('buyer.lblIntakeAvailability')}</span>
+                  <div className="spec-val">
+                    {form.available === 'yes' ? t('buyer.acceptingSupply')
+                     : form.available === 'limited' ? t('buyer.limitedCapacity')
+                     : t('buyer.intakeStandby')}
                   </div>
                 </div>
               </div>
 
               <div className="mt-lg pt-md" style={{ borderTop: '1px solid var(--color-border-light)' }}>
-                <span className="label">Accepted Crop Residue Species</span>
+                <span className="label">{t('buyer.lblAcceptedSpecies')}</span>
                 <div className="tag-list mt-xs">
-                  {form.acceptedTypes.map((t) => (
-                    <span key={t} className="badge badge-green">{t}</span>
+                  {form.acceptedTypes.map((cropKey) => (
+                    <span key={cropKey} className="badge badge-green">
+                      {t(`crops.${cropKey}`, cropKey)}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -213,13 +248,13 @@ export default function Buyer() {
 
             <div className="buyer-success__actions">
               <button onClick={() => navigate('/matches')} className="btn btn-primary btn-lg">
-                Inspect Available Farm Supply
+                {t('buyer.btnInspectSupply')}
               </button>
               <button onClick={() => navigate('/dashboard')} className="btn btn-secondary btn-lg">
-                View Sourcing Dashboard
+                {t('buyer.btnViewDashboard')}
               </button>
               <button onClick={handleReset} className="btn btn-outline">
-                Register Additional Spec
+                {t('buyer.btnRegisterAdditional')}
               </button>
             </div>
           </FadeContent>
@@ -234,11 +269,16 @@ export default function Buyer() {
       <header className="page-header">
         <div className="container">
           <div className="page-header__inner">
-            <span className="section-eyebrow">Enterprise Sourcing Protocol</span>
-            <SplitText text="Register Feedstock Demand" tag="h1" className="display-lg" delay={0.03} />
+            <span className="section-eyebrow">{t('buyer.eyebrow')}</span>
+            <SplitText
+              key={`buyer-heading-${i18n.language}`}
+              text={t('buyer.title')}
+              tag="h1"
+              className="display-lg"
+              delay={0.03}
+            />
             <p className="body-lg text-muted mt-xs" style={{ maxWidth: '600px' }}>
-              Define industrial intake requirements, residue varieties, and logistics preferences
-              to source consistent raw biomass directly from verified farming cooperatives.
+              {t('buyer.subtitle')}
             </p>
           </div>
         </div>
@@ -250,28 +290,28 @@ export default function Buyer() {
             {!isConfigured && <DbSetupBanner />}
             {dbError && <DbErrorAlert message={dbError} onRetry={() => setDbError(null)} />}
 
-            <form onSubmit={handleSubmit} noValidate aria-label="Buyer demand registration form">
+            <form onSubmit={handleSubmit} noValidate aria-label={t('buyer.title')}>
               {/* ── Section 01: Enterprise Details ── */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="form-section-num">01</span>
+                  <span className="form-section-num">{t('buyer.sec1Num')}</span>
                   <div>
-                    <h2 className="heading-md">Enterprise Information</h2>
-                    <p className="body-sm text-muted">Legal entity and procurement authorization.</p>
+                    <h2 className="heading-md">{t('buyer.sec1Title')}</h2>
+                    <p className="body-sm text-muted">{t('buyer.sec1Desc')}</p>
                   </div>
                 </div>
 
                 <div className="form-grid form-grid-2">
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
                     <label className="form-label" htmlFor="orgName">
-                      Organisation / Facility Name <span className="required">*</span>
+                      {t('buyer.lblOrgName')} <span className="required">*</span>
                     </label>
                     <input
                       id="orgName"
                       name="orgName"
                       type="text"
                       className={`form-control ${errors.orgName ? 'form-control--error' : ''}`}
-                      placeholder="e.g. GreenFuel Bio-Energy Pvt. Ltd."
+                      placeholder={t('buyer.phOrgName')}
                       value={form.orgName}
                       onChange={handleChange}
                       disabled={loading}
@@ -281,7 +321,7 @@ export default function Buyer() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="orgType">Entity Structure</label>
+                    <label className="form-label" htmlFor="orgType">{t('buyer.lblOrgType')}</label>
                     <select
                       id="orgType"
                       name="orgType"
@@ -290,19 +330,23 @@ export default function Buyer() {
                       onChange={handleChange}
                       disabled={loading}
                     >
-                      <option value="">— Select Category —</option>
-                      {ORG_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      <option value="">— {t('buyer.lblOrgType')} —</option>
+                      {ORG_TYPES.map((orgKey) => (
+                        <option key={orgKey} value={orgKey}>
+                          {t(`orgTypes.${orgKey}`, orgKey)}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="contactPerson">Procurement Officer</label>
+                    <label className="form-label" htmlFor="contactPerson">{t('buyer.lblProcurementOfficer')}</label>
                     <input
                       id="contactPerson"
                       name="contactPerson"
                       type="text"
                       className="form-control"
-                      placeholder="e.g. Priya Sharma"
+                      placeholder={t('buyer.phProcurementOfficer')}
                       value={form.contactPerson}
                       onChange={handleChange}
                       disabled={loading}
@@ -311,13 +355,13 @@ export default function Buyer() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="contactPhone">Contact Phone</label>
+                    <label className="form-label" htmlFor="contactPhone">{t('buyer.lblContactPhone')}</label>
                     <input
                       id="contactPhone"
                       name="contactPhone"
                       type="tel"
                       className={`form-control ${errors.contactPhone ? 'form-control--error' : ''}`}
-                      placeholder="e.g. 98765 43210"
+                      placeholder={t('buyer.phContactPhone')}
                       value={form.contactPhone}
                       onChange={handleChange}
                       disabled={loading}
@@ -327,13 +371,13 @@ export default function Buyer() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="contactEmail">Official Email</label>
+                    <label className="form-label" htmlFor="contactEmail">{t('buyer.lblOfficialEmail')}</label>
                     <input
                       id="contactEmail"
                       name="contactEmail"
                       type="email"
                       className={`form-control ${errors.contactEmail ? 'form-control--error' : ''}`}
-                      placeholder="procurement@facility.in"
+                      placeholder={t('buyer.phOfficialEmail')}
                       value={form.contactEmail}
                       onChange={handleChange}
                       disabled={loading}
@@ -347,18 +391,18 @@ export default function Buyer() {
               {/* ── Section 02: Residue Species ── */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="form-section-num">02</span>
+                  <span className="form-section-num">{t('buyer.sec2Num')}</span>
                   <div>
-                    <h2 className="heading-md">Accepted Feedstock Varieties</h2>
-                    <p className="body-sm text-muted">Select all agricultural residue types your facility processes.</p>
+                    <h2 className="heading-md">{t('buyer.sec2Title')}</h2>
+                    <p className="body-sm text-muted">{t('buyer.sec2Desc')}</p>
                   </div>
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">
-                    Residue Types <span className="required">*</span>
+                    {t('buyer.lblResidueTypes')} <span className="required">*</span>
                   </label>
-                  <div className="residue-type-grid" role="group" aria-label="Select residue types">
+                  <div className="residue-type-grid" role="group" aria-label={t('buyer.lblResidueTypes')}>
                     {RESIDUE_TYPES.map((type) => {
                       const selected = form.acceptedTypes.includes(type);
                       return (
@@ -370,7 +414,7 @@ export default function Buyer() {
                           aria-pressed={selected}
                         >
                           {selected && <span className="btn-check">✓ </span>}
-                          {type}
+                          {t(`crops.${type}`, type)}
                         </button>
                       );
                     })}
@@ -379,7 +423,7 @@ export default function Buyer() {
                     <span className="form-error mt-xs" role="alert">{errors.acceptedTypes}</span>
                   )}
                   <span className="form-hint mt-xs">
-                    Selected: {form.acceptedTypes.length} variety(s) indexed for matching.
+                    {t('buyer.hintSelectedTypes', { count: form.acceptedTypes.length })}
                   </span>
                 </div>
               </div>
@@ -387,17 +431,17 @@ export default function Buyer() {
               {/* ── Section 03: Intake Capacities & Transformation ── */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="form-section-num">03</span>
+                  <span className="form-section-num">{t('buyer.sec3Num')}</span>
                   <div>
-                    <h2 className="heading-md">Tonnage &amp; Industrial Transformation</h2>
-                    <p className="body-sm text-muted">Required delivery lot size and targeted end product.</p>
+                    <h2 className="heading-md">{t('buyer.sec3Title')}</h2>
+                    <p className="body-sm text-muted">{t('buyer.sec3Desc')}</p>
                   </div>
                 </div>
 
                 <div className="form-grid form-grid-2">
                   <div className="form-group">
                     <label className="form-label" htmlFor="requiredQuantity">
-                      Minimum Batch Volume (Tonnes) <span className="required">*</span>
+                      {t('buyer.lblMinBatch')} <span className="required">*</span>
                     </label>
                     <input
                       id="requiredQuantity"
@@ -405,18 +449,18 @@ export default function Buyer() {
                       type="number"
                       min="1"
                       className={`form-control ${errors.requiredQuantity ? 'form-control--error' : ''}`}
-                      placeholder="e.g. 50"
+                      placeholder={t('buyer.phMinBatch')}
                       value={form.requiredQuantity}
                       onChange={handleChange}
                       disabled={loading}
                     />
                     {errors.requiredQuantity && <span className="form-error" role="alert">{errors.requiredQuantity}</span>}
-                    <span className="form-hint">Minimum lot size required to initiate haulage dispatch.</span>
+                    <span className="form-hint">{t('buyer.hintMinBatch')}</span>
                   </div>
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="maxIntake">
-                      Max Yard Intake Capacity (Tonnes / Month)
+                      {t('buyer.lblMaxIntake')}
                     </label>
                     <input
                       id="maxIntake"
@@ -424,18 +468,18 @@ export default function Buyer() {
                       type="number"
                       min="1"
                       className={`form-control ${errors.maxIntake ? 'form-control--error' : ''}`}
-                      placeholder="e.g. 500"
+                      placeholder={t('buyer.phMaxIntake')}
                       value={form.maxIntake}
                       onChange={handleChange}
                       disabled={loading}
                     />
                     {errors.maxIntake && <span className="form-error" role="alert">{errors.maxIntake}</span>}
-                    <span className="form-hint">Prevents matching algorithm from oversaturating yard capacity.</span>
+                    <span className="form-hint">{t('buyer.hintMaxIntake')}</span>
                   </div>
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="intendedUse">
-                      Industrial End-Use <span className="required">*</span>
+                      {t('buyer.lblIntendedUse')} <span className="required">*</span>
                     </label>
                     <select
                       id="intendedUse"
@@ -445,14 +489,18 @@ export default function Buyer() {
                       onChange={handleChange}
                       disabled={loading}
                     >
-                      <option value="">— Select Target Application —</option>
-                      {INTENDED_USES.map((u) => <option key={u} value={u}>{u}</option>)}
+                      <option value="">— {t('buyer.lblIntendedUse')} —</option>
+                      {INTENDED_USES.map((useKey) => (
+                        <option key={useKey} value={useKey}>
+                          {t(`uses.${useKey}`, useKey)}
+                        </option>
+                      ))}
                     </select>
                     {errors.intendedUse && <span className="form-error" role="alert">{errors.intendedUse}</span>}
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label" htmlFor="available">Current Intake Status</label>
+                    <label className="form-label" htmlFor="available">{t('buyer.lblIntakeStatus')}</label>
                     <select
                       id="available"
                       name="available"
@@ -461,9 +509,9 @@ export default function Buyer() {
                       onChange={handleChange}
                       disabled={loading}
                     >
-                      <option value="yes">Accepting Active Deliveries</option>
-                      <option value="limited">Limited Yard Space</option>
-                      <option value="no">Temporarily On Standby</option>
+                      <option value="yes">{t('buyer.optActiveDeliveries')}</option>
+                      <option value="limited">{t('buyer.optLimitedSpace')}</option>
+                      <option value="no">{t('buyer.optOnStandby')}</option>
                     </select>
                   </div>
                 </div>
@@ -472,24 +520,24 @@ export default function Buyer() {
               {/* ── Section 04: Facility Location ── */}
               <div className="form-section">
                 <div className="form-section-header">
-                  <span className="form-section-num">04</span>
+                  <span className="form-section-num">{t('buyer.sec4Num')}</span>
                   <div>
-                    <h2 className="heading-md">Facility Yard Location</h2>
-                    <p className="body-sm text-muted">Intake terminal coordinates for road haulage calculation.</p>
+                    <h2 className="heading-md">{t('buyer.sec4Title')}</h2>
+                    <p className="body-sm text-muted">{t('buyer.sec4Desc')}</p>
                   </div>
                 </div>
 
                 <div className="form-grid form-grid-2">
                   <div className="form-group">
                     <label className="form-label" htmlFor="location">
-                      City / Industrial Area <span className="required">*</span>
+                      {t('buyer.lblLocation')} <span className="required">*</span>
                     </label>
                     <input
                       id="location"
                       name="location"
                       type="text"
                       className={`form-control ${errors.location ? 'form-control--error' : ''}`}
-                      placeholder="e.g. Panipat Industrial Area"
+                      placeholder={t('buyer.phLocation')}
                       value={form.location}
                       onChange={handleChange}
                       disabled={loading}
@@ -500,14 +548,14 @@ export default function Buyer() {
 
                   <div className="form-group">
                     <label className="form-label" htmlFor="state">
-                      State <span className="required">*</span>
+                      {t('buyer.lblState')} <span className="required">*</span>
                     </label>
                     <input
                       id="state"
                       name="state"
                       type="text"
                       className={`form-control ${errors.state ? 'form-control--error' : ''}`}
-                      placeholder="e.g. Haryana"
+                      placeholder={t('buyer.phState')}
                       value={form.state}
                       onChange={handleChange}
                       disabled={loading}
@@ -517,19 +565,19 @@ export default function Buyer() {
                   </div>
 
                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                    <label className="form-label" htmlFor="notes">Intake Specifications &amp; Unloading Constraints</label>
+                    <label className="form-label" htmlFor="notes">{t('buyer.lblNotes')}</label>
                     <textarea
                       id="notes"
                       name="notes"
                       className="form-control"
-                      placeholder="e.g. Weighbridge on site, 24/7 weighment available, maximum permissible moisture 14%..."
+                      placeholder={t('buyer.phNotes')}
                       value={form.notes}
                       onChange={handleChange}
                       disabled={loading}
                       rows={3}
                       maxLength={1000}
                     />
-                    <span className="form-hint">Moisture tolerances, weighbridge limits, or offloading hours.</span>
+                    <span className="form-hint">{t('buyer.hintNotes')}</span>
                   </div>
                 </div>
               </div>
@@ -537,14 +585,14 @@ export default function Buyer() {
               {/* Form Action Controls */}
               <div className="buyer-form-footer">
                 <div className="footer-notice">
-                  Fields marked <span className="text-danger">*</span> are required for algorithm matching.
+                  {t('farmer.requiredFieldsNotice', 'Fields marked * are required for algorithm matching.')}
                 </div>
                 <div className="flex gap-sm">
                   <button type="button" onClick={handleReset} className="btn btn-outline" disabled={loading}>
-                    Reset Form
+                    {t('buyer.btnReset')}
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
-                    {loading ? <LoadingSpinner label="Writing record…" /> : 'Register Demand Criteria'}
+                    {loading ? <LoadingSpinner label={t('buyer.writingRecord')} /> : t('buyer.btnSubmit')}
                   </button>
                 </div>
               </div>
@@ -557,31 +605,30 @@ export default function Buyer() {
               <div className="sidebar-card-header">
                 <span className="sidebar-dot" />
                 <span className="heading-sm">
-                  {isConfigured ? 'Live Database Active' : 'Local Standby Engine'}
+                  {isConfigured ? t('buyer.sidebarDbActive') : t('buyer.sidebarDbStandby')}
                 </span>
               </div>
               <p className="body-sm text-muted">
                 {isConfigured
-                  ? 'Buyer requirements are actively queried by incoming farm listings across regional supply hubs.'
-                  : 'Demonstration environment. Submissions populate local memory and matching algorithms.'}
+                  ? t('buyer.sidebarDbActiveDesc')
+                  : t('buyer.sidebarDbStandbyDesc')}
               </p>
             </div>
 
             <div className="sidebar-card mt-lg">
-              <h3 className="heading-sm mb-sm">Sourcing Best Practices</h3>
+              <h3 className="heading-sm mb-sm">{t('buyer.sidebarBestPractices')}</h3>
               <ul className="sidebar-checklist">
-                <li>Specify max intake to avoid sudden over-commitment of storage yards.</li>
-                <li>Multiple residue types improve aggregation rate across mixed crop regions.</li>
-                <li>Include clear weighbridge and moisture criteria in facility notes.</li>
-                <li>Maintain active status to appear in top algorithm recommendations.</li>
+                <li>{t('buyer.sidebarBp1')}</li>
+                <li>{t('buyer.sidebarBp2')}</li>
+                <li>{t('buyer.sidebarBp3')}</li>
+                <li>{t('buyer.sidebarBp4')}</li>
               </ul>
             </div>
 
             <div className="sidebar-card mt-lg">
-              <h3 className="heading-sm mb-sm">Automated Aggregation</h3>
+              <h3 className="heading-sm mb-sm">{t('buyer.sidebarAggregationTitle')}</h3>
               <p className="body-sm text-muted">
-                When a single farm cannot fulfill your minimum batch size, our clustering algorithm
-                groups compatible listings within a 25 km radius into a consolidated freight delivery.
+                {t('buyer.sidebarAggregationDesc')}
               </p>
             </div>
           </FadeContent>
