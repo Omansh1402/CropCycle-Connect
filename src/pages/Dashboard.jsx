@@ -5,12 +5,17 @@ import {
   fetchBuyerRequirements,
   fetchContactRequests,
   fetchDashboardStats,
+  updateListingStatus,
+  updateContactRequestStatus,
   formatDbError,
 } from '../lib/db';
 import { isConfigured } from '../lib/supabase';
 import { sampleListings, sampleBuyers, sampleMatches, dashboardStats as staticStats } from '../data/sampleData';
 import { DbSetupBanner, DbErrorAlert, LoadingSpinner } from '../components/DbStatus';
 import { findCollectionGroupings } from '../lib/matchingEngine';
+import SplitText from '../components/reactbits/SplitText';
+import FadeContent from '../components/reactbits/FadeContent';
+import CountUp from '../components/reactbits/CountUp';
 import './Dashboard.css';
 
 const STATUS_BADGE = {
@@ -18,12 +23,10 @@ const STATUS_BADGE = {
   pending:  'badge-warm',
   matched:  'badge-blue',
   closed:   'badge-muted',
-  // contact_requests
   'pending-req': 'badge-warm',
   accepted:      'badge-green',
   rejected:      'badge-muted',
   completed:     'badge-blue',
-  // legacy sample data values
   Active:   'badge-green',
   Pending:  'badge-warm',
   Matched:  'badge-blue',
@@ -32,45 +35,57 @@ const STATUS_BADGE = {
 };
 
 function useDbData() {
-  const [listings,  setListings]  = useState(null);
-  const [buyers,    setBuyers]    = useState(null);
-  const [requests,  setRequests]  = useState(null);
-  const [kpis,      setKpis]      = useState(null);
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState(null);
+  const [listings, setListings] = useState(null);
+  const [buyers,   setBuyers]   = useState(null);
+  const [requests, setRequests] = useState(null);
+  const [kpis,     setKpis]     = useState(null);
+  const [loading,  setLoading]  = useState(isConfigured);
+  const [error,    setError]    = useState(null);
+  const [refreshToken, setRefreshToken] = useState(0);
 
-  const fetchAll = useCallback(async () => {
-    if (!isConfigured) return;
+  const refetch = useCallback(() => {
     setLoading(true);
     setError(null);
-    try {
-      const [lRes, bRes, rRes, kRes] = await Promise.all([
-        fetchFarmerListings(),
-        fetchBuyerRequirements(),
-        fetchContactRequests(),
-        fetchDashboardStats(),
-      ]);
-
-      const firstError = [lRes, bRes, rRes, kRes].find((r) => r.error);
-      if (firstError) {
-        setError(formatDbError(firstError.error));
-        return;
-      }
-
-      setListings(lRes.data ?? []);
-      setBuyers(bRes.data ?? []);
-      setRequests(rRes.data ?? []);
-      setKpis(kRes.data);
-    } catch {
-      setError('Failed to load dashboard data. Check your network and Supabase configuration.');
-    } finally {
-      setLoading(false);
-    }
+    setRefreshToken((t) => t + 1);
   }, []);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    if (!isConfigured) return;
 
-  return { listings, buyers, requests, kpis, loading, error, refetch: fetchAll };
+    let isMounted = true;
+
+    Promise.all([
+      fetchFarmerListings(),
+      fetchBuyerRequirements(),
+      fetchContactRequests(),
+      fetchDashboardStats(),
+    ])
+      .then(([lRes, bRes, rRes, kRes]) => {
+        if (!isMounted) return;
+        const firstError = [lRes, bRes, rRes, kRes].find((r) => r.error);
+        if (firstError) {
+          setError(formatDbError(firstError.error));
+        } else {
+          setListings(lRes.data ?? []);
+          setBuyers(bRes.data ?? []);
+          setRequests(rRes.data ?? []);
+          setKpis(kRes.data);
+          setError(null);
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        setError('Failed to load dashboard data. Check your network and Supabase configuration.');
+        setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [refreshToken]);
+
+  return { listings, buyers, requests, kpis, loading, error, refetch };
 }
 
 export default function Dashboard() {
@@ -78,28 +93,191 @@ export default function Dashboard() {
   const [filterScope, setFilterScope] = useState('all'); // 'all' | 'real' | 'demo'
   const { listings, buyers, requests, kpis, loading, error, refetch } = useDbData();
 
-  // Decide what to display: DB data if available, else sample data
+  // Workflow action states
+  const [actionState, setActionState] = useState({ id: null, loading: false });
+  const [securityNotice, setSecurityNotice] = useState(null);
+  const [actionSuccess, setActionSuccess] = useState(null);
+  const [actionError, setActionError] = useState(null);
+
+  // Handle contact request status updates
+  const handleUpdateContactRequest = async (id, newStatus, isDemo) => {
+    if (isDemo || (typeof id === 'string' && (id.startsWith('REQ') || id.startsWith('M0')))) {
+      setSecurityNotice({
+        title: 'Demo Record Read-Only',
+        message: 'Sample contact requests are simulated reference data and cannot be mutated.',
+        technicalDetails: 'Demo records reside in local memory in data/sampleData.js rather than Supabase PostgreSQL.',
+        resolution: 'To test live updates, submit a real contact request via the Match Details page with Supabase connected.',
+      });
+      return;
+    }
+
+    setActionState({ id, loading: true });
+    setActionSuccess(null);
+    setActionError(null);
+
+    try {
+      const { data, error: updateErr } = await updateContactRequestStatus(id, newStatus);
+      if (updateErr) {
+        if (
+          updateErr.code === '42501' ||
+          updateErr.message?.includes('violates row-level security') ||
+          updateErr.message?.includes('permission denied')
+        ) {
+          setSecurityNotice({
+            title: 'Database Security Restriction (Row Level Security)',
+            message: 'Status update was rejected by Supabase Row Level Security.',
+            technicalDetails: 'Postgres Error 42501: No public UPDATE policy exists for table "contact_requests". Public anonymous clients cannot mutate records.',
+            resolution:
+              'Secure status updates require authentication (e.g. Supabase Auth with admin role), a signed RPC function, or a backend Edge Function with service_role privileges. The frontend will not bypass security or falsely claim success.',
+          });
+        } else {
+          setActionError(formatDbError(updateErr));
+        }
+      } else if (data) {
+        setActionSuccess(`Contact request #${id.slice(0, 8)} status confirmed as "${newStatus}" by database.`);
+        refetch();
+      } else {
+        setSecurityNotice({
+          title: 'Database Security Restriction (0 Rows Modified)',
+          message: 'The database did not confirm this update. Row Level Security prevented modification.',
+          technicalDetails: 'Under Supabase RLS, an UPDATE query on a row without an UPDATE policy affects 0 rows and returns null.',
+          resolution: 'Configure Supabase authentication or an authorized Edge Function to allow administrative status changes.',
+        });
+      }
+    } catch (err) {
+      setActionError('Failed to update request: ' + (err.message || 'Network error'));
+    } finally {
+      setActionState({ id: null, loading: false });
+    }
+  };
+
+  // Handle farmer listing status updates
+  const handleUpdateListingStatus = async (id, newStatus, isDemo) => {
+    if (isDemo || (typeof id === 'string' && (id.startsWith('L0') || id.length < 10))) {
+      setSecurityNotice({
+        title: 'Demo Record Read-Only',
+        message: 'Sample crop residue listings are simulated seed records and cannot be mutated.',
+        technicalDetails: 'Demo listings reside in data/sampleData.js.',
+        resolution: 'Submit a live farmer listing on the /farmer page to create a modifiable Supabase database record.',
+      });
+      return;
+    }
+
+    setActionState({ id, loading: true });
+    setActionSuccess(null);
+    setActionError(null);
+
+    try {
+      const { data, error: updateErr } = await updateListingStatus(id, newStatus);
+      if (updateErr) {
+        if (
+          updateErr.code === '42501' ||
+          updateErr.message?.includes('violates row-level security') ||
+          updateErr.message?.includes('permission denied')
+        ) {
+          setSecurityNotice({
+            title: 'Database Security Restriction (Row Level Security)',
+            message: 'Status update was rejected by Supabase Row Level Security.',
+            technicalDetails: 'Postgres Error 42501: No public UPDATE policy exists for table "farmer_listings". Public anonymous clients cannot mutate records.',
+            resolution:
+              'Marking listings as matched requires authenticated administrative privileges, a signed RPC function, or an Edge Function. Unrestricted public write policies are disabled to protect data integrity.',
+          });
+        } else {
+          setActionError(formatDbError(updateErr));
+        }
+      } else if (data) {
+        setActionSuccess(`Listing #${id.slice(0, 8)} status confirmed as "${newStatus}" by database.`);
+        refetch();
+      } else {
+        setSecurityNotice({
+          title: 'Database Security Restriction (0 Rows Modified)',
+          message: 'The database did not confirm this update. Row Level Security prevented modification.',
+          technicalDetails: 'Under Supabase RLS, an UPDATE query on a row without an UPDATE policy affects 0 rows and returns null.',
+          resolution: 'Configure Supabase authentication or an authorized Edge Function to allow administrative status changes.',
+        });
+      }
+    } catch (err) {
+      setActionError('Failed to update listing: ' + (err.message || 'Network error'));
+    } finally {
+      setActionState({ id: null, loading: false });
+    }
+  };
+
+  // Decide what to display
   const displayListings  = listings  ?? sampleListings;
   const displayBuyers    = buyers    ?? sampleBuyers;
   const displayRequests  = requests  ?? sampleMatches;
   const isLiveData       = isConfigured && listings !== null;
 
-  const liveKpis = kpis ?? {
-    totalListings:  staticStats.totalListings,
-    totalBuyers:    sampleBuyers.length,
-    totalRequests:  sampleMatches.length,
-    totalQuantityTonnes: staticStats.tonsRedirected,
-    tonsRedirected: staticStats.tonsRedirected,
-    real: { listings: 0, quantityTonnes: 0, buyers: 0, requests: 0 },
-    demo: { listings: staticStats.totalListings, quantityTonnes: staticStats.tonsRedirected, buyers: sampleBuyers.length, requests: sampleMatches.length },
+  const liveKpis = useMemo(() => {
+    return kpis ?? {
+      totalListings:  staticStats.totalListings,
+      totalBuyers:    sampleBuyers.length,
+      totalRequests:  sampleMatches.length,
+      totalQuantityTonnes: staticStats.tonsRedirected,
+      tonsRedirected: staticStats.tonsRedirected,
+      real: { listings: 0, quantityTonnes: 0, buyers: 0, requests: 0 },
+      demo: { listings: staticStats.totalListings, quantityTonnes: staticStats.tonsRedirected, buyers: sampleBuyers.length, requests: sampleMatches.length },
+    };
+  }, [kpis]);
+
+  const getBuyerDisplayName = (r) => {
+    if (r.buyer_requirements?.org_name) {
+      return r.buyer_requirements.org_name;
+    }
+    if (r.buyer_id && Array.isArray(buyers)) {
+      const found = buyers.find((b) => b.id === r.buyer_id);
+      if (found?.org_name || found?.orgName) return found.org_name || found.orgName;
+    }
+    if (r.demo_buyer_ref) {
+      const sample = sampleBuyers.find((b) => b.id === r.demo_buyer_ref);
+      if (sample?.orgName) return sample.orgName;
+      return `Sample Buyer (${r.demo_buyer_ref})`;
+    }
+    return 'Registered Buyer';
   };
 
-  // Grouped collection opportunities (Feature 6)
+  const activeKpis = useMemo(() => {
+    if (filterScope === 'real') {
+      return {
+        listings: liveKpis.real?.listings ?? 0,
+        listingsBreakdown: 'Live entries in PostgreSQL database',
+        buyers: liveKpis.real?.buyers ?? 0,
+        buyersBreakdown: 'Verified industrial buyer entities',
+        requests: liveKpis.real?.requests ?? 0,
+        requestsBreakdown: 'Active sourcing inquiries',
+        volume: `${liveKpis.real?.quantityTonnes ?? 0}t`,
+        volumeBreakdown: 'Active harvest volume listed',
+      };
+    }
+    if (filterScope === 'demo') {
+      return {
+        listings: liveKpis.demo?.listings ?? 0,
+        listingsBreakdown: 'Demonstration seed lots',
+        buyers: liveKpis.demo?.buyers ?? 0,
+        buyersBreakdown: 'Reference industrial accounts',
+        requests: liveKpis.demo?.requests ?? 0,
+        requestsBreakdown: 'Simulated haulage requests',
+        volume: `${liveKpis.demo?.quantityTonnes ?? 0}t`,
+        volumeBreakdown: 'Demonstration baseline capacity',
+      };
+    }
+    return {
+      listings: liveKpis.totalListings,
+      listingsBreakdown: `${liveKpis.real?.listings ?? 0} live · ${liveKpis.demo?.listings ?? 0} reference`,
+      buyers: liveKpis.totalBuyers,
+      buyersBreakdown: `${liveKpis.real?.buyers ?? 0} live · ${liveKpis.demo?.buyers ?? 0} reference`,
+      requests: liveKpis.totalRequests,
+      requestsBreakdown: `${liveKpis.real?.requests ?? 0} live · ${liveKpis.demo?.requests ?? 0} reference`,
+      volume: `${liveKpis.totalQuantityTonnes ?? liveKpis.tonsRedirected}t`,
+      volumeBreakdown: `${liveKpis.real?.quantityTonnes ?? 0}t live · ${liveKpis.demo?.quantityTonnes ?? 0}t reference`,
+    };
+  }, [liveKpis, filterScope]);
+
   const groupings = useMemo(() => {
     return findCollectionGroupings(displayListings, displayBuyers);
   }, [displayListings, displayBuyers]);
 
-  // Filtered views based on user selection (Feature 5)
   const filteredListings = useMemo(() => {
     if (!displayListings) return [];
     if (filterScope === 'real') return displayListings.filter((l) => !l.is_demo && !l.isDemo);
@@ -122,136 +300,134 @@ export default function Dashboard() {
   }, [displayRequests, filterScope]);
 
   const tabs = [
-    { id: 'overview',    label: '📊 Overview' },
-    { id: 'listings',    label: `🌾 Listings (${filteredListings.length})` },
-    { id: 'requests',    label: `📬 Requests (${filteredRequests.length})` },
-    { id: 'buyers',      label: `🏭 Buyers (${filteredBuyers.length})` },
-    { id: 'collections', label: `📦 Grouped Collections (${groupings.length})` },
+    { id: 'overview',    label: 'Network Overview' },
+    { id: 'listings',    label: `Supply Listings (${filteredListings.length})` },
+    { id: 'requests',    label: `Sourcing Inquiries (${filteredRequests.length})` },
+    { id: 'buyers',      label: `Industrial Buyers (${filteredBuyers.length})` },
+    { id: 'collections', label: `Cluster Freight (${groupings.length})` },
   ];
 
   return (
     <main className="dashboard-page">
-      {/* Hero */}
-      <div className="page-hero">
-        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <span className="section-eyebrow" style={{ color: 'var(--color-mint)', background: 'rgba(82,183,136,0.15)', display: 'inline-block' }}>
-            Control Centre
-          </span>
-          <h1 className="display-lg text-white mt-md">Dashboard</h1>
-          <p className="body-lg mt-md" style={{ color: 'rgba(255,255,255,0.75)' }}>
-            {isLiveData
-              ? 'Live data from Supabase — all submitted listings, buyers and requests.'
-              : 'Sample demonstration data shown — connect Supabase for live records.'}
-          </p>
+      <header className="page-header">
+        <div className="container">
+          <div className="page-header__inner">
+            <span className="section-eyebrow">Enterprise Supply Chain Console</span>
+            <SplitText text="Operations Dashboard" tag="h1" className="display-lg" delay={0.03} />
+            <p className="body-lg text-muted mt-xs" style={{ maxWidth: '640px' }}>
+              {isLiveData
+                ? 'Connected to live Supabase cluster — auditing supply volume, verified demands, and haulage transitions.'
+                : 'Demonstration environment active — explore aggregated network telemetry and pipeline operations.'}
+            </p>
+          </div>
         </div>
-      </div>
+      </header>
 
       <div className="container section-sm">
-
-        {/* ── DB setup or error ── */}
         {!isConfigured && <DbSetupBanner />}
         {error && <DbErrorAlert message={error} onRetry={refetch} />}
 
-        {/* ── Data source indicator ── */}
-        <div className="dashboard-source-bar mb-xl">
+        {/* Source Status Bar */}
+        <div className="dashboard-source-bar mb-lg">
           <div className="flex items-center gap-sm">
             <span className={`db-dot-sm ${isLiveData ? 'db-dot-sm--live' : 'db-dot-sm--demo'}`} />
-            <span className="body-sm font-bold">
-              {isLiveData ? 'Live database' : 'Sample / demo data'}
+            <span className="body-sm font-semibold">
+              {isLiveData ? 'Active PostgreSQL Database Connection' : 'Demonstration Data Catalog'}
             </span>
             {isLiveData && (
-              <span className="body-sm text-muted">— includes demo seed rows (is_demo = true)</span>
+              <span className="body-sm text-muted">· Real-time sync active</span>
             )}
           </div>
           <div className="flex items-center gap-md">
             {isLiveData && !loading && (
               <button onClick={refetch} className="btn btn-outline btn-sm">
-                ↻ Refresh
+                Refresh Records
               </button>
             )}
-            {loading && <LoadingSpinner label="Loading…" />}
+            {loading && <LoadingSpinner label="Querying database…" />}
           </div>
         </div>
 
-        {/* ── Feature 5: Real vs Sample Data Activity Distinction ── */}
+        {/* Scope Filter Bar */}
         <div className="activity-banner card mb-lg">
           <div className="flex justify-between items-center flex-wrap gap-md">
-            <div className="flex items-center gap-md flex-wrap">
-              <span className="badge badge-green" style={{ fontSize: '0.8125rem', padding: '6px 12px' }}>
-                ● Real Activity: {liveKpis.real?.listings ?? 0} listings ({liveKpis.real?.quantityTonnes ?? 0}t) · {liveKpis.real?.buyers ?? 0} buyers · {liveKpis.real?.requests ?? 0} requests
+            <div className="flex items-center gap-sm flex-wrap">
+              <span className="badge badge-green">
+                Live Data: {liveKpis.real?.listings ?? 0} lots ({liveKpis.real?.quantityTonnes ?? 0}t) · {liveKpis.real?.buyers ?? 0} buyers · {liveKpis.real?.requests ?? 0} inquiries
               </span>
-              <span className="badge badge-warm" style={{ fontSize: '0.8125rem', padding: '6px 12px' }}>
-                ⚠️ Sample Seed Data: {liveKpis.demo?.listings ?? 0} listings ({liveKpis.demo?.quantityTonnes ?? 0}t) · {liveKpis.demo?.buyers ?? 0} buyers · {liveKpis.demo?.requests ?? 0} requests
+              <span className="badge badge-muted">
+                Reference Data: {liveKpis.demo?.listings ?? 0} lots ({liveKpis.demo?.quantityTonnes ?? 0}t) · {liveKpis.demo?.buyers ?? 0} buyers
               </span>
             </div>
-            <div className="flex items-center gap-xs">
-              <span className="body-xs text-muted font-bold" style={{ marginRight: '4px' }}>Filter View:</span>
+            <div className="scope-btn-group">
+              <span className="label" style={{ marginRight: '4px' }}>Scope:</span>
               <button
                 type="button"
-                className={`btn btn-xs ${filterScope === 'all' ? 'btn-primary' : 'btn-outline'}`}
+                className={`scope-btn ${filterScope === 'all' ? 'active' : ''}`}
                 onClick={() => setFilterScope('all')}
               >
                 All Records
               </button>
               <button
                 type="button"
-                className={`btn btn-xs ${filterScope === 'real' ? 'btn-primary' : 'btn-outline'}`}
+                className={`scope-btn ${filterScope === 'real' ? 'active' : ''}`}
                 onClick={() => setFilterScope('real')}
               >
-                Real Only
+                Live Only
               </button>
               <button
                 type="button"
-                className={`btn btn-xs ${filterScope === 'demo' ? 'btn-primary' : 'btn-outline'}`}
+                className={`scope-btn ${filterScope === 'demo' ? 'active' : ''}`}
                 onClick={() => setFilterScope('demo')}
               >
-                Sample Only
+                Reference Only
               </button>
             </div>
           </div>
         </div>
 
-        {/* ── KPI cards ── */}
-        <div className="dashboard-kpis animate-fadeUp">
-          <div className="kpi-card kpi-card--green">
-            <div className="kpi-icon">🌾</div>
-            <div className="kpi-value">{loading ? '—' : liveKpis.totalListings}</div>
-            <div className="kpi-label">Total Listings</div>
-            <div className="kpi-breakdown">
-              {liveKpis.real?.listings ?? 0} real · {liveKpis.demo?.listings ?? 0} sample
+        {/* KPI Cards Ledger with CountUp */}
+        <FadeContent delay={0.1} distance={18} className="stat-grid mb-xl">
+          <div className="stat-card">
+            <div className="stat-value">
+              {loading ? '—' : typeof activeKpis.listings === 'number' ? <CountUp to={activeKpis.listings} duration={1.4} /> : activeKpis.listings}
             </div>
-            <Link to="/farmer" className="kpi-action">Add listing →</Link>
+            <div className="label">Supply Listings</div>
+            <div className="stat-label mt-xs">{activeKpis.listingsBreakdown}</div>
+            <Link to="/farmer" className="stat-action-link mt-sm">Post listing →</Link>
           </div>
-          <div className="kpi-card kpi-card--blue animate-fadeUp delay-1">
-            <div className="kpi-icon">🏭</div>
-            <div className="kpi-value">{loading ? '—' : liveKpis.totalBuyers}</div>
-            <div className="kpi-label">Registered Buyers</div>
-            <div className="kpi-breakdown">
-              {liveKpis.real?.buyers ?? 0} real · {liveKpis.demo?.buyers ?? 0} sample
-            </div>
-            <Link to="/buyer" className="kpi-action">Register demand →</Link>
-          </div>
-          <div className="kpi-card kpi-card--tan animate-fadeUp delay-2">
-            <div className="kpi-icon">📬</div>
-            <div className="kpi-value">{loading ? '—' : liveKpis.totalRequests}</div>
-            <div className="kpi-label">Contact Requests</div>
-            <div className="kpi-breakdown">
-              {liveKpis.real?.requests ?? 0} real · {liveKpis.demo?.requests ?? 0} sample
-            </div>
-            <Link to="/matches" className="kpi-action">Browse matches →</Link>
-          </div>
-          <div className="kpi-card kpi-card--forest animate-fadeUp delay-3">
-            <div className="kpi-icon">♻️</div>
-            <div className="kpi-value">{loading ? '—' : `${liveKpis.totalQuantityTonnes ?? liveKpis.tonsRedirected}t`}</div>
-            <div className="kpi-label">Total Volume Listed</div>
-            <div className="kpi-breakdown">
-              {liveKpis.real?.quantityTonnes ?? 0}t real · {liveKpis.demo?.quantityTonnes ?? 0}t sample
-            </div>
-            <span className="kpi-action" style={{ cursor: 'default' }}>Matched: {liveKpis.tonsRedirected}t</span>
-          </div>
-        </div>
 
-        {/* ── Tabs ── */}
+          <div className="stat-card">
+            <div className="stat-value">
+              {loading ? '—' : typeof activeKpis.buyers === 'number' ? <CountUp to={activeKpis.buyers} duration={1.4} /> : activeKpis.buyers}
+            </div>
+            <div className="label">Industrial Buyers</div>
+            <div className="stat-label mt-xs">{activeKpis.buyersBreakdown}</div>
+            <Link to="/buyer" className="stat-action-link mt-sm">Register demand →</Link>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-value">
+              {loading ? '—' : typeof activeKpis.requests === 'number' ? <CountUp to={activeKpis.requests} duration={1.4} /> : activeKpis.requests}
+            </div>
+            <div className="label">Sourcing Inquiries</div>
+            <div className="stat-label mt-xs">{activeKpis.requestsBreakdown}</div>
+            <Link to="/matches" className="stat-action-link mt-sm">Inspect matches →</Link>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-value">
+              {loading ? '—' : typeof activeKpis.volume === 'number' ? <CountUp to={activeKpis.volume} suffix="t" duration={1.6} /> : activeKpis.volume}
+            </div>
+            <div className="label">Biomass Volume</div>
+            <div className="stat-label mt-xs">{activeKpis.volumeBreakdown}</div>
+            <span className="stat-label mt-sm" style={{ display: 'block', color: 'var(--color-forest)' }}>
+              Avoided Burn: {typeof liveKpis.tonsRedirected === 'number' ? <CountUp to={liveKpis.tonsRedirected} suffix="t" duration={1.6} /> : `${liveKpis.tonsRedirected}t`}
+            </span>
+          </div>
+        </FadeContent>
+
+        {/* Tab Navigation */}
         <div className="dashboard-tabs">
           {tabs.map((tab) => (
             <button
@@ -264,259 +440,332 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* ── Tab content ── */}
-        <div className="dashboard-content animate-fadeIn">
+        {/* Success confirmation banner */}
+        {actionSuccess && (
+          <div className="db-success-banner mb-md flex justify-between items-center">
+            <span>{actionSuccess}</span>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => setActionSuccess(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
-          {/* Overview */}
+        {/* Action error banner */}
+        {actionError && (
+          <div className="mb-md">
+            <DbErrorAlert message={actionError} onRetry={() => setActionError(null)} />
+          </div>
+        )}
+
+        {/* ── Tab Content ── */}
+        <FadeContent delay={0.15} distance={20} className="dashboard-content">
+          {/* Overview Tab */}
           {activeTab === 'overview' && (
             <div className="dashboard-overview">
               <div className="overview-grid">
                 {/* Recent listings */}
                 <div className="card dashboard-panel">
                   <div className="panel-header">
-                    <h2 className="heading-lg">Recent Listings</h2>
-                    <Link to="/farmer" className="btn btn-primary btn-sm">+ New</Link>
+                    <h2 className="heading-md">Recent Supply Listings</h2>
+                    <Link to="/farmer" className="btn btn-primary btn-sm">+ Post Listing</Link>
                   </div>
                   <div className="table-wrapper mt-md">
                     <table>
                       <thead>
                         <tr>
-                          <th>Farmer</th>
-                          <th>Type</th>
-                          <th>Qty (t)</th>
+                          <th>Producer</th>
+                          <th>Residue Variety</th>
+                          <th>Tonnage</th>
                           <th>Status</th>
-                          {isLiveData && <th>Source</th>}
+                          {isLiveData && <th>Scope</th>}
                         </tr>
                       </thead>
                       <tbody>
-                        {displayListings.slice(0, 5).map((l) => (
-                          <tr key={l.id}>
-                            <td>
-                              <p className="font-bold">{l.farmer_name ?? l.farmerName}</p>
-                              <p className="body-sm text-muted">{l.location}</p>
-                            </td>
-                            <td>{l.residue_type ?? l.residueType}</td>
-                            <td><strong>{l.quantity_tonnes ?? l.quantity}</strong></td>
-                            <td>
-                              <span className={`badge ${STATUS_BADGE[l.status] ?? 'badge-muted'}`}>
-                                {l.status}
-                              </span>
-                            </td>
-                            {isLiveData && (
+                        {filteredListings.length > 0 ? (
+                          filteredListings.slice(0, 5).map((l) => (
+                            <tr key={l.id}>
                               <td>
-                                <span className={`badge ${l.is_demo ? 'badge-warm' : 'badge-green'}`}>
-                                  {l.is_demo ? 'Demo seed' : 'Real'}
+                                <div className="font-semibold">{l.farmer_name ?? l.farmerName}</div>
+                                <div className="body-sm text-muted">{l.location}</div>
+                              </td>
+                              <td>{l.residue_type ?? l.residueType}</td>
+                              <td><strong>{l.quantity_tonnes ?? l.quantity} t</strong></td>
+                              <td>
+                                <span className={`badge ${STATUS_BADGE[l.status] ?? 'badge-muted'}`}>
+                                  {l.status}
                                 </span>
                               </td>
-                            )}
+                              {isLiveData && (
+                                <td>
+                                  <span className={`badge ${l.is_demo ? 'badge-muted' : 'badge-green'}`}>
+                                    {l.is_demo ? 'Reference' : 'Live'}
+                                  </span>
+                                </td>
+                              )}
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={isLiveData ? 5 : 4} className="text-center text-muted" style={{ padding: 'var(--space-xl)' }}>
+                              No listings found matching the active scope.
+                            </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </div>
 
-                {/* Recent requests / matches */}
+                {/* Recent requests */}
                 <div className="card dashboard-panel">
                   <div className="panel-header">
-                    <h2 className="heading-lg">{isLiveData ? 'Recent Requests' : 'Recent Matches'}</h2>
-                    <Link to="/matches" className="btn btn-outline btn-sm">View All</Link>
+                    <h2 className="heading-md">{isLiveData ? 'Recent Inquiries' : 'Recent Matches'}</h2>
+                    <Link to="/matches" className="btn btn-outline btn-sm">Inspect Catalog</Link>
                   </div>
                   <div className="match-list mt-md">
-                    {isLiveData
-                      ? (requests ?? []).slice(0, 4).map((r) => (
+                    {isLiveData ? (
+                      filteredRequests.length > 0 ? (
+                        filteredRequests.slice(0, 4).map((r) => (
                           <div key={r.id} className="match-row">
-                            <div className={`match-score-ring match-score-medium`} style={{ width: '48px', height: '48px', fontSize: '0.75rem', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {r.request_type === 'pickup' ? '🚛' : r.request_type === 'quote' ? '💰' : '📨'}
+                            <div className="match-row-info">
+                              <div className="font-semibold text-forest">
+                                {r.request_type ? `${r.request_type.toUpperCase()} Protocol` : 'Haulage Request'}
+                              </div>
+                              <div className="body-sm text-muted">
+                                Target: {getBuyerDisplayName(r)} · From: {r.requester_name || 'Cooperative Lead'}
+                              </div>
+                              <div className="body-sm text-muted">
+                                {new Date(r.created_at).toLocaleDateString('en-IN')}
+                              </div>
                             </div>
-                            <div className="flex-1" style={{ minWidth: 0 }}>
-                              <p className="heading-sm">{r.request_type} request</p>
-                              <p className="body-sm text-muted" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {r.demo_buyer_ref ? `→ Sample buyer (${r.demo_buyer_ref})` : '→ DB buyer'}
-                                {r.requester_name ? ` · From: ${r.requester_name}` : ''}
-                              </p>
-                              <p className="body-sm text-muted">{new Date(r.created_at).toLocaleDateString('en-IN')}</p>
-                            </div>
-                            <span className={`badge ${STATUS_BADGE[`${r.status}-req`] ?? STATUS_BADGE[r.status] ?? 'badge-muted'}`} style={{ flexShrink: 0 }}>
+                            <span className={`badge ${STATUS_BADGE[`${r.status}-req`] ?? STATUS_BADGE[r.status] ?? 'badge-muted'}`}>
                               {r.status}
                             </span>
                           </div>
                         ))
-                      : sampleMatches.map((m) => {
+                      ) : (
+                        <p className="body-sm text-muted text-center" style={{ padding: 'var(--space-xl)' }}>
+                          No inquiries found matching the active scope.
+                        </p>
+                      )
+                    ) : (
+                      filteredRequests.length > 0 ? (
+                        filteredRequests.slice(0, 4).map((m) => {
                           const listing = sampleListings.find((l) => l.id === m.listingId);
                           const buyer   = sampleBuyers.find((b) => b.id === m.buyerId);
                           return (
                             <div key={m.id} className="match-row">
-                              <div className={`match-score-ring ${m.matchScore >= 85 ? 'match-score-high' : 'match-score-medium'}`} style={{ width: '48px', height: '48px', fontSize: '0.875rem', flexShrink: 0 }}>
+                              <div className="match-row-score">
                                 {m.matchScore}%
                               </div>
-                              <div className="flex-1" style={{ minWidth: 0 }}>
-                                <p className="heading-sm">{listing?.residueType} → {buyer?.orgName}</p>
-                                <p className="body-sm text-muted">{m.notes}</p>
+                              <div className="match-row-info">
+                                <div className="font-semibold">{listing?.residueType} → {buyer?.orgName}</div>
+                                <div className="body-sm text-muted">{m.notes}</div>
                               </div>
-                              <span className={`badge ${STATUS_BADGE[m.status] ?? 'badge-muted'}`} style={{ flexShrink: 0 }}>
+                              <span className={`badge ${STATUS_BADGE[m.status] ?? 'badge-muted'}`}>
                                 {m.status}
                               </span>
                             </div>
                           );
                         })
-                    }
+                      ) : (
+                        <p className="body-sm text-muted text-center" style={{ padding: 'var(--space-xl)' }}>
+                          No matches available.
+                        </p>
+                      )
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Quick actions */}
-              <div className="dashboard-quick-actions mt-xl">
-                <h2 className="heading-lg mb-lg">Quick Actions</h2>
+              {/* Quick actions bar */}
+              <div className="mt-2xl">
+                <h3 className="heading-md mb-md">Marketplace Actions</h3>
                 <div className="quick-action-grid">
-                  <Link to="/farmer" className="quick-action-card">
-                    <span className="quick-action-icon">🌾</span>
-                    <h4 className="heading-sm">List Residue</h4>
-                    <p className="body-sm text-muted">Post a new crop residue listing</p>
+                  <Link to="/farmer" className="quick-action-card card">
+                    <span className="label">Farm Supply</span>
+                    <h4 className="heading-sm mt-xs">Post Residue Listing</h4>
+                    <p className="body-sm text-muted mt-xs">Log new harvest tonnage for matching.</p>
                   </Link>
-                  <Link to="/buyer" className="quick-action-card">
-                    <span className="quick-action-icon">🏭</span>
-                    <h4 className="heading-sm">Register Demand</h4>
-                    <p className="body-sm text-muted">Add your residue requirements</p>
+
+                  <Link to="/buyer" className="quick-action-card card">
+                    <span className="label">Industrial Sourcing</span>
+                    <h4 className="heading-sm mt-xs">Register Buyer Demand</h4>
+                    <p className="body-sm text-muted mt-xs">Define feedstock criteria and yard intake.</p>
                   </Link>
-                  <Link to="/matches" className="quick-action-card">
-                    <span className="quick-action-icon">🔍</span>
-                    <h4 className="heading-sm">Browse Matches</h4>
-                    <p className="body-sm text-muted">See all compatible pairings</p>
-                  </Link>
-                  <Link to={`/match-details/${sampleBuyers[0].id}?listing=${sampleListings[0].id}#contact`} className="quick-action-card">
-                    <span className="quick-action-icon">📬</span>
-                    <h4 className="heading-sm">Send Request</h4>
-                    <p className="body-sm text-muted">Contact a matched buyer</p>
+
+                  <Link to="/matches" className="quick-action-card card">
+                    <span className="label">Algorithmic Index</span>
+                    <h4 className="heading-sm mt-xs">Inspect Marketplace</h4>
+                    <p className="body-sm text-muted mt-xs">Evaluate multi-factor compatibility rankings.</p>
                   </Link>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Listings tab */}
+          {/* Listings Tab */}
           {activeTab === 'listings' && (
-            <div className="card dashboard-panel animate-fadeIn">
+            <div className="card dashboard-panel">
               <div className="panel-header">
-                <h2 className="heading-lg">
-                  {isLiveData ? 'Farmer Listings (Live DB)' : 'Sample Listings'}
-                  <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{filteredListings.length}</span>
-                </h2>
-                <div className="flex items-center gap-sm">
-                  <span className="body-xs text-muted">Showing {filterScope === 'all' ? 'All' : filterScope === 'real' ? 'Real' : 'Sample'}</span>
-                  <Link to="/farmer" className="btn btn-primary btn-sm">+ New Listing</Link>
-                </div>
-              </div>
-              <div className="table-wrapper mt-md">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Source Type</th>
-                      <th>Farmer</th>
-                      <th>Residue Type</th>
-                      <th>Qty (tonnes)</th>
-                      <th>Location</th>
-                      <th>Available From</th>
-                      <th>Pickup</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredListings.map((l) => (
-                      <tr key={l.id}>
-                        <td>
-                          <span className={`badge ${l.is_demo || l.isDemo ? 'badge-warm' : 'badge-green'}`}>
-                            {l.is_demo || l.isDemo ? '⚠️ Sample Seed' : '● Real Record'}
-                          </span>
-                        </td>
-                        <td>
-                          <p className="font-bold">{l.farmer_name ?? l.farmerName}</p>
-                          <p className="body-sm text-muted">{l.created_at ? new Date(l.created_at).toLocaleDateString('en-IN') : l.postedDate}</p>
-                        </td>
-                        <td>{l.residue_type ?? l.residueType}</td>
-                        <td><strong>{l.quantity_tonnes ?? l.quantity}</strong></td>
-                        <td>{l.location}{l.state ? `, ${l.state}` : ''}</td>
-                        <td>{l.availability_date ?? l.availabilityDate}</td>
-                        <td className="body-sm">{l.pickup_preference ?? l.pickupPreference}</td>
-                        <td>
-                          <span className={`badge ${STATUS_BADGE[l.status] ?? 'badge-muted'}`}>
-                            {l.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Requests tab */}
-          {activeTab === 'requests' && (
-            <div className="card dashboard-panel animate-fadeIn">
-              <div className="panel-header">
-                <h2 className="heading-lg">
-                  {isLiveData ? 'Contact Requests (Live DB)' : 'Sample Matches'}
-                  <span className="badge badge-muted" style={{ marginLeft: '8px' }}>
-                    {filteredRequests.length}
-                  </span>
-                </h2>
-                <div className="flex items-center gap-sm">
-                  <span className="body-xs text-muted">Showing {filterScope === 'all' ? 'All' : filterScope === 'real' ? 'Real' : 'Sample'}</span>
-                  <Link to="/matches" className="btn btn-outline btn-sm">Browse Matches</Link>
-                </div>
-              </div>
-              {!isLiveData && (
-                <p className="body-sm text-muted mt-sm mb-md">
-                  Showing sample match data. Connect Supabase to see real contact requests submitted via the Match Details page.
-                </p>
-              )}
-              {isLiveData && (filteredRequests.length === 0) && (
-                <div className="matches-empty" style={{ padding: 'var(--space-2xl)', textAlign: 'center' }}>
-                  <p className="body-lg text-muted">
-                    {filterScope === 'all'
-                      ? 'No contact requests yet. Go to a match and send a pickup or contact request.'
-                      : `No ${filterScope} contact requests match the selected view.`}
+                <div>
+                  <h2 className="heading-md">
+                    Agricultural Supply Listings
+                    <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{filteredListings.length}</span>
+                  </h2>
+                  <p className="body-sm text-muted mt-xs">
+                    Indexed farmer lots ready for industrial dispatch.
                   </p>
-                  <Link to="/matches" className="btn btn-primary mt-md">Browse Matches</Link>
                 </div>
-              )}
-              {isLiveData && filteredRequests.length > 0 && (
+                <Link to="/farmer" className="btn btn-primary btn-sm">+ Post Listing</Link>
+              </div>
+
+              {filteredListings.length === 0 ? (
+                <div className="dashboard-empty-state">
+                  <h3 className="heading-md">No Crop Residue Listings Found</h3>
+                  <p className="body-md text-muted">
+                    No listings match the current scope filter. Register a farm listing to populate the directory.
+                  </p>
+                  <div className="empty-state-actions">
+                    <Link to="/farmer" className="btn btn-primary">+ Post Farmer Listing</Link>
+                    {filterScope !== 'all' && (
+                      <button type="button" className="btn btn-outline" onClick={() => setFilterScope('all')}>
+                        Show All Records
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
                 <div className="table-wrapper mt-md">
                   <table>
                     <thead>
                       <tr>
-                        <th>Source</th>
-                        <th>Type</th>
-                        <th>From</th>
-                        <th>Buyer / Target</th>
-                        <th>Message</th>
+                        <th>Classification</th>
+                        <th>Producer</th>
+                        <th>Residue Variety</th>
+                        <th>Quantity</th>
+                        <th>Location</th>
+                        <th>Harvest Window</th>
+                        <th>Logistics Mode</th>
                         <th>Status</th>
-                        <th>Submitted</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredListings.map((l) => (
+                        <tr key={l.id}>
+                          <td>
+                            <span className={`badge ${l.is_demo || l.isDemo ? 'badge-muted' : 'badge-green'}`}>
+                              {l.is_demo || l.isDemo ? 'Reference' : 'Live'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="font-semibold">{l.farmer_name ?? l.farmerName}</div>
+                            <div className="body-sm text-muted">{l.created_at ? new Date(l.created_at).toLocaleDateString('en-IN') : l.postedDate}</div>
+                          </td>
+                          <td>{l.residue_type ?? l.residueType}</td>
+                          <td><strong>{l.quantity_tonnes ?? l.quantity} t</strong></td>
+                          <td>{l.location}{l.state ? `, ${l.state}` : ''}</td>
+                          <td>{l.availability_date ?? l.availabilityDate}</td>
+                          <td className="body-sm">{l.pickup_preference ?? l.pickupPreference}</td>
+                          <td>
+                            <span className={`badge ${STATUS_BADGE[l.status] ?? 'badge-muted'}`}>
+                              {l.status}
+                            </span>
+                          </td>
+                          <td>
+                            {l.status === 'matched' ? (
+                              <button
+                                type="button"
+                                className="btn btn-outline btn-sm"
+                                disabled={actionState.loading && actionState.id === l.id}
+                                onClick={() => handleUpdateListingStatus(l.id, 'active', l.is_demo || l.isDemo)}
+                              >
+                                Reactivate
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-sm"
+                                disabled={actionState.loading && actionState.id === l.id}
+                                onClick={() => handleUpdateListingStatus(l.id, 'matched', l.is_demo || l.isDemo)}
+                              >
+                                Mark Matched
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Requests Tab */}
+          {activeTab === 'requests' && (
+            <div className="card dashboard-panel">
+              <div className="panel-header">
+                <div>
+                  <h2 className="heading-md">
+                    Sourcing Inquiries &amp; Haulage Requests
+                    <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{filteredRequests.length}</span>
+                  </h2>
+                  <p className="body-sm text-muted mt-xs">
+                    Recorded communications between farm producers and commercial purchasers.
+                  </p>
+                </div>
+                <Link to="/matches" className="btn btn-outline btn-sm">Inspect Matches</Link>
+              </div>
+
+              {filteredRequests.length === 0 ? (
+                <div className="dashboard-empty-state">
+                  <h3 className="heading-md">No Sourcing Inquiries Recorded</h3>
+                  <p className="body-md text-muted">
+                    No requests have been submitted yet. Transmit an inquiry from any Buyer Profile on the Matches page.
+                  </p>
+                  <Link to="/matches" className="btn btn-primary mt-sm">Find Compatible Buyers</Link>
+                </div>
+              ) : isLiveData ? (
+                <div className="table-wrapper mt-md">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Record Scope</th>
+                        <th>Inquiry Protocol</th>
+                        <th>Requester</th>
+                        <th>Target Buyer</th>
+                        <th>Specification Notes</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredRequests.map((r) => (
                         <tr key={r.id}>
                           <td>
-                            <span className={`badge ${r.is_demo || r.demo_buyer_ref ? 'badge-warm' : 'badge-green'}`}>
-                              {r.is_demo || r.demo_buyer_ref ? '⚠️ Sample Seed' : '● Real Record'}
+                            <span className={`badge ${r.is_demo || r.demo_buyer_ref ? 'badge-muted' : 'badge-green'}`}>
+                              {r.is_demo || r.demo_buyer_ref ? 'Reference' : 'Live'}
                             </span>
                           </td>
                           <td><span className="badge badge-blue">{r.request_type}</span></td>
                           <td>
-                            <p className="font-bold">{r.requester_name ?? '(anonymous)'}</p>
-                            {r.requester_email && <p className="body-sm text-muted">{r.requester_email}</p>}
+                            <div className="font-semibold">{r.requester_name ?? 'Anonymous Lead'}</div>
+                            {r.requester_email && <div className="body-sm text-muted">{r.requester_email}</div>}
                           </td>
                           <td>
-                            {r.demo_buyer_ref
-                              ? <><p className="font-bold">Sample buyer ({r.demo_buyer_ref})</p><span className="badge badge-warm">Demo</span></>
-                              : <p className="font-bold">{r.buyer_requirements?.org_name ?? '—'}</p>}
+                            <div className="font-semibold">{getBuyerDisplayName(r)}</div>
                           </td>
                           <td>
-                            <p className="body-sm" style={{ maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <div className="body-sm" style={{ maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {r.message}
-                            </p>
+                            </div>
                           </td>
                           <td>
                             <span className={`badge ${STATUS_BADGE[r.status] ?? 'badge-muted'}`}>
@@ -526,17 +775,49 @@ export default function Dashboard() {
                           <td className="body-sm text-muted">
                             {new Date(r.created_at).toLocaleDateString('en-IN')}
                           </td>
+                          <td>
+                            {r.status === 'pending' ? (
+                              <div className="flex gap-xs">
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-sm"
+                                  disabled={actionState.loading && actionState.id === r.id}
+                                  onClick={() => handleUpdateContactRequest(r.id, 'accepted', r.is_demo || !!r.demo_buyer_ref)}
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-outline btn-sm"
+                                  disabled={actionState.loading && actionState.id === r.id}
+                                  onClick={() => handleUpdateContactRequest(r.id, 'rejected', r.is_demo || !!r.demo_buyer_ref)}
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            ) : r.status === 'accepted' ? (
+                              <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                disabled={actionState.loading && actionState.id === r.id}
+                                onClick={() => handleUpdateContactRequest(r.id, 'completed', r.is_demo || !!r.demo_buyer_ref)}
+                              >
+                                Complete Haulage
+                              </button>
+                            ) : (
+                              <span className="body-sm text-muted">Settled</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              )}
-              {!isLiveData && (
+              ) : (
                 <div className="table-wrapper mt-md">
                   <table>
                     <thead>
-                      <tr><th>Match</th><th>Score</th><th>Notes</th><th>Status</th></tr>
+                      <tr><th>Pairing</th><th>Fit Score</th><th>Notes</th><th>Status</th></tr>
                     </thead>
                     <tbody>
                       {filteredRequests.map((m) => {
@@ -545,11 +826,11 @@ export default function Dashboard() {
                         return (
                           <tr key={m.id}>
                             <td>
-                              <p className="font-bold">{listing?.residueType} → {buyer?.orgName}</p>
-                              <p className="body-sm text-muted">{listing?.location}</p>
+                              <div className="font-semibold">{listing?.residueType} → {buyer?.orgName}</div>
+                              <div className="body-sm text-muted">{listing?.location}</div>
                             </td>
                             <td><span className="badge badge-green">{m.matchScore}%</span></td>
-                            <td><p className="body-sm">{m.notes}</p></td>
+                            <td><div className="body-sm">{m.notes}</div></td>
                             <td><span className={`badge ${STATUS_BADGE[m.status] ?? 'badge-muted'}`}>{m.status}</span></td>
                           </tr>
                         );
@@ -561,147 +842,218 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Buyers tab */}
+          {/* Buyers Tab */}
           {activeTab === 'buyers' && (
-            <div className="card dashboard-panel animate-fadeIn">
-              <div className="panel-header">
-                <h2 className="heading-lg">
-                  {isLiveData ? 'Buyer Requirements (Live DB)' : 'Sample Buyers'}
-                  <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{filteredBuyers.length}</span>
-                </h2>
-                <Link to="/buyer" className="btn btn-warm btn-sm">+ Register Buyer</Link>
-              </div>
-              <div className="table-wrapper mt-md">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Source Type</th>
-                      <th>Organisation</th>
-                      <th>Location</th>
-                      <th>Intended Use</th>
-                      <th>Req. Qty (t)</th>
-                      <th>Max Intake (t)</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBuyers.map((b) => (
-                      <tr key={b.id}>
-                        <td>
-                          <span className={`badge ${b.is_demo || b.isDemo ? 'badge-warm' : 'badge-green'}`}>
-                            {b.is_demo || b.isDemo ? '⚠️ Sample Seed' : '● Real Record'}
-                          </span>
-                        </td>
-                        <td>
-                          <p className="font-bold">{b.org_name ?? b.orgName}</p>
-                          <div className="tag-list mt-sm" style={{ flexWrap: 'nowrap', overflow: 'hidden' }}>
-                            {((b.accepted_types || b.acceptedTypes) ?? []).slice(0, 2).map((t) => (
-                              <span key={t} className="badge badge-green">{t}</span>
-                            ))}
-                          </div>
-                        </td>
-                        <td>{b.location}{b.state ? `, ${b.state}` : ''}</td>
-                        <td>{b.intended_use ?? b.intendedUse}</td>
-                        <td>{b.required_quantity_tonnes ?? b.requiredQuantity}</td>
-                        <td>{b.max_intake_tonnes ?? b.maxIntake ?? '—'}</td>
-                        <td>
-                          <span className={`badge ${(b.availability_status === 'yes' || b.available) ? 'badge-green' : 'badge-muted'}`}>
-                            {(b.availability_status === 'yes' || b.available) ? 'Active' : 'On Hold'}
-                          </span>
-                        </td>
-                        <td>
-                          <Link to={`/match-details/${b.id}`} className="btn btn-outline btn-sm">View</Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Grouped Collections Tab (Feature 6) */}
-          {activeTab === 'collections' && (
-            <div className="card dashboard-panel animate-fadeIn">
+            <div className="card dashboard-panel">
               <div className="panel-header">
                 <div>
-                  <h2 className="heading-lg">
-                    Suggested Collection Opportunities
-                    <span className="badge badge-warm" style={{ marginLeft: '8px' }}>{groupings.length} Opportunities</span>
+                  <h2 className="heading-md">
+                    Industrial Buyer Demands
+                    <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{filteredBuyers.length}</span>
                   </h2>
                   <p className="body-sm text-muted mt-xs">
-                    Consolidating compatible nearby farmer lots to meet commercial batch volume requirements.
+                    Registered enterprise processing entities and commercial feedstock intake facilities.
                   </p>
                 </div>
-                <Link to="/matches" className="btn btn-primary btn-sm">Explore Matches</Link>
+                <Link to="/buyer" className="btn btn-primary btn-sm">+ Register Buyer</Link>
               </div>
 
-              <div className="collection-grid mt-lg">
-                {groupings.map((grp) => (
-                  <div key={grp.id} className="collection-item card">
-                    <div className="flex justify-between items-start gap-sm">
-                      <div>
-                        <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
-                          🌾 {grp.residueType}
-                        </span>
-                        <h4 className="heading-sm mt-xs">📍 {grp.clusterLocation}</h4>
-                      </div>
-                      <div className="text-right">
-                        <span className="display-sm text-forest" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
-                          {grp.totalQuantityTonnes}t
-                        </span>
-                        <p className="body-xs text-muted">({grp.farmerCount} farmers)</p>
-                      </div>
-                    </div>
-
-                    <div className="collection-target mt-sm">
-                      <span className="body-xs text-muted">Target Buyer Demand:</span>
-                      <p className="font-bold">{grp.targetBuyer.orgName}</p>
-                      <div className="flex items-center gap-xs mt-xs flex-wrap">
-                        <span className="badge badge-muted" style={{ fontSize: '0.6875rem' }}>
-                          Target: {grp.targetBuyer.requiredQuantity}t ({grp.fulfillmentPct}%)
-                        </span>
-                        {grp.indicativeLotValue && (
-                          <span className="badge badge-green" style={{ fontSize: '0.6875rem' }}>
-                            Est. Value: ₹{grp.indicativeLotValue.toLocaleString('en-IN')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="collection-farmers mt-sm">
-                      <span className="body-xs text-muted" style={{ display: 'block', marginBottom: '4px' }}>
-                        Consolidated Farmer Listings:
-                      </span>
-                      <div className="flex flex-col gap-xs">
-                        {grp.participatingListings.map((p) => (
-                          <div key={p.id} className="flex justify-between items-center body-xs" style={{ background: '#f8faf9', padding: '4px 8px', borderRadius: '4px' }}>
-                            <span>{p.farmerName}</span>
-                            <strong>{p.quantity} tonnes</strong>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="mt-sm">
-                      <p className="body-xs text-muted" style={{ fontStyle: 'italic', lineHeight: 1.4 }}>
-                        ℹ️ {grp.disclaimer}
-                      </p>
-                    </div>
-
-                    <Link
-                      to={`/match-details/${grp.targetBuyer.id}?listing=${grp.participatingListings[0].id}`}
-                      className="btn btn-outline btn-sm w-full mt-sm"
-                    >
-                      View Buyer Details →
-                    </Link>
-                  </div>
-                ))}
-              </div>
+              {filteredBuyers.length === 0 ? (
+                <div className="dashboard-empty-state">
+                  <h3 className="heading-md">No Industrial Demands Found</h3>
+                  <p className="body-md text-muted">
+                    No buyer requirement profiles match the active scope. Register an industrial buyer profile to begin sourcing.
+                  </p>
+                  <Link to="/buyer" className="btn btn-primary mt-sm">+ Register Demand Profile</Link>
+                </div>
+              ) : (
+                <div className="table-wrapper mt-md">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Scope</th>
+                        <th>Organisation</th>
+                        <th>Facility Location</th>
+                        <th>Target Output</th>
+                        <th>Batch Size</th>
+                        <th>Monthly Cap</th>
+                        <th>Intake Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredBuyers.map((b) => (
+                        <tr key={b.id}>
+                          <td>
+                            <span className={`badge ${b.is_demo || b.isDemo ? 'badge-muted' : 'badge-green'}`}>
+                              {b.is_demo || b.isDemo ? 'Reference' : 'Live'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="font-semibold">{b.org_name ?? b.orgName}</div>
+                            <div className="tag-list mt-xs">
+                              {((b.accepted_types || b.acceptedTypes) ?? []).slice(0, 2).map((t) => (
+                                <span key={t} className="badge badge-green">{t}</span>
+                              ))}
+                            </div>
+                          </td>
+                          <td>{b.location}{b.state ? `, ${b.state}` : ''}</td>
+                          <td>{b.intended_use ?? b.intendedUse}</td>
+                          <td><strong>{b.required_quantity_tonnes ?? b.requiredQuantity} t</strong></td>
+                          <td>{b.max_intake_tonnes ?? b.maxIntake ?? 'Flexible'}</td>
+                          <td>
+                            <span className={`badge ${(b.availability_status === 'yes' || b.available) ? 'badge-green' : 'badge-muted'}`}>
+                              {(b.availability_status === 'yes' || b.available) ? 'Active' : 'On Hold'}
+                            </span>
+                          </td>
+                          <td>
+                            <Link to={`/match-details/${b.id}`} className="btn btn-outline btn-sm">Profile</Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
-        </div>
+
+          {/* Grouped Collections Tab */}
+          {activeTab === 'collections' && (
+            <div className="card dashboard-panel">
+              <div className="panel-header">
+                <div>
+                  <h2 className="heading-md">
+                    Consolidated Cluster Freight Opportunities
+                    <span className="badge badge-muted" style={{ marginLeft: '8px' }}>{groupings.length} Opportunities</span>
+                  </h2>
+                  <p className="body-sm text-muted mt-xs">
+                    Multi-farm pooling within a 25 km radius to meet commercial buyer batch volumes.
+                  </p>
+                </div>
+                <Link to="/matches" className="btn btn-outline btn-sm">Inspect Marketplace</Link>
+              </div>
+
+              {groupings.length === 0 ? (
+                <div className="dashboard-empty-state">
+                  <h3 className="heading-md">No Cluster Groupings Available</h3>
+                  <p className="body-md text-muted">
+                    Cluster groupings automatically activate when multiple smallholder farms within 25 km combine to fulfill larger industrial batches (50+ tonnes).
+                  </p>
+                  <Link to="/matches" className="btn btn-primary mt-sm">Browse Direct Matches</Link>
+                </div>
+              ) : (
+                <div className="collection-grid mt-lg">
+                  {groupings.map((grp) => (
+                    <div key={grp.id} className="collection-item card">
+                      <div className="flex justify-between items-start gap-sm">
+                        <div>
+                          <span className="badge badge-green">
+                            {grp.residueType}
+                          </span>
+                          <h4 className="heading-sm mt-xs">{grp.clusterLocation}</h4>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-semibold text-forest" style={{ fontSize: '1.25rem' }}>
+                            {grp.totalQuantityTonnes}t
+                          </span>
+                          <p className="body-sm text-muted">({grp.farmerCount} farmers)</p>
+                        </div>
+                      </div>
+
+                      <div className="collection-target mt-sm">
+                        <span className="label">Target Industrial Demand:</span>
+                        <p className="font-semibold mt-xs">{grp.targetBuyer.orgName}</p>
+                        <div className="flex items-center gap-xs mt-xs flex-wrap">
+                          <span className="badge badge-muted">
+                            Target: {grp.targetBuyer.requiredQuantity}t ({grp.fulfillmentPct}%)
+                          </span>
+                          {grp.indicativeLotValue && (
+                            <span className="badge badge-green">
+                              Est. Value: ₹{grp.indicativeLotValue.toLocaleString('en-IN')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="collection-farmers mt-sm">
+                        <span className="label" style={{ display: 'block', marginBottom: '4px' }}>
+                          Aggregated Farmer Listings:
+                        </span>
+                        <div className="flex flex-col gap-xs">
+                          {grp.participatingListings.map((p) => (
+                            <div key={p.id} className="participating-row">
+                              <span>{p.farmerName}</span>
+                              <strong>{p.quantity} tonnes</strong>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="mt-sm">
+                        <p className="body-sm text-muted" style={{ fontStyle: 'italic', lineHeight: 1.4 }}>
+                          {grp.disclaimer}
+                        </p>
+                      </div>
+
+                      <Link
+                        to={`/match-details/${grp.targetBuyer.id}?listing=${grp.participatingListings[0].id}`}
+                        className="btn btn-outline btn-sm w-full mt-sm"
+                      >
+                        View Buyer Dossier →
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </FadeContent>
+
+        {/* Security Restriction Modal */}
+        {securityNotice && (
+          <div className="security-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="security-modal-title">
+            <div className="security-modal-card card">
+              <div className="security-modal-header">
+                <div>
+                  <span className="label text-forest">Security Architecture Requirement</span>
+                  <h3 id="security-modal-title" className="heading-md mt-xs">{securityNotice.title}</h3>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  onClick={() => setSecurityNotice(null)}
+                  aria-label="Close dialog"
+                >
+                  Close
+                </button>
+              </div>
+
+              <p className="body-md font-medium text-forest mt-md">{securityNotice.message}</p>
+
+              <div className="security-modal-tech-box mt-md">
+                <strong>Technical Detail:</strong> {securityNotice.technicalDetails}
+              </div>
+
+              <div className="security-modal-steps mt-md">
+                <strong>Resolution Requirement:</strong>
+                <p className="body-sm text-muted mt-xs" style={{ lineHeight: 1.55 }}>
+                  {securityNotice.resolution}
+                </p>
+              </div>
+
+              <div className="flex justify-end mt-lg">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => setSecurityNotice(null)}
+                >
+                  Understood
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );

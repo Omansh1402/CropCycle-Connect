@@ -4,15 +4,62 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: var(--color-offwhite);
+  color: var(--color-text);
 }
 
-/* Pages that don't start with a full-bleed hero need top padding */
 .page-wrapper {
   flex: 1;
   padding-top: var(--nav-height);
 }
 
-/* Home has its own hero that overlaps the nav */
 .page-wrapper--home {
   padding-top: 0;
+}
+
+.page-loading-shell {
+  min-height: calc(70vh - var(--nav-height));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl);
+  text-align: center;
+}
+
+/* 404 page styling */
+.not-found-container {
+  min-height: calc(75vh - var(--nav-height));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-2xl) var(--space-md);
+}
+
+.not-found-code {
+  font-family: var(--font-display);
+  font-size: 5rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--color-forest);
+  letter-spacing: -0.04em;
+  margin-bottom: var(--space-sm);
+}
+
+.not-found-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: var(--space-sm);
+}
+
+.not-found-desc {
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+  max-width: 420px;
+  margin-bottom: var(--space-lg);
 }

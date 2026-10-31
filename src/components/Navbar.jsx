@@ -4,11 +4,11 @@ import { Link, useLocation } from 'react-router-dom';
 import './Navbar.css';
 
 const navLinks = [
-  { path: '/',          label: 'Home' },
-  { path: '/farmer',   label: 'Farmer' },
-  { path: '/buyer',    label: 'Buyer' },
-  { path: '/matches',  label: 'Matches' },
-  { path: '/dashboard',label: 'Dashboard' },
+  { path: '/', label: 'Overview' },
+  { path: '/farmer', label: 'Farmer Portal' },
+  { path: '/buyer', label: 'Buyer Requirements' },
+  { path: '/matches', label: 'Marketplace' },
+  { path: '/dashboard', label: 'Dashboard' },
 ];
 
 export default function Navbar() {
@@ -17,84 +17,111 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 12);
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
-  useEffect(() => { setMenuOpen(false); }, [location]);
+  const [prevPath, setPrevPath] = useState(location.pathname);
+
+  // Close menu on route transition
+  if (prevPath !== location.pathname) {
+    setPrevPath(location.pathname);
+    setMenuOpen(false);
+  }
 
   return (
     <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
       <div className="container navbar__inner">
-        {/* Logo */}
-        <Link to="/" className="navbar__logo">
-          <div className="logo-icon">
-            <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
-              <circle cx="16" cy="16" r="16" fill="#2D6A4F"/>
-              <path d="M16 6C16 6 8 12 8 18C8 22.4 11.6 26 16 26C20.4 26 24 22.4 24 18C24 12 16 6 16 6Z" fill="#52B788"/>
-              <path d="M16 10C16 10 11 14.5 11 18.5C11 21.5 13.2 24 16 24" fill="#2D6A4F"/>
-              <circle cx="16" cy="20" r="2" fill="#F9F4EF"/>
+        {/* Brand Identity */}
+        <Link to="/" className="navbar__logo" aria-label="CropCycle Connect Home">
+          <div className="logo-symbol" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 2C6.477 2 2 6.477 2 12C2 14.83 3.177 17.388 5.07 19.21L6.48 17.79C4.94 16.32 4 14.27 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 14.27 19.06 16.32 17.52 17.79L18.93 19.21C20.823 17.388 22 14.83 22 12C22 6.477 17.523 2 12 2Z"
+                fill="currentColor"
+              />
+              <path
+                d="M12 7C9.239 7 7 9.239 7 12C7 13.43 7.6 14.72 8.56 15.63L9.97 14.22C9.37 13.66 9 12.87 9 12C9 10.34 10.34 9 12 9C13.66 9 15 10.34 15 12C15 12.87 14.63 13.66 14.03 14.22L15.44 15.63C16.4 14.72 17 13.43 17 12C17 9.239 14.761 7 12 7Z"
+                fill="currentColor"
+                opacity="0.8"
+              />
+              <circle cx="12" cy="12" r="1.5" fill="currentColor" />
             </svg>
           </div>
           <div className="logo-text">
-            <span className="logo-name">CropCycle</span>
-            <span className="logo-sub">Connect</span>
+            <span className="logo-title">CropCycle</span>
+            <span className="logo-badge">Connect</span>
           </div>
         </Link>
 
-        {/* Desktop nav */}
-        <nav className="navbar__links" role="navigation" aria-label="Main navigation">
-          {navLinks.map(({ path, label }) => (
-            <Link
-              key={path}
-              to={path}
-              className={`navbar__link ${location.pathname === path ? 'navbar__link--active' : ''}`}
-            >
-              {label}
-            </Link>
-          ))}
+        {/* Main Desktop Navigation */}
+        <nav className="navbar__nav" role="navigation" aria-label="Main Navigation">
+          {navLinks.map(({ path, label }) => {
+            const isActive = location.pathname === path;
+            return (
+              <Link
+                key={path}
+                to={path}
+                className={`navbar__link ${isActive ? 'navbar__link--active' : ''}`}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* CTA */}
+        {/* Right CTA Actions */}
         <div className="navbar__actions">
+          <Link to="/matches" className="navbar__link-subtle">
+            Browse Supply
+          </Link>
           <Link to="/farmer" className="btn btn-primary btn-sm">
             List Residue
           </Link>
+
           <button
             className="navbar__hamburger"
-            aria-label="Toggle menu"
+            aria-label="Toggle navigation menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(!menuOpen)}
           >
-            <span className={`bar ${menuOpen ? 'bar--open' : ''}`}/>
-            <span className={`bar ${menuOpen ? 'bar--open' : ''}`}/>
-            <span className={`bar ${menuOpen ? 'bar--open' : ''}`}/>
+            <span className={`bar-line ${menuOpen ? 'bar-line--top-open' : ''}`} />
+            <span className={`bar-line ${menuOpen ? 'bar-line--mid-open' : ''}`} />
+            <span className={`bar-line ${menuOpen ? 'bar-line--bot-open' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
-      <div className={`navbar__mobile ${menuOpen ? 'navbar__mobile--open' : ''}`} aria-hidden={!menuOpen}>
-        {navLinks.map(({ path, label }) => (
-          <Link
-            key={path}
-            to={path}
-            className={`navbar__mobile-link ${location.pathname === path ? 'active' : ''}`}
-            onClick={() => setMenuOpen(false)}
-          >
-            {label}
-          </Link>
-        ))}
-        <Link
-          to="/farmer"
-          className="btn btn-primary mt-md"
-          style={{ alignSelf: 'flex-start' }}
-          onClick={() => setMenuOpen(false)}
-        >
-          List Residue
-        </Link>
+      {/* Mobile Menu Dropdown */}
+      <div className={`navbar__mobile ${menuOpen ? 'navbar__mobile--open' : ''}`}>
+        <div className="container navbar__mobile-inner">
+          <nav className="navbar__mobile-links">
+            {navLinks.map(({ path, label }) => {
+              const isActive = location.pathname === path;
+              return (
+                <Link
+                  key={path}
+                  to={path}
+                  className={`navbar__mobile-link ${isActive ? 'navbar__mobile-link--active' : ''}`}
+                >
+                  {label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="navbar__mobile-actions">
+            <Link to="/farmer" className="btn btn-primary w-full">
+              List Residue
+            </Link>
+            <Link to="/buyer" className="btn btn-secondary w-full">
+              Register Buyer Demand
+            </Link>
+          </div>
+        </div>
       </div>
     </header>
   );

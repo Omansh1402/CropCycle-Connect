@@ -15,9 +15,92 @@ import { sampleBuyers } from '../src/data/sampleData.js';
 
 console.log('🧪 Running Complete User Journey Test...\n');
 
-const supabaseUrl = 'https://nqsbebhgwdbrtpepwhwu.supabase.co';
-const supabaseKey = 'sb_publishable_N4QLIf9v3egv6tKVXBmccg_pa7cfi6e';
-const supabase = createClient(supabaseUrl, supabaseKey);
+const envUrl = process.env.TEST_SUPABASE_URL || process.env.VITE_SUPABASE_URL || null;
+const envKey = process.env.TEST_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || null;
+const runLive = process.env.RUN_LIVE_SUPABASE_TESTS === 'true' && envUrl && envKey;
+
+function createMockSupabaseClient() {
+  const store = {
+    farmer_listings: [
+      {
+        id: 'seed-l1',
+        farmer_name: 'Rajesh Patel [DEMO]',
+        residue_type: 'Paddy Straw',
+        quantity_tonnes: 18,
+        location: 'Khambhat village',
+        district: 'Anand',
+        state: 'Gujarat',
+        availability_date: '2026-11-10',
+        pickup_preference: 'Self-pickup by buyer',
+        status: 'active',
+        is_demo: true,
+      },
+    ],
+    buyer_requirements: [
+      {
+        id: 'seed-b1',
+        org_name: 'GreenFuel Renewables [DEMO]',
+        accepted_types: ['Paddy Straw', 'Wheat Straw'],
+        required_quantity_tonnes: 50,
+        max_intake_tonnes: 200,
+        intended_use: 'Biofuel / Energy Generation',
+        location: 'Vadodara Industrial Estate',
+        state: 'Gujarat',
+        availability_status: 'yes',
+        is_demo: true,
+      },
+      {
+        id: 'seed-b2',
+        org_name: 'AgriCompost Cooperative [DEMO]',
+        accepted_types: ['Paddy Straw', 'Cotton Stalks'],
+        required_quantity_tonnes: 20,
+        max_intake_tonnes: 80,
+        intended_use: 'Compost / Organic Fertiliser',
+        location: 'Anand District',
+        state: 'Gujarat',
+        availability_status: 'yes',
+        is_demo: true,
+      },
+    ],
+    contact_requests: [
+      {
+        id: 'seed-r1',
+        demo_buyer_ref: 'B001',
+        request_type: 'pickup',
+        message: 'Initial seed request',
+        status: 'pending',
+        is_demo: true,
+      },
+    ],
+  };
+
+  return {
+    from: (table) => {
+      const tableRows = store[table] || [];
+      return {
+        insert: (payload) => {
+          const row = {
+            ...payload,
+            id: `journey-mock-uuid-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            created_at: new Date().toISOString(),
+          };
+          tableRows.push(row);
+          return {
+            select: () => ({
+              single: async () => ({ data: row, error: null }),
+            }),
+          };
+        },
+        select: () => ({
+          then: (resolve) => resolve({ data: [...tableRows], error: null }),
+          single: async () => ({ data: tableRows[0] || null, error: null }),
+        }),
+      };
+    },
+  };
+}
+
+const supabase = runLive ? createClient(envUrl, envKey) : createMockSupabaseClient();
 
 async function runJourney() {
   const timestamp = Date.now();

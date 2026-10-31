@@ -9,8 +9,9 @@
 // ─────────────────────────────────────────────────────────────────
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl  = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnon = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' && process.env) ? process.env : {};
+const supabaseUrl  = env.VITE_SUPABASE_URL;
+const supabaseAnon = env.VITE_SUPABASE_ANON_KEY;
 
 /**
  * isConfigured – true only when both env vars are set and look valid.

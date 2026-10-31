@@ -3,7 +3,7 @@
 // Data-access layer — all Supabase queries live here.
 // Pages import these functions; they never import supabase directly.
 // ─────────────────────────────────────────────────────────────────
-import { supabase, isConfigured } from './supabase';
+import { supabase, isConfigured } from './supabase.js';
 
 /** Sentinel error returned when Supabase is not yet configured. */
 const NOT_CONFIGURED = {
@@ -225,6 +225,23 @@ export async function fetchContactRequests() {
   return { data, error };
 }
 
+/**
+ * Update contact request status (e.g. 'pending' → 'accepted' | 'rejected' | 'completed').
+ * Note: Subject to Supabase Row Level Security.
+ */
+export async function updateContactRequestStatus(id, status) {
+  if (!isConfigured) return NOT_CONFIGURED;
+
+  const { data, error } = await supabase
+    .from('contact_requests')
+    .update({ status })
+    .eq('id', id)
+    .select()
+    .single();
+
+  return { data, error };
+}
+
 // ─── Dashboard summary ───────────────────────────────────────────
 
 /**
@@ -335,7 +352,7 @@ export function formatDbError(error) {
   if (error.code === '23502') return 'A required field is missing.';
   if (error.code === '23503') return 'A referenced record does not exist.';
   if (error.code === '42501') {
-    return 'Database permission setup needed. In Supabase SQL editor, run: GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;';
+    return 'Permission denied by Row Level Security: Mutating status requires authenticated administrative privileges or a secure backend Edge Function. Public anonymous clients cannot modify records.';
   }
 
   // Network / Supabase errors

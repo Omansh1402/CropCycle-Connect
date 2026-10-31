@@ -11,8 +11,12 @@
     "test": "node test/matchingEngine.test.js && node test/auditSuite.test.js"
   },
   "dependencies": {
+    "@gsap/react": "^2.1.2",
     "@supabase/supabase-js": "^2.118.0",
+    "framer-motion": "^14.9.0",
+    "gsap": "^3.15.0",
     "leaflet": "^1.9.4",
+    "motion": "^14.9.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.4"

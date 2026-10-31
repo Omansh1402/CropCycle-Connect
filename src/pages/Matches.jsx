@@ -3,9 +3,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { sampleBuyers, sampleListings, RESIDUE_TYPES } from '../data/sampleData';
 import { fetchFarmerListings, fetchBuyerRequirements, formatDbError } from '../lib/db';
-import { matchListingWithBuyers, normalizeListing, findCollectionGroupings } from '../lib/matchingEngine';
+import {
+  matchListingWithBuyers,
+  normalizeListing,
+  normalizeBuyer,
+  findCollectionGroupings,
+} from '../lib/matchingEngine';
 import BuyerCard from '../components/BuyerCard';
 import { LoadingSpinner, DbErrorAlert } from '../components/DbStatus';
+import SplitText from '../components/reactbits/SplitText';
+import FadeContent from '../components/reactbits/FadeContent';
 import './Matches.css';
 
 export default function Matches() {
@@ -86,72 +93,94 @@ export default function Matches() {
     };
   }, []);
 
-  // ─── Unified listings pool ──────────────────────────────────────
+  // ─── Unified listings pool with safe deterministic deduplication ───
   const combinedListings = useMemo(() => {
     const list = [];
-    // Prioritize DB listings if available
     if (dbListings.length > 0) {
       dbListings.forEach((item) => list.push(normalizeListing(item)));
     }
-    // Also include demo listings so the catalog is never barren
     sampleListings.forEach((item) => {
-      if (!list.some((existing) => existing.id === item.id)) {
+      const isAlreadyPresent = list.some((existing) => {
+        if (existing.id === item.id) return true;
+        if (existing.isDemo && item.isDemo) {
+          const cleanExisting = String(existing.farmerName || '').replace(/\s*\[DEMO\]\s*/gi, '').trim().toLowerCase();
+          const cleanItem = String(item.farmerName || '').replace(/\s*\[DEMO\]\s*/gi, '').trim().toLowerCase();
+          return cleanExisting === cleanItem && existing.residueType === item.residueType;
+        }
+        return false;
+      });
+
+      if (!isAlreadyPresent) {
         list.push(normalizeListing(item));
       }
     });
     return list;
   }, [dbListings]);
 
-  // ─── Unified buyers pool ────────────────────────────────────────
+  // ─── Unified buyers pool with safe deterministic deduplication ───
   const combinedBuyers = useMemo(() => {
     const buyers = [];
     if (dbBuyers.length > 0) {
-      dbBuyers.forEach((b) => buyers.push(b));
+      dbBuyers.forEach((b) => buyers.push(normalizeBuyer(b)));
     }
     sampleBuyers.forEach((b) => {
-      if (!buyers.some((existing) => existing.id === b.id)) {
-        buyers.push(b);
+      const normSample = normalizeBuyer(b);
+      const isAlreadyPresent = buyers.some((existing) => {
+        if (existing.id === normSample.id) return true;
+        if (existing.isDemo && normSample.isDemo) {
+          const cleanExisting = String(existing.orgName || '').replace(/\s*\[DEMO\]\s*/gi, '').replace(/\s+(pvt\.?|ltd\.?|limited|cooperative|llc|inc)\b/gi, '').trim().toLowerCase();
+          const cleanSample = String(normSample.orgName || '').replace(/\s*\[DEMO\]\s*/gi, '').replace(/\s+(pvt\.?|ltd\.?|limited|cooperative|llc|inc)\b/gi, '').trim().toLowerCase();
+          return cleanExisting === cleanSample;
+        }
+        return false;
+      });
+
+      if (!isAlreadyPresent) {
+        buyers.push(normSample);
       }
     });
     return buyers;
   }, [dbBuyers]);
 
-  // Ensure activeListingId points to a valid listing
-  useEffect(() => {
-    if (combinedListings.length > 0) {
-      const exists = combinedListings.some((l) => l.id === activeListingId);
-      if (!exists) {
-        const defaultId = combinedListings[0].id;
-        setActiveListingId(defaultId);
-        setSearchParams({ listing: defaultId }, { replace: true });
-      }
+  // Determine active listing
+  const effectiveActiveListingId = useMemo(() => {
+    if (activeListingId && combinedListings.some((l) => l.id === activeListingId)) {
+      return activeListingId;
     }
-  }, [combinedListings, activeListingId, setSearchParams]);
+    return combinedListings[0]?.id || '';
+  }, [activeListingId, combinedListings]);
 
-  // Get current active listing with optional dynamic test quantity override
   const currentListing = useMemo(() => {
-    const found = combinedListings.find((l) => l.id === activeListingId);
+    const found = combinedListings.find((l) => l.id === effectiveActiveListingId);
     if (!found) return null;
+
     if (testQuantityOverride !== null) {
       return {
         ...found,
-        quantity: Number(testQuantityOverride),
+        quantity: testQuantityOverride,
+        quantity_tonnes: testQuantityOverride,
       };
     }
     return found;
-  }, [combinedListings, activeListingId, testQuantityOverride]);
+  }, [effectiveActiveListingId, combinedListings, testQuantityOverride]);
 
-  // ─── Execute Smart Matching Engine ──────────────────────────────
+  const baseQuantity = useMemo(() => {
+    const original = combinedListings.find((l) => l.id === effectiveActiveListingId);
+    return original ? Number(original.quantity) : 25;
+  }, [effectiveActiveListingId, combinedListings]);
+
+  const sliderMax = Math.max(150, Math.ceil(baseQuantity * 3));
+  const sliderStep = baseQuantity > 50 ? 5 : 1;
+
+  // Compute match report using matching engine
   const matchReport = useMemo(() => {
     if (!currentListing) {
       return {
-        listing: null,
         rankedMatches: [],
         topMatches: [],
         incompatibleBuyers: [],
         totalEvaluated: 0,
         compatibleCount: 0,
-        incompatibleCount: 0,
       };
     }
     return matchListingWithBuyers(currentListing, combinedBuyers);
@@ -185,32 +214,24 @@ export default function Matches() {
 
   const handleSelectListing = (id) => {
     setActiveListingId(id);
-    setTestQuantityOverride(null); // Reset manual quantity test override
+    setTestQuantityOverride(null);
     setSearchParams({ listing: id }, { replace: true });
   };
 
   return (
     <main className="matches-page">
-      {/* Hero */}
-      <div className="page-hero">
-        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <span
-            className="section-eyebrow"
-            style={{
-              color: 'var(--color-mint)',
-              background: 'rgba(82,183,136,0.15)',
-              display: 'inline-block',
-            }}
-          >
-            Smart Matching Engine
-          </span>
-          <h1 className="display-lg text-white mt-md">Dynamic Buyer Matching</h1>
-          <p className="body-lg mt-md" style={{ color: 'rgba(255,255,255,0.8)', maxWidth: '640px' }}>
-            Multi-factor algorithm ranking verified buyers by residue type suitability,
-            batch quantity fit (40%), logistics proximity (30%), yard intake capacity (20%), and circular use-case (10%).
-          </p>
+      <header className="page-header">
+        <div className="container">
+          <div className="page-header__inner">
+            <span className="section-eyebrow">Matching Engine v2.4</span>
+            <SplitText text="Algorithmic Feedstock Exchange" tag="h1" className="display-lg" delay={0.03} />
+            <p className="body-lg text-muted mt-xs" style={{ maxWidth: '640px' }}>
+              Multi-factor algorithmic ranking evaluating batch volume fit (40%), logistics
+              proximity (30%), yard intake capacity (20%), and circular use-case synergy (10%).
+            </p>
+          </div>
         </div>
-      </div>
+      </header>
 
       <div className="container section-sm">
         {/* Data Source & Status Bar */}
@@ -221,22 +242,22 @@ export default function Matches() {
                 dataSource === 'supabase' ? 'matches-source-dot--live' : 'matches-source-dot--demo'
               }`}
             />
-            <span style={{ fontWeight: 600 }}>
+            <span className="font-semibold">
               {dataSource === 'supabase'
-                ? 'Connected to Supabase Database'
-                : 'Local Demonstration Catalog'}
+                ? 'Connected to Live PostgreSQL Database'
+                : 'Indexed Demonstration Feedstock Catalog'}
             </span>
             <span className="text-muted">
-              ({matchReport.totalEvaluated} buyer organizations evaluated)
+              ({matchReport.totalEvaluated} verified enterprise buyers evaluated)
             </span>
           </div>
 
           <div className="flex items-center gap-sm">
-            <span className="badge badge-green" style={{ fontSize: '0.75rem' }}>
-              4-Factor Weighted Formula
+            <span className="badge badge-green">
+              4-Factor Weighted Algorithm
             </span>
             <span className="text-muted" style={{ fontSize: '0.75rem' }}>
-              Q:40% | P:30% | C:20% | U:10%
+              Q:40% · P:30% · C:20% · U:10%
             </span>
           </div>
         </div>
@@ -248,15 +269,15 @@ export default function Matches() {
         )}
 
         {/* Active Listing Selector Bar */}
-        <div className="matches-listing-bar card mb-xl">
+        <FadeContent delay={0.1} distance={18} className="matches-listing-bar card mb-xl">
           <div className="matches-listing-bar__top">
             <div style={{ flex: 1 }}>
               <div className="flex items-center justify-between gap-md mb-sm flex-wrap">
-                <span className="label text-muted">
-                  Select Farmer Listing to Match:
+                <span className="label">
+                  Active Farm Listing Evaluated:
                 </span>
-                <Link to="/farmer" className="btn btn-outline btn-sm" style={{ padding: '2px 10px', fontSize: '0.75rem' }}>
-                  + Post New Listing
+                <Link to="/farmer" className="btn btn-outline btn-sm">
+                  + Register New Listing
                 </Link>
               </div>
 
@@ -264,16 +285,18 @@ export default function Matches() {
                 {combinedListings.map((l) => (
                   <button
                     key={l.id}
-                    className={`listing-chip ${activeListingId === l.id ? 'listing-chip--active' : ''}`}
+                    className={`listing-chip ${effectiveActiveListingId === l.id ? 'listing-chip--active' : ''}`}
                     onClick={() => handleSelectListing(l.id)}
                     type="button"
                   >
-                    <span>{l.residueType}</span>
-                    <span style={{ opacity: 0.8, fontSize: '0.75rem' }}>
-                      ({l.quantity}t — {l.district || l.state || l.location})
+                    <span className="font-medium">{l.residueType}</span>
+                    <span className="listing-chip-meta">
+                      {l.quantity}t · {l.district || l.state || l.location}
                     </span>
-                    {l.isDemo && (
-                      <span style={{ fontSize: '0.625rem', opacity: 0.7 }}>[demo]</span>
+                    {l.isDemo ? (
+                      <span className="chip-demo-tag">demo</span>
+                    ) : (
+                      <span className="badge badge-green" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>live</span>
                     )}
                   </button>
                 ))}
@@ -284,28 +307,28 @@ export default function Matches() {
             {currentListing && (
               <div className="matches-listing-meta">
                 <div className="matches-listing-meta-item">
-                  <span className="label text-muted">Residue</span>
-                  <p className="heading-sm mt-xs" style={{ color: 'var(--color-forest)' }}>
+                  <span className="label">Residue</span>
+                  <div className="heading-sm text-forest font-semibold mt-xs">
                     {currentListing.residueType}
-                  </p>
+                  </div>
                 </div>
                 <div className="matches-listing-meta-item">
-                  <span className="label text-muted">Lot Size</span>
-                  <p className="heading-sm mt-xs">
+                  <span className="label">Batch Volume</span>
+                  <div className="heading-sm font-semibold mt-xs">
                     {currentListing.quantity} tonnes
-                  </p>
+                  </div>
                 </div>
                 <div className="matches-listing-meta-item">
-                  <span className="label text-muted">Location</span>
-                  <p className="heading-sm mt-xs" style={{ fontSize: '0.85rem' }}>
+                  <span className="label">Origin</span>
+                  <div className="heading-sm mt-xs">
                     {currentListing.district ? `${currentListing.district}, ` : ''}{currentListing.state || currentListing.location}
-                  </p>
+                  </div>
                 </div>
                 <div className="matches-listing-meta-item">
-                  <span className="label text-muted">Pickup</span>
-                  <p className="heading-sm mt-xs" style={{ fontSize: '0.8rem' }}>
+                  <span className="label">Haulage</span>
+                  <div className="heading-sm mt-xs">
                     {currentListing.pickupPreference}
-                  </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -315,32 +338,32 @@ export default function Matches() {
           {currentListing && (
             <div className="matches-sensitivity-box">
               <div className="matches-sensitivity-left">
-                <span className="heading-sm" style={{ fontSize: '0.875rem' }}>
-                  🧪 Live What-If Sensitivity Test:
+                <span className="heading-sm" style={{ fontSize: '0.84375rem' }}>
+                  Dynamic Sensitivity Simulation:
                 </span>
-                <span className="text-muted body-sm">
-                  Simulate changing batch quantity to observe dynamic score recalculation:
+                <span className="body-sm text-muted">
+                  Simulate modifying lot quantity to evaluate real-time score shifts:
                 </span>
               </div>
               <div className="slider-group">
                 <input
                   type="range"
-                  min="2"
-                  max="150"
-                  step="2"
+                  min="1"
+                  max={sliderMax}
+                  step={sliderStep}
                   value={currentListing.quantity}
                   onChange={(e) => setTestQuantityOverride(Number(e.target.value))}
                   aria-label="Simulate lot quantity"
                   style={{ width: '130px', accentColor: 'var(--color-forest)' }}
                 />
-                <span className="heading-sm" style={{ minWidth: '60px', color: 'var(--color-forest)' }}>
+                <span className="heading-sm text-forest" style={{ minWidth: '60px' }}>
                   {currentListing.quantity} t
                 </span>
                 {testQuantityOverride !== null && (
                   <button
                     type="button"
                     className="btn btn-outline btn-sm"
-                    style={{ fontSize: '0.7rem', padding: '2px 8px' }}
+                    style={{ fontSize: '0.75rem', padding: '2px 8px' }}
                     onClick={() => setTestQuantityOverride(null)}
                   >
                     Reset
@@ -349,32 +372,32 @@ export default function Matches() {
               </div>
             </div>
           )}
-        </div>
+        </FadeContent>
 
         {/* Loading Spinner */}
         {loading && (
           <div className="flex justify-center p-xl">
-            <LoadingSpinner message="Calculating real-time candidate matches..." />
+            <LoadingSpinner label="Evaluating real-time candidate matches…" />
           </div>
         )}
 
         {!loading && (
           <>
-            {/* Feature 6: Optional Collection Grouping */}
+            {/* Collection Grouping Opportunities */}
             {collectionOpportunities.length > 0 && (
-              <section className="collection-groupings-card card mb-xl">
+              <FadeContent delay={0.15} distance={18} className="collection-groupings-card card mb-xl">
                 <div className="flex justify-between items-center flex-wrap gap-sm mb-md">
                   <div>
-                    <span className="badge badge-warm" style={{ fontSize: '0.75rem' }}>
-                      📦 Logistics Optimization
+                    <span className="badge badge-warm">
+                      Logistics Aggregation
                     </span>
-                    <h2 className="heading-lg mt-xs">Suggested Collection Opportunities (Aggregate Batches)</h2>
+                    <h2 className="heading-md mt-xs">Consolidated Cluster Freight Opportunities</h2>
                     <p className="body-sm text-muted">
-                      Recommended groupings of compatible nearby farmer lots to fulfill commercial buyer intake minimums with shared freight.
+                      Algorithmic grouping of nearby smallholder farms within 25 km to fulfill commercial buyer intake minimums with shared haulage.
                     </p>
                   </div>
                   <span className="badge badge-muted">
-                    {collectionOpportunities.length} Opportunity{collectionOpportunities.length > 1 ? 'ies' : ''}
+                    {collectionOpportunities.length} Grouping{collectionOpportunities.length > 1 ? 's' : ''}
                   </span>
                 </div>
 
@@ -383,41 +406,41 @@ export default function Matches() {
                     <div key={opp.id} className="collection-item card">
                       <div className="flex justify-between items-start gap-sm">
                         <div>
-                          <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
-                            🌾 {opp.residueType}
+                          <span className="badge badge-green">
+                            {opp.residueType}
                           </span>
-                          <h4 className="heading-sm mt-xs">📍 {opp.clusterLocation}</h4>
+                          <h4 className="heading-sm mt-xs">{opp.clusterLocation}</h4>
                         </div>
                         <div className="text-right">
-                          <span className="display-sm text-forest" style={{ fontSize: '1.25rem', fontWeight: 700 }}>
+                          <span className="text-forest font-semibold" style={{ fontSize: '1.25rem' }}>
                             {opp.totalQuantityTonnes}t
                           </span>
-                          <p className="body-xs text-muted">({opp.farmerCount} farmers)</p>
+                          <p className="body-sm text-muted">({opp.farmerCount} farmers)</p>
                         </div>
                       </div>
 
                       <div className="collection-target mt-sm">
-                        <span className="body-xs text-muted">Target Buyer Demand:</span>
-                        <p className="font-bold">{opp.targetBuyer.orgName}</p>
+                        <span className="label">Target Industrial Demand:</span>
+                        <p className="font-semibold mt-xs">{opp.targetBuyer.orgName}</p>
                         <div className="flex items-center gap-xs mt-xs flex-wrap">
-                          <span className="badge badge-muted" style={{ fontSize: '0.6875rem' }}>
-                            Batch Target: {opp.targetBuyer.requiredQuantity}t ({opp.fulfillmentPct}% covered)
+                          <span className="badge badge-muted">
+                            Intake Target: {opp.targetBuyer.requiredQuantity}t ({opp.fulfillmentPct}%)
                           </span>
                           {opp.indicativeLotValue && (
-                            <span className="badge badge-green" style={{ fontSize: '0.6875rem' }}>
-                              Est. Batch Value: ₹{opp.indicativeLotValue.toLocaleString('en-IN')}
+                            <span className="badge badge-green">
+                              Est. Batch: ₹{opp.indicativeLotValue.toLocaleString('en-IN')}
                             </span>
                           )}
                         </div>
                       </div>
 
                       <div className="collection-farmers mt-sm">
-                        <span className="body-xs text-muted" style={{ display: 'block', marginBottom: '4px' }}>
-                          Consolidated Farmer Lots:
+                        <span className="label" style={{ display: 'block', marginBottom: '4px' }}>
+                          Aggregated Farm Lots:
                         </span>
                         <div className="flex flex-col gap-xs">
                           {opp.participatingListings.map((p) => (
-                            <div key={p.id} className="flex justify-between items-center body-xs" style={{ background: '#f8faf9', padding: '4px 8px', borderRadius: '4px' }}>
+                            <div key={p.id} className="participating-row">
                               <span>{p.farmerName} ({p.location})</span>
                               <strong>{p.quantity} tonnes</strong>
                             </div>
@@ -426,8 +449,8 @@ export default function Matches() {
                       </div>
 
                       <div className="mt-sm">
-                        <p className="body-xs text-muted" style={{ fontStyle: 'italic', lineHeight: 1.4 }}>
-                          ℹ️ {opp.disclaimer}
+                        <p className="body-sm text-muted" style={{ fontStyle: 'italic', lineHeight: 1.4 }}>
+                          {opp.disclaimer}
                         </p>
                       </div>
 
@@ -435,28 +458,26 @@ export default function Matches() {
                         to={`/match-details/${opp.targetBuyer.id}?listing=${opp.participatingListings[0].id}`}
                         className="btn btn-outline btn-sm w-full mt-sm"
                       >
-                        Review Opportunity & Buyer Profile →
+                        Inspect Route &amp; Buyer Profile →
                       </Link>
                     </div>
                   ))}
                 </div>
-              </section>
+              </FadeContent>
             )}
 
-            {/* STEP 3: Top 3 Matches Showcase */}
+            {/* Top 3 Recommended Matches Showcase */}
             {matchReport.topMatches.length > 0 && filterType === 'All' && (
-              <section className="top-matches-showcase">
+              <FadeContent delay={0.2} distance={20} className="top-matches-showcase mb-xl">
                 <div className="top-matches-header">
                   <div>
-                    <span className="section-eyebrow" style={{ color: 'var(--color-clay)', background: 'rgba(181,131,90,0.15)' }}>
-                      Step 3 — Ranking
-                    </span>
-                    <h2 className="heading-lg mt-xs">Top 3 Recommended Matches</h2>
+                    <span className="section-eyebrow">Top Recommendations</span>
+                    <h2 className="heading-md mt-xs">Ranked Matching Candidates</h2>
                     <p className="body-sm text-muted">
                       Highest multi-factor compatibility scores for {currentListing?.residueType} ({currentListing?.quantity} tonnes).
                     </p>
                   </div>
-                  <div className="badge badge-green" style={{ padding: '6px 12px' }}>
+                  <div className="badge badge-green">
                     Ranked by Composite Score
                   </div>
                 </div>
@@ -476,13 +497,13 @@ export default function Matches() {
                     />
                   ))}
                 </div>
-              </section>
+              </FadeContent>
             )}
 
             {/* Filter and Directory Controls */}
             <div className="matches-filters">
               <div className="matches-filter-group">
-                <span className="label text-muted" style={{ marginRight: '6px', whiteSpace: 'nowrap' }}>
+                <span className="label" style={{ marginRight: '6px', whiteSpace: 'nowrap' }}>
                   Residue Filter:
                 </span>
                 <div className="tag-list">
@@ -490,7 +511,7 @@ export default function Matches() {
                     <button
                       key={t}
                       type="button"
-                      className={`tag ${filterType === t ? 'active' : ''}`}
+                      className={`filter-tab ${filterType === t ? 'active' : ''}`}
                       onClick={() => setFilterType(t)}
                     >
                       {t}
@@ -507,9 +528,9 @@ export default function Matches() {
                   onChange={(e) => setFilterAvail(e.target.value)}
                   aria-label="Filter by availability"
                 >
-                  <option value="All">All Availabilities</option>
+                  <option value="All">All Intakes</option>
                   <option value="Active">Active Intake Only</option>
-                  <option value="Unavailable">On Hold</option>
+                  <option value="Unavailable">Intake On Hold</option>
                 </select>
 
                 <select
@@ -519,16 +540,16 @@ export default function Matches() {
                   onChange={(e) => setSortBy(e.target.value)}
                   aria-label="Sort candidates"
                 >
-                  <option value="matchScore">Sort: Best Match Score</option>
+                  <option value="matchScore">Sort: Compatibility Score</option>
                   <option value="proximity">Sort: Closest Proximity</option>
                   <option value="quantity">Sort: Required Batch Size</option>
-                  <option value="name">Sort: Organization A–Z</option>
+                  <option value="name">Sort: Organisation A–Z</option>
                 </select>
               </div>
             </div>
 
-            {/* Compatible Matches Section */}
-            <div className="matches-count flex items-center justify-between flex-wrap gap-md">
+            {/* Compatible Matches Header */}
+            <div className="matches-count flex items-center justify-between flex-wrap gap-md mb-md">
               <div className="flex items-center gap-sm">
                 <h3 className="heading-md">
                   All Compatible Buyers ({filteredMatches.length})
@@ -538,7 +559,7 @@ export default function Matches() {
                 )}
               </div>
               <span className="body-sm text-muted">
-                Showing candidates passing Step 1 compatibility checks
+                Candidates passing verification checks
               </span>
             </div>
 
@@ -560,10 +581,9 @@ export default function Matches() {
                 ))}
               </div>
             ) : (
-              /* Step 5: Edge Case — No compatible buyers */
+              /* Edge Case — No compatible buyers */
               <div className="matches-empty card">
-                <span style={{ fontSize: '3rem' }}>🔍</span>
-                <h3 className="heading-lg">No Compatible Buyers Found</h3>
+                <h3 className="heading-md">No Compatible Buyers Found</h3>
                 <p className="body-md text-muted" style={{ maxWidth: '480px' }}>
                   No active buyers in the directory currently accept{' '}
                   <strong>{currentListing?.residueType || 'this residue'}</strong> or meet the
@@ -578,37 +598,37 @@ export default function Matches() {
                       setFilterAvail('All');
                     }}
                   >
-                    Clear Filter Constraints
+                    Reset Filter Constraints
                   </button>
                   <Link to="/farmer" className="btn btn-primary">
-                    Create Another Listing
+                    Register Alternate Crop Listing
                   </Link>
                 </div>
               </div>
             )}
 
-            {/* Step 5: Incompatible / Excluded Candidates Collapsible Section */}
+            {/* Incompatible / Excluded Candidates Section */}
             {matchReport.incompatibleBuyers.length > 0 && (
-              <div className="incompatible-section card">
+              <div className="incompatible-section card mt-2xl">
                 <button
                   type="button"
                   className="incompatible-toggle-btn"
                   onClick={() => setShowIncompatible((prev) => !prev)}
                   aria-expanded={showIncompatible}
                 >
-                  <div className="flex items-center gap-sm">
-                    <span style={{ fontSize: '1.25rem' }}>🚫</span>
+                  <div className="incompatible-toggle-left">
+                    <span className="incompatible-badge">Excluded</span>
                     <div>
-                      <h4 className="heading-sm" style={{ color: 'var(--color-charcoal)' }}>
-                        Excluded / Incompatible Candidates ({matchReport.incompatibleBuyers.length})
+                      <h4 className="heading-sm">
+                        Incompatible Directory Candidates ({matchReport.incompatibleBuyers.length})
                       </h4>
                       <p className="body-sm text-muted">
-                        Organizations excluded during Step 1 compatibility evaluation
+                        Organizations excluded by residue non-acceptance, intake hold, or batch mismatch.
                       </p>
                     </div>
                   </div>
-                  <span className="btn btn-outline btn-sm" style={{ fontSize: '0.75rem' }}>
-                    {showIncompatible ? '▲ Hide Exclusions' : '▼ View Exclusions'}
+                  <span className="btn btn-outline btn-sm">
+                    {showIncompatible ? 'Hide Excluded' : 'Inspect Criteria'}
                   </span>
                 </button>
 
@@ -617,14 +637,14 @@ export default function Matches() {
                     {matchReport.incompatibleBuyers.map(({ buyer, matchResult }) => (
                       <div key={buyer.id} className="incompatible-row">
                         <div className="incompatible-buyer-info">
-                          <span className="heading-sm" style={{ fontSize: '0.9375rem' }}>
+                          <span className="font-semibold">
                             {buyer.orgName}
                           </span>
                           <span className="body-sm text-muted">
-                            {buyer.location || 'Location unlisted'} • Intended use: {buyer.intendedUse}
+                            {buyer.location || 'Location unlisted'} · Output: {buyer.intendedUse}
                           </span>
                         </div>
-                        <div className="flex items-center gap-sm flex-wrap">
+                        <div className="flex items-center gap-xs flex-wrap">
                           {matchResult.incompatibleReasons.map((reason, i) => (
                             <span key={i} className="incompatible-reason-badge">
                               {reason}

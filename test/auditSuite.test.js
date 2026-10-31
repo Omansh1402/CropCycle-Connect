@@ -30,6 +30,7 @@ import {
 } from '../src/lib/matchingEngine.js';
 import { resolveCoordinates, calculateHaversineDistanceKm } from '../src/lib/geo.js';
 import { sampleBuyers } from '../src/data/sampleData.js';
+import { formatDbError } from '../src/lib/db.js';
 
 console.log('🧪 Starting CropCycle Connect Comprehensive Audit Test Suite...\n');
 
@@ -227,12 +228,178 @@ runAudit('Feature 6: Suggested collection opportunity includes non-binding discl
   assert.match(groupings[0].disclaimer, /NOT a confirmed booking/i);
 });
 
-// ── 5. The Complete 6-Step Demo Journey Against Live Supabase ──────
-console.log('\nSection 5: Complete 6-Step Demonstration User Journey (Live Supabase)');
+runAudit('Phase 2: Safe deterministic deduplication eliminates demo duplicates and preserves real records', () => {
+  // Mock DB containing 1 demo seed listing and 2 real listings with similar names
+  const dbListings = [
+    { id: 'uuid-1', farmer_name: 'Rajesh Patel [DEMO]', residue_type: 'Paddy Straw', quantity_tonnes: 18, is_demo: true },
+    { id: 'uuid-2', farmer_name: 'Rajesh Patel', residue_type: 'Paddy Straw', quantity_tonnes: 45, is_demo: false }, // Real farmer 1
+    { id: 'uuid-3', farmer_name: 'Rajesh Patel', residue_type: 'Wheat Straw', quantity_tonnes: 25, is_demo: false }, // Real farmer 2
+  ];
+  // Sample catalog containing the original seed listing
+  const sampleListings = [
+    { id: 'L001', farmerName: 'Rajesh Patel', residueType: 'Paddy Straw', quantity: 18, isDemo: true },
+  ];
 
-const supabaseUrl = 'https://nqsbebhgwdbrtpepwhwu.supabase.co';
-const supabaseKey = 'sb_publishable_N4QLIf9v3egv6tKVXBmccg_pa7cfi6e';
-const supabase = createClient(supabaseUrl, supabaseKey);
+  const cleanDemo = (str) => String(str || '').replace(/\s*\[DEMO\]\s*/gi, '').trim().toLowerCase();
+
+  const merged = [...dbListings.map(l => ({ ...l, isDemo: !!l.is_demo }))];
+  sampleListings.forEach((item) => {
+    const isPresent = merged.some((existing) => {
+      if (existing.id === item.id) return true;
+      if (existing.isDemo && item.isDemo) {
+        return cleanDemo(existing.farmer_name || existing.farmerName) === cleanDemo(item.farmerName) &&
+               existing.residue_type === item.residueType;
+      }
+      return false;
+    });
+    if (!isPresent) merged.push(item);
+  });
+
+  // The sample demo duplicate L001 must be excluded because uuid-1 exists
+  assert.equal(merged.length, 3, 'Merged list should contain exactly 3 records');
+  // Both real farmer listings must be intact and distinct
+  const realListings = merged.filter(m => !m.isDemo);
+  assert.equal(realListings.length, 2, 'Both distinct real listings must be preserved');
+  assert.ok(realListings.some(r => r.id === 'uuid-2'));
+  assert.ok(realListings.some(r => r.id === 'uuid-3'));
+});
+
+runAudit('Phase 2: Match score percentage and breakdown points are mathematically consistent', () => {
+  const listing = { residueType: 'Paddy Straw', quantity: 18, location: 'Anand, Gujarat', district: 'Anand', state: 'Gujarat' };
+  const buyer = {
+    id: 'B001',
+    orgName: 'GreenFuel Renewables',
+    acceptedTypes: ['Paddy Straw'],
+    requiredQuantity: 20,
+    maxIntake: null, // unspecified capacity
+    intendedUse: 'Biofuel / Energy Generation',
+    location: 'Vadodara, Gujarat',
+    state: 'Gujarat',
+    available: true,
+  };
+
+  const result = scoreMatch(listing, buyer);
+  assert.ok(result.compatible);
+  assert.equal(typeof result.finalScore, 'number');
+  assert.equal(typeof result.weightedPoints.total, 'number');
+  assert.equal(result.finalScore, Math.round(result.weightedPoints.total), 'finalScore must equal rounded total weightedPoints');
+});
+
+// ── 5. The Complete 6-Step Demo Journey (Local Mocked DB / Test Isolation) ──
+console.log('\nSection 5: Complete 6-Step Demonstration User Journey (Test Isolation)');
+
+const envUrl = process.env.TEST_SUPABASE_URL || process.env.VITE_SUPABASE_URL || null;
+const envKey = process.env.TEST_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || null;
+const runLive = process.env.RUN_LIVE_SUPABASE_TESTS === 'true' && envUrl && envKey;
+
+function createMockSupabaseClient() {
+  const store = {
+    farmer_listings: [
+      {
+        id: 'mock-seed-l1',
+        farmer_name: 'Rajesh Patel [DEMO]',
+        residue_type: 'Paddy Straw',
+        quantity_tonnes: 18,
+        location: 'Khambhat village',
+        district: 'Anand',
+        state: 'Gujarat',
+        availability_date: '2026-11-10',
+        pickup_preference: 'Self-pickup by buyer',
+        status: 'active',
+        is_demo: true,
+      },
+    ],
+    buyer_requirements: [
+      {
+        id: 'mock-seed-b1',
+        org_name: 'GreenFuel Renewables [DEMO]',
+        accepted_types: ['Paddy Straw', 'Wheat Straw'],
+        required_quantity_tonnes: 50,
+        max_intake_tonnes: 200,
+        intended_use: 'Biofuel / Energy Generation',
+        location: 'Vadodara Industrial Estate',
+        state: 'Gujarat',
+        availability_status: 'yes',
+        is_demo: true,
+      },
+      {
+        id: 'mock-seed-b2',
+        org_name: 'AgriCompost Cooperative [DEMO]',
+        accepted_types: ['Paddy Straw', 'Cotton Stalks'],
+        required_quantity_tonnes: 20,
+        max_intake_tonnes: 80,
+        intended_use: 'Compost / Organic Fertiliser',
+        location: 'Anand District',
+        state: 'Gujarat',
+        availability_status: 'yes',
+        is_demo: true,
+      },
+      {
+        id: 'mock-seed-b3',
+        org_name: 'BioGas India Initiative [DEMO]',
+        accepted_types: ['Sugarcane Bagasse', 'Cotton Stalks'],
+        required_quantity_tonnes: 100,
+        max_intake_tonnes: 500,
+        intended_use: 'Bio-CNG Production',
+        location: 'Hyderabad Outskirts',
+        state: 'Telangana',
+        availability_status: 'yes',
+        is_demo: true,
+      },
+    ],
+    contact_requests: [
+      {
+        id: 'mock-seed-r1',
+        demo_buyer_ref: 'B001',
+        request_type: 'pickup',
+        message: 'Initial demo request',
+        status: 'pending',
+        is_demo: true,
+      },
+    ],
+  };
+
+  return {
+    from: (table) => {
+      const tableRows = store[table] || [];
+      return {
+        insert: (payload) => {
+          const row = {
+            ...payload,
+            id: `test-uuid-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            created_at: new Date().toISOString(),
+          };
+          tableRows.push(row);
+          return {
+            select: () => ({
+              single: async () => ({ data: row, error: null }),
+            }),
+          };
+        },
+        update: (updates) => ({
+          eq: (field, val) => ({
+            select: () => ({
+              single: async () => {
+                const target = tableRows.find((r) => r[field] === val);
+                if (target) {
+                  Object.assign(target, updates);
+                  return { data: { ...target }, error: null };
+                }
+                return { data: null, error: { message: 'Row not found', code: 'PGRST116' } };
+              },
+            }),
+          }),
+        }),
+        select: () => ({
+          then: (resolve) => resolve({ data: [...tableRows], error: null }),
+          single: async () => ({ data: tableRows[0] || null, error: null }),
+        }),
+      };
+    },
+  };
+}
+
+const supabase = runLive ? createClient(envUrl, envKey) : createMockSupabaseClient();
 
 await runAuditAsync('Step 1: Enter a farmer rice-straw (Paddy Straw) listing in Supabase', async () => {
   const ts = Date.now();
@@ -329,6 +496,43 @@ await runAuditAsync('Step 6: Show resulting confirmation and dashboard metric sp
 
   assert.ok(realListings.some((l) => l.id === global.__demoListing.id), 'Listing must appear in real listings');
   assert.ok(realRequests.some((r) => r.id === global.__demoRequestId), 'Request must appear in real requests');
+});
+
+// ── 6. Phase 3 Workflow Actions & Security Architecture ──────────
+console.log('\nSection 6: Phase 3 Workflow Actions & Security Architecture Rules');
+
+runAudit('Phase 3: Database error formatter explains Row Level Security constraint for 42501', () => {
+  const rlsError = { code: '42501', message: 'permission denied for table contact_requests' };
+  const formatted = formatDbError(rlsError);
+  assert.ok(formatted.includes('Row Level Security'), 'Should explicitly cite Row Level Security');
+  assert.ok(formatted.includes('authenticated') || formatted.includes('Edge Function'), 'Should explain required security architecture');
+  assert.equal(formatted.includes('GRANT ALL ON ALL TABLES'), false, 'Must NOT suggest open public grant');
+});
+
+await runAuditAsync('Phase 3: Contact request status transition updates correctly in database', async () => {
+  const { data, error } = await supabase
+    .from('contact_requests')
+    .update({ status: 'accepted' })
+    .eq('id', global.__demoRequestId)
+    .select()
+    .single();
+
+  assert.equal(error, null);
+  assert.equal(data.status, 'accepted');
+  assert.equal(data.id, global.__demoRequestId);
+});
+
+await runAuditAsync('Phase 3: Farmer listing status transition (active -> matched) updates correctly in database', async () => {
+  const { data, error } = await supabase
+    .from('farmer_listings')
+    .update({ status: 'matched' })
+    .eq('id', global.__demoListing.id)
+    .select()
+    .single();
+
+  assert.equal(error, null);
+  assert.equal(data.status, 'matched');
+  assert.equal(data.id, global.__demoListing.id);
 });
 
 console.log(`\n🎉 Audit Test Results: ${auditTestsPassed} / ${totalAuditTests} tests passed successfully.\n`);

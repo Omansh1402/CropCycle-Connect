@@ -349,9 +349,8 @@ export function calculateProximityFit(farmerLocationInput, buyerLocationInput) {
  *   - listing > maxIntake: maxIntake / listing (discounted proportionally)
  * If maxIntake not specified, falls back to 2x requiredQuantity as buffer.
  */
-export function calculateCapacityFit(listingQty, buyerMaxIntake, buyerReqQty) {
+export function calculateCapacityFit(listingQty, buyerMaxIntake) {
   const qListing = Number(listingQty);
-  const qReq = Number(buyerReqQty);
   const qMax = buyerMaxIntake != null && !isNaN(Number(buyerMaxIntake)) ? Number(buyerMaxIntake) : null;
 
   if (isNaN(qListing) || qListing <= 0) {
@@ -363,29 +362,34 @@ export function calculateCapacityFit(listingQty, buyerMaxIntake, buyerReqQty) {
     };
   }
 
-  const effectiveCapacity = qMax || (qReq > 0 ? qReq * 2 : qListing * 2);
-
-  if (qListing <= effectiveCapacity) {
-    const isExplicit = qMax != null;
+  // When buyer intake capacity is unspecified, do not apply an arbitrary capacity penalty
+  if (qMax == null) {
     return {
       score: 1.0,
       status: 'within_capacity',
-      reason: isExplicit
-        ? `Listing lot (${qListing}t) is comfortably within buyer's max intake capacity (${effectiveCapacity}t)`
-        : `Listing lot (${qListing}t) is within operational processing threshold (~${effectiveCapacity}t)`,
+      reason: 'Buyer has not specified a maximum intake limit; capacity is treated as sufficient',
       warning: null,
     };
   }
 
-  // Exceeds capacity: calculate proportional absorption fit
-  const ratio = Math.max(0.10, effectiveCapacity / qListing);
+  if (qListing <= qMax) {
+    return {
+      score: 1.0,
+      status: 'within_capacity',
+      reason: `Listing lot (${qListing}t) is comfortably within buyer's max intake capacity (${qMax}t)`,
+      warning: null,
+    };
+  }
+
+  // Exceeds explicitly declared capacity: calculate proportional absorption fit
+  const ratio = Math.max(0.10, qMax / qListing);
   const normalized = Number(Math.min(0.95, ratio).toFixed(4));
 
   return {
     score: normalized,
     status: 'exceeds_capacity',
-    reason: `Listing lot of ${qListing}t exceeds single-batch max intake of ${effectiveCapacity}t`,
-    warning: `Exceeds single-batch max intake (${effectiveCapacity}t). Multiple delivery batches required.`,
+    reason: `Listing lot of ${qListing}t exceeds single-batch max intake of ${qMax}t`,
+    warning: `Exceeds single-batch max intake (${qMax}t). Multiple delivery batches required.`,
   };
 }
 
@@ -502,6 +506,7 @@ export function scoreMatch(listingInput, buyerInput) {
 
   const rawFinal = weightedPoints.quantity + weightedPoints.proximity + weightedPoints.capacity + weightedPoints.useCase;
   const finalScore = Math.min(100, Math.max(0, Math.round(rawFinal)));
+  weightedPoints.total = Number(rawFinal.toFixed(1));
 
   // Collect warnings
   const warnings = [];

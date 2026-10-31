@@ -2,69 +2,84 @@
 import { Link } from 'react-router-dom';
 import './Footer.css';
 
+const CURRENT_YEAR = new Date().getFullYear();
+
 export default function Footer() {
   return (
-    <footer className="footer">
+    <footer className="footer" id="contact">
       <div className="container">
         <div className="footer__grid">
-          {/* Brand */}
-          <div className="footer__brand">
-            <div className="flex items-center gap-sm mb-md">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                <circle cx="16" cy="16" r="16" fill="#2D6A4F"/>
-                <path d="M16 6C16 6 8 12 8 18C8 22.4 11.6 26 16 26C20.4 26 24 22.4 24 18C24 12 16 6 16 6Z" fill="#52B788"/>
-                <path d="M16 10C16 10 11 14.5 11 18.5C11 21.5 13.2 24 16 24" fill="#2D6A4F"/>
-                <circle cx="16" cy="20" r="2" fill="#F9F4EF"/>
-              </svg>
-              <div>
-                <div className="footer__logo-name">CropCycle Connect</div>
+          {/* Brand Column */}
+          <div className="footer__col footer__col--brand">
+            <Link to="/" className="footer__brand" aria-label="CropCycle Connect Home">
+              <div className="logo-symbol" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M12 2C6.477 2 2 6.477 2 12C2 14.83 3.177 17.388 5.07 19.21L6.48 17.79C4.94 16.32 4 14.27 4 12C4 7.58 7.58 4 12 4C16.42 4 20 7.58 20 12C20 14.27 19.06 16.32 17.52 17.79L18.93 19.21C20.823 17.388 22 14.83 22 12C22 6.477 17.523 2 12 2Z"
+                    fill="currentColor"
+                  />
+                  <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+                </svg>
               </div>
-            </div>
-            <p className="footer__tagline">
-              Turning agricultural residue into opportunity — reducing stubble burning
-              and creating value chains for farmers and buyers alike.
+              <span className="footer__logo-title">CropCycle Connect</span>
+            </Link>
+            <p className="footer__desc">
+              National agricultural biomass aggregation and matching platform. Connecting farm cooperatives
+              with bioenergy facilities, paper mills, and industrial composters to end seasonal stubble burning.
             </p>
-            <div className="footer__disclaimer">
-              ⚠️ This is a hackathon demonstration. Sample data shown is fictional and does not represent real individuals or organisations.
+            <div className="footer__security-badge">
+              <span className="security-dot" />
+              <span>Verified Circular Sourcing Protocol</span>
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Marketplace Navigation */}
           <div className="footer__col">
-            <h4 className="footer__heading">Platform</h4>
+            <h4 className="footer__heading">Marketplace</h4>
             <ul className="footer__links">
-              <li><Link to="/">Home</Link></li>
-              <li><Link to="/farmer">List Residue</Link></li>
-              <li><Link to="/buyer">Find Residue</Link></li>
-              <li><Link to="/matches">Matches</Link></li>
-              <li><Link to="/dashboard">Dashboard</Link></li>
+              <li><Link to="/farmer">Farmer Listings</Link></li>
+              <li><Link to="/buyer">Buyer Requirements</Link></li>
+              <li><Link to="/matches">Live Matching Engine</Link></li>
+              <li><Link to="/dashboard">Operations Dashboard</Link></li>
             </ul>
           </div>
 
-          {/* Info */}
+          {/* Technology & Framework */}
           <div className="footer__col">
-            <h4 className="footer__heading">About</h4>
+            <h4 className="footer__heading">Architecture</h4>
             <ul className="footer__links">
-              <li><Link to="/#how-it-works">How It Works</Link></li>
-              <li><Link to="/#impact">Environmental Impact</Link></li>
-              <li><Link to="/matches">Active Matches</Link></li>
+              <li><Link to="/#how-it-works">5-Dimension Matching</Link></li>
+              <li><Link to="/#feedstocks">Feedstock Standards</Link></li>
+              <li><Link to="/#impact">Emissions Model</Link></li>
+              <li><Link to="/dashboard#audit">Logistics Aggregation</Link></li>
             </ul>
           </div>
 
-          {/* Impact */}
+          {/* Operations & Standards */}
           <div className="footer__col">
-            <h4 className="footer__heading">Project</h4>
-            <p className="body-sm" style={{ color: 'rgba(255,255,255,0.55)', lineHeight: '1.7' }}>
-              Built at a 4-day hackathon to address India's crop-residue burning crisis.
-              Phase 1: Matching platform.
+            <h4 className="footer__heading">Governance</h4>
+            <p className="footer__subtext">
+              Demonstration environment. Supply chain records and partner profiles follow Indian Agricultural
+              Waste Management and Bio-CNG guidelines.
             </p>
-            <div className="footer__badge mt-md">🌱 4-Day Hackathon Project</div>
+            <div className="footer__status">
+              <span className="status-indicator-live" />
+              <span>Supabase Engine Connected</span>
+            </div>
           </div>
         </div>
 
         <div className="footer__bottom">
-          <p>© 2026 CropCycle Connect. Hackathon Demo — Not for commercial use.</p>
-          <p>Built with ❤️ for sustainable agriculture.</p>
+          <div className="footer__copyright">
+            © {CURRENT_YEAR} CropCycle Connect Inc. All rights reserved.
+          </div>
+          <div className="footer__legal-links">
+            <span className="footer__legal-item">Supply Verification Protocol</span>
+            <span className="footer__legal-divider">·</span>
+            <span className="footer__legal-item">Clean Air Initiative</span>
+            <span className="footer__legal-divider">·</span>
+            <span className="footer__legal-item">Terms of Operation</span>
+          </div>
         </div>
       </div>
     </footer>

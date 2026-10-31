@@ -1,6 +1,7 @@
 // src/components/BuyerCard.jsx
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import CountUp from './reactbits/CountUp';
 import './BuyerCard.css';
 
 export default function BuyerCard({
@@ -17,9 +18,9 @@ export default function BuyerCard({
 
   // Determine score and styling
   const score = matchResult ? matchResult.finalScore : (buyer.matchScore ?? 70);
-  const scoreClass =
-    score >= 80 ? 'match-score-pill--high' :
-    score >= 60 ? 'match-score-pill--medium' : 'match-score-pill--low';
+  const scoreBadgeClass =
+    score >= 80 ? 'score-pill--high' :
+    score >= 60 ? 'score-pill--medium' : 'score-pill--low';
 
   const cardRankClass = rank ? `buyer-card--rank-${Math.min(rank, 3)}` : '';
 
@@ -30,106 +31,103 @@ export default function BuyerCard({
   const warnings = explanation?.warnings || [];
 
   return (
-    <div className={`buyer-card card animate-fadeUp ${cardRankClass}`}>
-      {/* Top Bar with Rank Badge & Demo tag */}
+    <article className={`buyer-card card ${cardRankClass}`}>
+      {/* Top Bar with Rank Badge & Metadata */}
       <div className="buyer-card__top-bar">
-        {badgeText ? (
-          <span className={`rank-badge rank-badge--${badgeTier}`}>
-            {badgeText}
-          </span>
-        ) : (
-          <span className="badge badge-muted" style={{ fontSize: '0.7rem' }}>
-            {buyer.orgType || 'Commercial'}
-          </span>
-        )}
+        <div className="buyer-card__tags">
+          {badgeText ? (
+            <span className={`rank-badge rank-badge--${badgeTier}`}>
+              {badgeText}
+            </span>
+          ) : (
+            <span className="badge badge-muted">
+              {buyer.orgType || 'Commercial Buyer'}
+            </span>
+          )}
 
-        {buyer.isDemo && (
-          <span className="badge badge-muted" style={{ fontSize: '0.6875rem' }}>
-            Demo Profile
-          </span>
-        )}
+          {buyer.isDemo && (
+            <span className="badge badge-muted">
+              Verified Reference Record
+            </span>
+          )}
+        </div>
+
+        <span className={`status-pill ${buyer.available ? 'status-pill--active' : 'status-pill--standby'}`}>
+          <span className="status-dot-mini" />
+          {buyer.available ? 'Active Intake' : 'Intake Standby'}
+        </span>
       </div>
 
       {/* Main Header */}
       <div className="buyer-card__header">
-        <div className="buyer-card__icon" aria-hidden="true">
-          {buyer.orgName.charAt(0)}
-        </div>
-        <div className="buyer-card__title">
-          <h3 className="heading-md" style={{ fontSize: '1.125rem', lineHeight: 1.3 }}>
+        <div className="buyer-card__title-area">
+          <h3 className="buyer-card__name">
             {buyer.orgName}
           </h3>
-          <div className="flex items-center gap-sm mt-xs flex-wrap">
-            <span className="body-sm text-muted flex items-center gap-xs">
-              📍 {buyer.location || 'Location unlisted'}
-              {matchResult?.metadata?.estimatedDistanceKm != null && (
-                <span className="distance-chip">
-                  ({matchResult.metadata.coordinateDistanceKm != null ? `~${matchResult.metadata.coordinateDistanceKm} km` : `${matchResult.metadata.estimatedDistanceKm} km est.`})
-                </span>
-              )}
-            </span>
-            <span className={`badge ${buyer.available ? 'badge-green' : 'badge-muted'}`}>
-              {buyer.available ? '● Active Intake' : '○ On Hold'}
-            </span>
+          <div className="buyer-card__location">
+            <span>{buyer.location || 'Location unlisted'}</span>
+            {matchResult?.metadata?.estimatedDistanceKm != null && (
+              <span className="distance-tag">
+                {matchResult.metadata.coordinateDistanceKm != null
+                  ? `${matchResult.metadata.coordinateDistanceKm} km`
+                  : `${matchResult.metadata.estimatedDistanceKm} km est.`}
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Match Score Ring/Pill */}
-        <div className="buyer-card__score-wrap">
-          <div className={`match-score-pill ${scoreClass}`} title="Compatibility score out of 100">
-            <span>{score}</span>
-            <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>%</span>
+        {/* Compatibility Score Display */}
+        <div className="buyer-card__score-box">
+          <div className={`score-pill ${scoreBadgeClass}`} title="5-Dimension algorithm compatibility rating">
+            <span className="score-val">
+              <CountUp to={score} duration={1.2} />
+            </span>
+            <span className="score-unit">%</span>
           </div>
-          <span style={{ fontSize: '0.6875rem', color: 'var(--color-muted)', fontWeight: 600 }}>
-            {score >= 80 ? 'High Fit' : score >= 60 ? 'Moderate' : 'Low Fit'}
+          <span className="score-label">
+            {score >= 80 ? 'Optimal Match' : score >= 60 ? 'Compatible' : 'Low Alignment'}
           </span>
         </div>
       </div>
 
-      {/* Description / Notes */}
+      {/* Description / Facility Notes */}
       {buyer.notes && (
-        <p className="buyer-card__desc body-sm text-muted">
+        <p className="buyer-card__notes body-sm">
           {buyer.notes}
         </p>
       )}
 
-      {/* Key operational details & Potential Value */}
-      <div className="buyer-card__details">
-        <div className="buyer-card__detail-row">
-          <span className="buyer-card__detail-label">Intended Output</span>
-          <span className="buyer-card__detail-value">{buyer.intendedUse}</span>
+      {/* Operational Specifications Grid */}
+      <div className="buyer-card__spec-grid">
+        <div className="spec-col">
+          <span className="spec-label">Target Application</span>
+          <span className="spec-val">{buyer.intendedUse}</span>
         </div>
-        <div className="buyer-card__detail-row">
-          <span className="buyer-card__detail-label">Required Batch</span>
-          <span className="buyer-card__detail-value">{buyer.requiredQuantity} tonnes</span>
+        <div className="spec-col">
+          <span className="spec-label">Required Batch</span>
+          <span className="spec-val">{buyer.requiredQuantity} tonnes</span>
         </div>
-        <div className="buyer-card__detail-row">
-          <span className="buyer-card__detail-label">Max Yard Intake</span>
-          <span className="buyer-card__detail-value">
-            {buyer.maxIntake ? `${buyer.maxIntake} tonnes` : 'Flexible / unstated'}
+        <div className="spec-col">
+          <span className="spec-label">Facility Max Intake</span>
+          <span className="spec-val">
+            {buyer.maxIntake ? `${buyer.maxIntake} tonnes` : 'Flexible Capacity'}
           </span>
         </div>
-        {/* Feature 4: Potential Value calculation & Demo price label */}
-        <div className="buyer-card__detail-row buyer-card__detail-row--pricing">
-          <span className="buyer-card__detail-label">Potential Value</span>
-          <span className="buyer-card__detail-value">
+        <div className="spec-col">
+          <span className="spec-label">Indicative Lot Value</span>
+          <span className="spec-val">
             {matchResult?.metadata?.pricing?.pricePerTonne != null ? (
-              <span className="flex items-center gap-xs flex-wrap">
-                <strong style={{ color: 'var(--color-forest-dark)' }}>
+              <span className="flex items-center gap-xs">
+                <strong className="text-forest">
                   ₹{matchResult.metadata.pricing.indicativeValue?.toLocaleString('en-IN')}
                 </strong>
                 <span className="badge badge-green" style={{ fontSize: '0.6875rem' }}>
                   ₹{matchResult.metadata.pricing.pricePerTonne?.toLocaleString('en-IN')}/t
                 </span>
-                {matchResult.metadata.pricing.isDemoPrice && (
-                  <span className="badge badge-warm" style={{ fontSize: '0.625rem' }}>
-                    Demo Price
-                  </span>
-                )}
               </span>
             ) : (
-              <span className="badge badge-muted" style={{ fontSize: '0.6875rem' }}>
-                Price unavailable
+              <span className="badge badge-muted">
+                Price upon inquiry
               </span>
             )}
           </span>
@@ -137,8 +135,8 @@ export default function BuyerCard({
       </div>
 
       {/* Accepted Feedstocks */}
-      <div>
-        <span className="label text-muted" style={{ display: 'block', marginBottom: '6px' }}>
+      <div className="buyer-card__feedstocks">
+        <span className="spec-label" style={{ marginBottom: '6px', display: 'block' }}>
           Accepted Crop Residues
         </span>
         <div className="tag-list">
@@ -147,39 +145,39 @@ export default function BuyerCard({
             return (
               <span
                 key={type}
-                className={`badge ${isMatch ? 'badge-green tag-highlight' : 'badge-muted'}`}
-                title={isMatch ? `Direct match with your listing: ${type}` : undefined}
+                className={`feedstock-chip ${isMatch ? 'feedstock-chip--matched' : ''}`}
               >
-                {isMatch ? `✓ ${type}` : type}
+                {isMatch && <span className="matched-check">✓</span>}
+                {type}
               </span>
             );
           })}
         </div>
       </div>
 
-      {/* Step 4: "Why This Matched" Section */}
+      {/* Why This Matched Section */}
       {matchResult && (
-        <div className="mt-xs">
+        <div className="buyer-card__match-section">
           <button
             type="button"
-            className="buyer-card__explanation-toggle"
+            className="buyer-card__toggle-btn"
             onClick={() => setShowExplanation((prev) => !prev)}
             aria-expanded={showExplanation}
           >
-            <span>📊 Why This Matched ({score}/100)</span>
-            <span>{showExplanation ? '▲ Hide breakdown' : '▼ View explanation'}</span>
+            <span className="toggle-label">
+              Algorithm Score Breakdown ({score}/100)
+            </span>
+            <span className="toggle-arrow">{showExplanation ? 'Hide' : 'Inspect'}</span>
           </button>
 
           {showExplanation && (
-            <div className="buyer-card__breakdown mt-sm">
+            <div className="buyer-card__breakdown">
               {/* Component Bar Breakdown */}
-              <div className="breakdown-bars">
-                <div className="breakdown-row">
+              <div className="breakdown-grid">
+                <div className="breakdown-item">
                   <div className="breakdown-header">
-                    <span className="breakdown-label">Quantity Fit (40%)</span>
-                    <span className="breakdown-points">
-                      {Math.round((scores?.quantityFit || 0) * 100)}% ({weighted?.quantity || 0}/40 pts)
-                    </span>
+                    <span>Quantity Fit (40%)</span>
+                    <strong>{weighted?.quantity || 0}/40 pts</strong>
                   </div>
                   <div className="breakdown-track">
                     <div
@@ -189,56 +187,41 @@ export default function BuyerCard({
                   </div>
                 </div>
 
-                <div className="breakdown-row">
+                <div className="breakdown-item">
                   <div className="breakdown-header">
-                    <span className="breakdown-label">Proximity (30%)</span>
-                    <span className="breakdown-points">
-                      {Math.round((scores?.proximityFit || 0) * 100)}% ({weighted?.proximity || 0}/30 pts)
-                    </span>
+                    <span>Proximity (30%)</span>
+                    <strong>{weighted?.proximity || 0}/30 pts</strong>
                   </div>
                   <div className="breakdown-track">
                     <div
                       className="breakdown-fill"
-                      style={{
-                        width: `${Math.round((scores?.proximityFit || 0) * 100)}%`,
-                        background: '#2d6a4f',
-                      }}
+                      style={{ width: `${Math.round((scores?.proximityFit || 0) * 100)}%` }}
                     />
                   </div>
                 </div>
 
-                <div className="breakdown-row">
+                <div className="breakdown-item">
                   <div className="breakdown-header">
-                    <span className="breakdown-label">Capacity Fit (20%)</span>
-                    <span className="breakdown-points">
-                      {Math.round((scores?.capacityFit || 0) * 100)}% ({weighted?.capacity || 0}/20 pts)
-                    </span>
+                    <span>Capacity (20%)</span>
+                    <strong>{weighted?.capacity || 0}/20 pts</strong>
                   </div>
                   <div className="breakdown-track">
                     <div
                       className="breakdown-fill"
-                      style={{
-                        width: `${Math.round((scores?.capacityFit || 0) * 100)}%`,
-                        background: '#52b788',
-                      }}
+                      style={{ width: `${Math.round((scores?.capacityFit || 0) * 100)}%` }}
                     />
                   </div>
                 </div>
 
-                <div className="breakdown-row">
+                <div className="breakdown-item">
                   <div className="breakdown-header">
-                    <span className="breakdown-label">Use-Case Fit (10%)</span>
-                    <span className="breakdown-points">
-                      {Math.round((scores?.useCaseFit || 0) * 100)}% ({weighted?.useCase || 0}/10 pts)
-                    </span>
+                    <span>Use-Case (10%)</span>
+                    <strong>{weighted?.useCase || 0}/10 pts</strong>
                   </div>
                   <div className="breakdown-track">
                     <div
                       className="breakdown-fill"
-                      style={{
-                        width: `${Math.round((scores?.useCaseFit || 0) * 100)}%`,
-                        background: '#74c69d',
-                      }}
+                      style={{ width: `${Math.round((scores?.useCaseFit || 0) * 100)}%` }}
                     />
                   </div>
                 </div>
@@ -247,53 +230,41 @@ export default function BuyerCard({
               {/* Explanatory Narratives across 5 dimensions */}
               {explanation && (
                 <div className="breakdown-narratives">
-                  <div className="narrative-item">
-                    <span className="narrative-icon">🌾</span>
-                    <span className="narrative-text">
-                      <strong>Residue:</strong> {explanation.residue}
-                    </span>
+                  <div className="narrative-row">
+                    <span className="narrative-key">Residue</span>
+                    <span className="narrative-val">{explanation.residue}</span>
                   </div>
-                  <div className="narrative-item">
-                    <span className="narrative-icon">📦</span>
-                    <span className="narrative-text">
-                      <strong>Quantity:</strong> {explanation.quantity}
-                    </span>
+                  <div className="narrative-row">
+                    <span className="narrative-key">Quantity</span>
+                    <span className="narrative-val">{explanation.quantity}</span>
                   </div>
-                  <div className="narrative-item">
-                    <span className="narrative-icon">📍</span>
-                    <span className="narrative-text">
-                      <strong>Distance:</strong> {explanation.distance}
-                    </span>
+                  <div className="narrative-row">
+                    <span className="narrative-key">Distance</span>
+                    <span className="narrative-val">{explanation.distance}</span>
                   </div>
-                  <div className="narrative-item">
-                    <span className="narrative-icon">🏭</span>
-                    <span className="narrative-text">
-                      <strong>Capacity:</strong> {explanation.capacity}
-                    </span>
+                  <div className="narrative-row">
+                    <span className="narrative-key">Capacity</span>
+                    <span className="narrative-val">{explanation.capacity}</span>
                   </div>
-                  <div className="narrative-item">
-                    <span className="narrative-icon">♻️</span>
-                    <span className="narrative-text">
-                      <strong>Potential Use:</strong> {explanation.useCase}
-                    </span>
+                  <div className="narrative-row">
+                    <span className="narrative-key">Intended Use</span>
+                    <span className="narrative-val">{explanation.useCase}</span>
                   </div>
                   {explanation.pricing && (
-                    <div className="narrative-item">
-                      <span className="narrative-icon">💰</span>
-                      <span className="narrative-text">
-                        <strong>Pricing:</strong> {explanation.pricing}
-                      </span>
+                    <div className="narrative-row">
+                      <span className="narrative-key">Pricing</span>
+                      <span className="narrative-val">{explanation.pricing}</span>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Step 5: Warnings if any */}
+              {/* Warnings if any */}
               {warnings.length > 0 && (
-                <div className="flex flex-col gap-xs mt-xs">
+                <div className="breakdown-warnings">
                   {warnings.map((w, idx) => (
-                    <div key={idx} className="card-warning-pill">
-                      <span>⚠️</span>
+                    <div key={idx} className="warning-item">
+                      <span className="warning-dot" />
                       <span>{w}</span>
                     </div>
                   ))}
@@ -304,26 +275,25 @@ export default function BuyerCard({
         </div>
       )}
 
-      {/* Actions */}
-      <div className="buyer-card__actions">
+      {/* Action Footer */}
+      <div className="buyer-card__footer">
         <Link
           to={`/match-details/${buyer.id}${listingId ? `?listing=${listingId}` : ''}`}
           className="btn btn-primary btn-sm"
-          style={{ flex: 1, textAlign: 'center' }}
         >
-          View Details & Contact
+          View Route & Profile
         </Link>
         <Link
           to={`/match-details/${buyer.id}${listingId ? `?listing=${listingId}` : ''}#contact`}
-          className="btn btn-outline btn-sm"
+          className="btn btn-secondary btn-sm"
         >
-          Direct Inquire
+          Send Pickup Request
         </Link>
       </div>
 
-      <p className="buyer-card__disclaimer">
-        ℹ️ Score is a compatibility ranking based on current listing traits, not a transaction guarantee.
-      </p>
-    </div>
+      <div className="buyer-card__footnote">
+        Algorithm compatibility score is computed based on distance and batch specifications. Non-binding advisory.
+      </div>
+    </article>
   );
 }

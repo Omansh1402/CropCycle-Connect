@@ -8,18 +8,18 @@ import './RouteMap.css';
 /**
  * Creates custom SVG marker icons for OpenStreetMap
  */
-function createMarkerIcon(emoji, bgClass) {
+function createMarkerIcon(label, bgClass) {
   return L.divIcon({
     className: `custom-map-pin ${bgClass}`,
     html: `
       <div class="pin-marker">
-        <span class="pin-emoji">${emoji}</span>
+        <span class="pin-label">${label}</span>
       </div>
       <div class="pin-shadow"></div>
     `,
-    iconSize: [36, 46],
-    iconAnchor: [18, 42],
-    popupAnchor: [0, -38],
+    iconSize: [32, 40],
+    iconAnchor: [16, 38],
+    popupAnchor: [0, -34],
   });
 }
 
@@ -33,8 +33,9 @@ export default function RouteMap({
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
-  const originCoords = resolveCoordinates(origin?.coordinates || origin?.location || origin);
-  const destCoords = resolveCoordinates(destination?.coordinates || destination?.location || destination);
+  // Strictly verify origin exists independently; never substitute destination coordinates for origin
+  const originCoords = origin ? resolveCoordinates(origin.coordinates || origin.location || origin) : null;
+  const destCoords = destination ? resolveCoordinates(destination.coordinates || destination.location || destination) : null;
 
   const originLat = originCoords?.[0];
   const originLon = originCoords?.[1];
@@ -85,11 +86,11 @@ export default function RouteMap({
     }).addTo(map);
 
     // Add Farmer origin marker
-    const originPin = createMarkerIcon('🌾', 'pin-farmer');
+    const originPin = createMarkerIcon('A', 'pin-farmer');
     const originMarker = L.marker(coords1, { icon: originPin }).addTo(map);
     originMarker.bindPopup(`
       <div class="map-popup-card">
-        <div class="map-popup-header">🌾 Farmer Origin</div>
+        <div class="map-popup-header">Origin Point (Farmer)</div>
         <strong>${originName}</strong>
         <p class="body-sm text-muted">${originLoc}</p>
         ${residueType ? `<p class="body-sm"><strong>Residue:</strong> ${residueType} (${quantityTonnes || '—'} tonnes)</p>` : ''}
@@ -97,16 +98,47 @@ export default function RouteMap({
     `);
 
     // Add Buyer destination marker
-    const destPin = createMarkerIcon('🏭', 'pin-buyer');
+    const destPin = createMarkerIcon('B', 'pin-buyer');
     const destMarker = L.marker(coords2, { icon: destPin }).addTo(map);
     destMarker.bindPopup(`
       <div class="map-popup-card">
-        <div class="map-popup-header">🏭 Buyer Processing Yard</div>
+        <div class="map-popup-header">Destination Facility (Buyer)</div>
         <strong>${destName}</strong>
         <p class="body-sm text-muted">${destLoc}</p>
         ${destUse ? `<p class="body-sm"><strong>Intended Use:</strong> ${destUse}</p>` : ''}
       </div>
     `);
+
+    // Invalidate map size after initial mount and layout settlement
+    const t1 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 150);
+
+    const t2 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 500);
+
+    // Watch container size shifts (responsive collapse, tab changes, orientation change)
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== 'undefined' && mapContainerRef.current) {
+      resizeObserver = new ResizeObserver(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      });
+      resizeObserver.observe(mapContainerRef.current);
+    }
+
+    const handleWindowResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener('resize', handleWindowResize);
 
     let isMounted = true;
 
@@ -124,6 +156,7 @@ export default function RouteMap({
             lineJoin: 'round',
           }).addTo(map);
 
+          map.invalidateSize();
           map.fitBounds(roadPolyline.getBounds(), { padding: [40, 40] });
 
           setRouteInfo({
@@ -142,6 +175,7 @@ export default function RouteMap({
             opacity: 0.8,
           }).addTo(map);
 
+          map.invalidateSize();
           map.fitBounds(directPolyline.getBounds(), { padding: [40, 40] });
 
           setRouteInfo({
@@ -162,6 +196,7 @@ export default function RouteMap({
           opacity: 0.8,
         }).addTo(map);
 
+        map.invalidateSize();
         map.fitBounds(directPolyline.getBounds(), { padding: [40, 40] });
 
         setRouteInfo({
@@ -175,6 +210,12 @@ export default function RouteMap({
 
     return () => {
       isMounted = false;
+      clearTimeout(t1);
+      clearTimeout(t2);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener('resize', handleWindowResize);
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -188,10 +229,13 @@ export default function RouteMap({
         <div className="fallback-inner">
           <span style={{ fontSize: '2rem' }}>🗺️</span>
           <div>
-            <h4 className="heading-sm">Geographic Map Fallback</h4>
+            <h4 className="heading-sm">
+              {!originCoords ? 'Farmer Origin Location Required' : 'Buyer Location Required'}
+            </h4>
             <p className="body-sm text-muted mt-xs">
-              Direct coordinates not available for {origin?.location || 'farmer'} or {destination?.location || 'buyer'}.
-              Matching engine calculated estimated transit using regional administrative proximity.
+              {!originCoords
+                ? `Transit routing requires a farmer lot location. Please select a farmer residue listing to calculate road transit to ${destName} (${destLoc}).`
+                : `Coordinates unavailable for ${destName}. Regional administrative proximity applied.`}
             </p>
           </div>
         </div>

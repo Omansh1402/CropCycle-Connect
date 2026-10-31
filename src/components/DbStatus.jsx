@@ -1,40 +1,36 @@
 // src/components/DbStatus.jsx
-// Shown at the top of forms when Supabase is not configured,
-// or to display a database error after a failed submit.
 import './DbStatus.css';
 
 export function DbSetupBanner() {
   return (
     <div className="db-setup-banner" role="alert">
-      <div className="db-setup-banner__icon">🔌</div>
+      <div className="db-setup-banner__icon" aria-hidden="true">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <ellipse cx="12" cy="5" rx="9" ry="3" />
+          <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" />
+          <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+        </svg>
+      </div>
       <div className="db-setup-banner__body">
-        <h4 className="db-setup-banner__title">Database not connected</h4>
+        <div className="db-setup-banner__header">
+          <h4 className="db-setup-banner__title">Remote Database Connection Standby</h4>
+          <span className="badge badge-muted">Local Demo Mode Active</span>
+        </div>
         <p className="db-setup-banner__text">
-          This form will save to Supabase once configured. Follow the steps below to enable
-          persistent storage:
+          Listings and contact requests are currently operating in local storage mode. To activate
+          persistent PostgreSQL syncing, verify your Supabase environment configuration:
         </p>
         <ol className="db-setup-steps">
           <li>
-            <strong>Create a Supabase project</strong> at{' '}
-            <a href="https://supabase.com" target="_blank" rel="noopener noreferrer">supabase.com</a>
+            Execute <code>supabase/schema.sql</code> in your project’s Supabase SQL Editor.
           </li>
           <li>
-            Run <code>supabase/schema.sql</code> in <em>SQL Editor → New Query</em> to create the tables.
+            Verify <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in <code>.env.local</code>.
           </li>
           <li>
-            Copy <code>.env.example</code> to <code>.env.local</code> in the project root.
-          </li>
-          <li>
-            Fill in <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> from{' '}
-            <em>Supabase Dashboard → Settings → API</em>.
-          </li>
-          <li>
-            Restart the dev server (<code>npm run dev</code>) — this banner will disappear.
+            Reload dev environment (<code>npm run dev</code>) to transition to live database syncing.
           </li>
         </ol>
-        <p className="db-setup-banner__note">
-          ⚠️ Use only the <strong>anon / public</strong> key here — never the <code>service_role</code> key.
-        </p>
       </div>
     </div>
   );
@@ -43,13 +39,19 @@ export function DbSetupBanner() {
 export function DbErrorAlert({ message, onRetry }) {
   return (
     <div className="db-error-alert" role="alert">
-      <span className="db-error-alert__icon">❌</span>
+      <div className="db-error-alert__icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      </div>
       <div className="db-error-alert__body">
-        <strong>Database error:</strong> {message}
+        <span className="db-error-alert__title">Database Error:</span> {message}
       </div>
       {onRetry && (
         <button onClick={onRetry} className="btn btn-outline btn-sm db-error-alert__retry">
-          Retry
+          Retry Request
         </button>
       )}
     </div>
@@ -59,17 +61,22 @@ export function DbErrorAlert({ message, onRetry }) {
 export function DbSuccessBanner({ message }) {
   return (
     <div className="db-success-banner" role="status">
-      <span>✅</span>
-      <span>{message || 'Saved to database successfully.'}</span>
+      <div className="db-success-banner__icon" aria-hidden="true">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+          <polyline points="22 4 12 14.01 9 11.01" />
+        </svg>
+      </div>
+      <span>{message || 'Record successfully committed to database.'}</span>
     </div>
   );
 }
 
-export function LoadingSpinner({ label = 'Saving…' }) {
+export function LoadingSpinner({ label = 'Processing…' }) {
   return (
-    <span className="db-spinner" aria-label={label}>
+    <div className="db-spinner" aria-label={label}>
       <span className="db-spinner__ring" />
       <span className="db-spinner__label">{label}</span>
-    </span>
+    </div>
   );
 }

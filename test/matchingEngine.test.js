@@ -156,6 +156,13 @@ test('Capacity Fit: listing exceeding max intake is discounted with warning', ()
   assert.match(warning, /exceeds single-batch max intake/i);
 });
 
+test('Capacity Fit: unspecified buyer intake capacity incurs no arbitrary penalty', () => {
+  const { score, status, warning } = calculateCapacityFit(250, null, 50);
+  assert.equal(score, 1.0);
+  assert.equal(status, 'within_capacity');
+  assert.equal(warning, null);
+});
+
 test('Use-Case Fit: high-synergy circular pairing yields 1.0', () => {
   const { score } = calculateUseCaseFit('Paddy Straw', 'Biofuel / Energy Generation', ['Paddy Straw']);
   assert.equal(score, 1.0);
