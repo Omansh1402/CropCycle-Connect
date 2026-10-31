@@ -1,0 +1,99 @@
+/* src/pages/Buyer.css */
+
+.buyer-page {
+  min-height: 100vh;
+}
+
+.buyer-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: var(--space-2xl);
+  align-items: start;
+}
+
+/* Residue Variety Grid */
+.residue-type-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+}
+
+.residue-type-btn {
+  padding: 0.4rem 0.875rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background-color: var(--color-white);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.residue-type-btn:hover {
+  border-color: var(--color-sage);
+  background-color: var(--color-offwhite);
+}
+
+.residue-type-btn.active {
+  background-color: var(--color-forest);
+  color: var(--color-white);
+  border-color: var(--color-forest);
+}
+
+.btn-check {
+  font-weight: 700;
+  margin-right: 2px;
+}
+
+/* Buyer form footer */
+.buyer-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg) var(--space-xl);
+  box-shadow: var(--shadow-subtle);
+  flex-wrap: wrap;
+}
+
+/* Sidebar */
+.buyer-sidebar {
+  position: sticky;
+  top: calc(var(--nav-height) + var(--space-xl));
+  display: flex;
+  flex-direction: column;
+}
+
+/* Success View */
+.buyer-success {
+  max-width: 760px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.buyer-success__summary {
+  padding: var(--space-xl);
+}
+
+.buyer-success__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1024px) {
+  .buyer-layout {
+    grid-template-columns: 1fr;
+  }
+  .buyer-sidebar {
+    position: static;
+  }
+}
