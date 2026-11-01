@@ -98,13 +98,13 @@ export default function Navbar() {
 
         {/* Right CTA Actions */}
         <div className="navbar__actions">
-          {/* Language Selector Dropdown (6 Supported Languages) */}
+          {/* Language Selector Dropdown (9 Supported Languages) */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
             className="navbar__lang-select"
-            aria-label="Interface Language"
-            title="Change language / भाषा बदलें"
+            aria-label={t('interfaceLanguage') || 'Interface Language'}
+            title={t('changeLanguage') || 'Change language / भाषा बदलें'}
             style={{
               padding: '4px 8px',
               fontSize: '0.8125rem',
@@ -124,15 +124,15 @@ export default function Navbar() {
           </select>
 
           <Link to="/matches" className="navbar__link-subtle">
-            Browse Supply
+            {t('browseSupply') || 'Browse Supply'}
           </Link>
           <Link to="/farmer" className="btn btn-primary btn-sm">
-            List Residue
+            {t('listResidue') || 'List Residue'}
           </Link>
 
           <button
             className="navbar__hamburger"
-            aria-label="Toggle navigation menu"
+            aria-label={t('toggleNavMenu') || 'Toggle navigation menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(!menuOpen)}
           >
@@ -180,10 +180,10 @@ export default function Navbar() {
           </nav>
           <div className="navbar__mobile-actions">
             <Link to="/farmer" className="btn btn-primary w-full">
-              List Residue
+              {t('listResidue') || 'List Residue'}
             </Link>
             <Link to="/buyer" className="btn btn-secondary w-full">
-              Register Buyer Demand
+              {t('registerDemand') || 'Register Buyer Demand'}
             </Link>
           </div>
         </div>

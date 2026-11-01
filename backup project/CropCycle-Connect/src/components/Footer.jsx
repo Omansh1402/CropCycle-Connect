@@ -1,10 +1,13 @@
 // src/components/Footer.jsx
 import { Link } from 'react-router-dom';
+import { useTranslation } from '../lib/i18n';
 import './Footer.css';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
 export default function Footer() {
+  const { t } = useTranslation();
+
   return (
     <footer className="footer" id="contact">
       <div className="container">
@@ -24,61 +27,61 @@ export default function Footer() {
               <span className="footer__logo-title">CropCycle Connect</span>
             </Link>
             <p className="footer__desc">
-              National agricultural biomass aggregation and matching platform. Connecting farm cooperatives
-              with bioenergy facilities, paper mills, and industrial composters to end seasonal stubble burning.
+              {t('footerDesc') ||
+                'National agricultural biomass aggregation and matching platform. Connecting farm cooperatives with bioenergy facilities, paper mills, and industrial composters to end seasonal stubble burning.'}
             </p>
             <div className="footer__security-badge">
               <span className="security-dot" />
-              <span>Verified Circular Sourcing Protocol</span>
+              <span>{t('securityBadgeText') || 'Verified Circular Sourcing Protocol'}</span>
             </div>
           </div>
 
           {/* Marketplace Navigation */}
           <div className="footer__col">
-            <h4 className="footer__heading">Marketplace</h4>
+            <h4 className="footer__heading">{t('marketplace') || 'Marketplace'}</h4>
             <ul className="footer__links">
-              <li><Link to="/farmer">Farmer Listings</Link></li>
-              <li><Link to="/buyer">Buyer Requirements</Link></li>
-              <li><Link to="/matches">Live Matching Engine</Link></li>
-              <li><Link to="/dashboard">Operations Dashboard</Link></li>
+              <li><Link to="/farmer">{t('farmerListingsNav') || 'Farmer Listings'}</Link></li>
+              <li><Link to="/buyer">{t('buyerRequirementsNav') || 'Buyer Requirements'}</Link></li>
+              <li><Link to="/matches">{t('liveMatchingEngineNav') || 'Live Matching Engine'}</Link></li>
+              <li><Link to="/dashboard">{t('operationsDashboardNav') || 'Operations Dashboard'}</Link></li>
             </ul>
           </div>
 
           {/* Technology & Framework */}
           <div className="footer__col">
-            <h4 className="footer__heading">Architecture</h4>
+            <h4 className="footer__heading">{t('navArchitecture') || 'Architecture'}</h4>
             <ul className="footer__links">
-              <li><Link to="/#how-it-works">5-Dimension Matching</Link></li>
-              <li><Link to="/#feedstocks">Feedstock Standards</Link></li>
-              <li><Link to="/#impact">Emissions Model</Link></li>
-              <li><Link to="/dashboard#audit">Logistics Aggregation</Link></li>
+              <li><Link to="/#how-it-works">{t('fiveDimMatching') || '5-Dimension Matching'}</Link></li>
+              <li><Link to="/#feedstocks">{t('feedstockStandards') || 'Feedstock Standards'}</Link></li>
+              <li><Link to="/#impact">{t('emissionsModel') || 'Emissions Model'}</Link></li>
+              <li><Link to="/dashboard#audit">{t('logisticsAggregation') || 'Logistics Aggregation'}</Link></li>
             </ul>
           </div>
 
           {/* Operations & Standards */}
           <div className="footer__col">
-            <h4 className="footer__heading">Governance</h4>
+            <h4 className="footer__heading">{t('navGovernance') || 'Governance'}</h4>
             <p className="footer__subtext">
-              Demonstration environment. Supply chain records and partner profiles follow Indian Agricultural
-              Waste Management and Bio-CNG guidelines.
+              {t('governanceSubtext') ||
+                'Demonstration environment. Supply chain records and partner profiles follow Indian Agricultural Waste Management and Bio-CNG guidelines.'}
             </p>
             <div className="footer__status">
               <span className="status-indicator-live" />
-              <span>Supabase Engine Connected</span>
+              <span>{t('engineConnected') || 'Supabase Engine Connected'}</span>
             </div>
           </div>
         </div>
 
         <div className="footer__bottom">
           <div className="footer__copyright">
-            © {CURRENT_YEAR} CropCycle Connect Inc. All rights reserved.
+            © {CURRENT_YEAR} CropCycle Connect Inc. {t('allRightsReserved') || 'All rights reserved.'}
           </div>
           <div className="footer__legal-links">
-            <span className="footer__legal-item">Supply Verification Protocol</span>
+            <span className="footer__legal-item">{t('supplyVerificationProtocol') || 'Supply Verification Protocol'}</span>
             <span className="footer__legal-divider">·</span>
-            <span className="footer__legal-item">Clean Air Initiative</span>
+            <span className="footer__legal-item">{t('cleanAirInitiative') || 'Clean Air Initiative'}</span>
             <span className="footer__legal-divider">·</span>
-            <span className="footer__legal-item">Terms of Operation</span>
+            <span className="footer__legal-item">{t('termsOfOperation') || 'Terms of Operation'}</span>
           </div>
         </div>
       </div>

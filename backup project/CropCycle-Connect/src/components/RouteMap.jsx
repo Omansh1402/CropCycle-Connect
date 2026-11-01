@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { resolveCoordinates, calculateHaversineDistanceKm, fetchRoadRoute } from '../lib/geo';
+import { useTranslation } from '../lib/i18n';
 import './RouteMap.css';
 
 /**
@@ -30,6 +31,7 @@ export default function RouteMap({
   quantityTonnes = null,
   height = '360px',
 }) {
+  const { t, tResidue, tPurpose } = useTranslation();
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
 
@@ -51,13 +53,13 @@ export default function RouteMap({
     isRoadRoute: false,
     distanceKm: haversineDist,
     durationMins: null,
-    statusNote: 'Calculating route…',
+    statusNote: t('calculatingRoute') || 'Calculating route…',
   });
 
-  const originName = origin?.name || origin?.farmerName || 'Farmer Listing';
-  const originLoc = origin?.location || 'Origin Farm';
-  const destName = destination?.orgName || destination?.name || 'Buyer Yard';
-  const destLoc = destination?.location || 'Delivery Destination';
+  const originName = origin?.name || origin?.farmerName || (t('farmerListing') || 'Farmer Listing');
+  const originLoc = origin?.location || (t('originFarm') || 'Origin Farm');
+  const destName = destination?.orgName || destination?.name || (t('buyerYard') || 'Buyer Yard');
+  const destLoc = destination?.location || (t('deliveryDestination') || 'Delivery Destination');
   const destUse = destination?.intendedUse || '';
 
   useEffect(() => {
@@ -90,10 +92,10 @@ export default function RouteMap({
     const originMarker = L.marker(coords1, { icon: originPin }).addTo(map);
     originMarker.bindPopup(`
       <div class="map-popup-card">
-        <div class="map-popup-header">Origin Point (Farmer)</div>
+        <div class="map-popup-header">${t('originPointFarmer') || 'Origin Point (Farmer)'}</div>
         <strong>${originName}</strong>
         <p class="body-sm text-muted">${originLoc}</p>
-        ${residueType ? `<p class="body-sm"><strong>Residue:</strong> ${residueType} (${quantityTonnes || '—'} tonnes)</p>` : ''}
+        ${residueType ? `<p class="body-sm"><strong>${t('residueLabel') || 'Residue'}:</strong> ${tResidue(residueType)} (${quantityTonnes || '—'} ${t('tonnes') || 'tonnes'})</p>` : ''}
       </div>
     `);
 
@@ -102,10 +104,10 @@ export default function RouteMap({
     const destMarker = L.marker(coords2, { icon: destPin }).addTo(map);
     destMarker.bindPopup(`
       <div class="map-popup-card">
-        <div class="map-popup-header">Destination Facility (Buyer)</div>
+        <div class="map-popup-header">${t('destinationPointBuyer') || 'Destination Facility (Buyer)'}</div>
         <strong>${destName}</strong>
         <p class="body-sm text-muted">${destLoc}</p>
-        ${destUse ? `<p class="body-sm"><strong>Intended Use:</strong> ${destUse}</p>` : ''}
+        ${destUse ? `<p class="body-sm"><strong>${t('intendedUseLabel') || 'Intended Use'}:</strong> ${tPurpose(destUse)}</p>` : ''}
       </div>
     `);
 
@@ -164,7 +166,7 @@ export default function RouteMap({
             isRoadRoute: true,
             distanceKm: routeResult.roadDistanceKm,
             durationMins: routeResult.roadDurationMinutes,
-            statusNote: `Road route via OpenStreetMap (${routeResult.provider})`,
+            statusNote: `${t('roadRouteViaOsm') || 'Road route via OpenStreetMap'} (${routeResult.provider})`,
           });
         } else {
           // Fallback: draw straight-line connection (do not invent road route)
@@ -183,7 +185,7 @@ export default function RouteMap({
             isRoadRoute: false,
             distanceKm: haversineDist,
             durationMins: null,
-            statusNote: 'Road routing service unavailable — showing direct coordinate distance (Haversine)',
+            statusNote: t('roadRoutingUnavailable') || 'Road routing service unavailable — showing direct coordinate distance (Haversine)',
           });
         }
       })
@@ -204,7 +206,7 @@ export default function RouteMap({
           isRoadRoute: false,
           distanceKm: haversineDist,
           durationMins: null,
-          statusNote: 'Direct coordinate distance (routing offline)',
+          statusNote: t('directCoordRoutingOffline') || 'Direct coordinate distance (routing offline)',
         });
       });
 
@@ -221,7 +223,7 @@ export default function RouteMap({
         mapInstanceRef.current = null;
       }
     };
-  }, [originLat, originLon, destLat, destLon, originName, originLoc, destName, destLoc, destUse, residueType, quantityTonnes, haversineDist]);
+  }, [originLat, originLon, destLat, destLon, originName, originLoc, destName, destLoc, destUse, residueType, quantityTonnes, haversineDist, t, tResidue, tPurpose]);
 
   if (!originCoords || !destCoords) {
     return (
@@ -230,12 +232,12 @@ export default function RouteMap({
           <span style={{ fontSize: '2rem' }}>🗺️</span>
           <div>
             <h4 className="heading-sm">
-              {!originCoords ? 'Farmer Origin Location Required' : 'Buyer Location Required'}
+              {!originCoords ? (t('farmerOriginRequired') || 'Farmer Origin Location Required') : (t('buyerLocRequired') || 'Buyer Location Required')}
             </h4>
             <p className="body-sm text-muted mt-xs">
               {!originCoords
-                ? `Transit routing requires a farmer lot location. Please select a farmer residue listing to calculate road transit to ${destName} (${destLoc}).`
-                : `Coordinates unavailable for ${destName}. Regional administrative proximity applied.`}
+                ? (t('farmerOriginRequiredDesc', { destName, destLoc }) || `Transit routing requires a farmer lot location. Please select a farmer residue listing to calculate road transit to ${destName} (${destLoc}).`)
+                : (t('buyerLocRequiredDesc', { destName }) || `Coordinates unavailable for ${destName}. Regional administrative proximity applied.`)}
             </p>
           </div>
         </div>
@@ -250,14 +252,14 @@ export default function RouteMap({
           <div className="route-point">
             <span className="route-dot route-dot--origin" />
             <span className="body-sm font-bold truncate">
-              {origin?.location || origin?.name || 'Origin'}
+              {origin?.location || origin?.name || (t('origin') || 'Origin')}
             </span>
           </div>
           <span className="route-arrow">➔</span>
           <div className="route-point">
             <span className="route-dot route-dot--dest" />
             <span className="body-sm font-bold truncate">
-              {destination?.location || destination?.orgName || 'Destination'}
+              {destination?.location || destination?.orgName || (t('destination') || 'Destination')}
             </span>
           </div>
         </div>
@@ -266,17 +268,17 @@ export default function RouteMap({
           {routeInfo.distanceKm != null ? (
             <div className="flex items-center gap-xs">
               <span className="route-distance-badge">
-                {routeInfo.isRoadRoute ? '🚗 Road Route: ' : '📏 Direct: '}
-                <strong>~{routeInfo.distanceKm} km</strong>
+                {routeInfo.isRoadRoute ? (t('roadRouteBadge') || '🚗 Road Route: ') : (t('directBadge') || '📏 Direct: ')}
+                <strong>~{routeInfo.distanceKm} {t('km') || 'km'}</strong>
               </span>
               {routeInfo.durationMins && (
                 <span className="route-duration-badge">
-                  ⏱ ~{routeInfo.durationMins} mins drive
+                  ⏱ ~{routeInfo.durationMins} {t('mins') || 'mins'} drive
                 </span>
               )}
             </div>
           ) : (
-            <span className="body-sm text-muted">Estimating distance…</span>
+            <span className="body-sm text-muted">{t('estimatingDistance') || 'Estimating distance…'}</span>
           )}
         </div>
       </div>
