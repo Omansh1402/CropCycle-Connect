@@ -4,26 +4,28 @@ import { RESIDUE_TYPES, PICKUP_PREFERENCES } from '../data/sampleData';
 import { createFarmerListing, formatDbError } from '../lib/db';
 import { isConfigured } from '../lib/supabase';
 import { useTranslation } from '../lib/i18n';
+import { currentUser } from '../lib/auth';
 import { DbSetupBanner, DbErrorAlert, LoadingSpinner } from '../components/DbStatus';
 import SplitText from '../components/reactbits/SplitText';
 import FadeContent from '../components/reactbits/FadeContent';
 import './Farmer.css';
 
 const TODAY_DATE = new Date().toISOString().split('T')[0];
+const user = currentUser();
 
 const INITIAL_FORM = {
-  farmerName: '',
+  farmerName: user?.name || '',
   residueType: '',
   quantity: '',
   unit: 'tonnes',
   location: '',
-  district: '',
+  district: user?.district || '',
   state: '',
   availabilityDate: '',
   pickupPreference: '',
   notes: '',
   contactEmail: '',
-  contactPhone: '',
+  contactPhone: user?.phone || '',
   // Commercial & Quality parameters
   askingPricePerTonne: '',
   isPriceNegotiable: true,

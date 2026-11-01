@@ -1,0 +1,279 @@
+/* src/pages/Welcome.css — onboarding. Uses only tokens from src/index.css. */
+
+.welcome {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--color-offwhite);
+  color: var(--color-text);
+}
+
+/* ── Header ── */
+.welcome__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  min-height: var(--nav-height);
+}
+
+.welcome__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.welcome__header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.welcome__lang,
+.welcome__skip {
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  color: var(--color-forest);
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.welcome__skip {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+}
+
+.welcome__skip:hover { color: var(--color-forest); }
+
+.welcome__lang:focus-visible,
+.welcome__skip:focus-visible,
+.welcome__tab:focus-visible,
+.welcome__guest:focus-visible,
+.welcome__dot:focus-visible,
+.welcome__scroller:focus-visible,
+.welcome__role:focus-within {
+  outline: 2px solid var(--color-forest);
+  outline-offset: 2px;
+}
+
+/* ── Slide strip ── */
+.welcome__scroller {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.welcome__scroller::-webkit-scrollbar { display: none; }
+
+.welcome__slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  overflow-y: auto;
+  padding: var(--space-md);
+}
+
+.welcome__content {
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.welcome__art {
+  min-height: 180px;
+  aspect-ratio: 16 / 8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-sage-soft);
+  text-align: center;
+}
+
+.welcome__photo-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-forest-mid);
+}
+
+.welcome__photo-description {
+  max-width: 28ch;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+.welcome__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-forest);
+  text-wrap: balance;
+}
+
+.welcome__title--auth { margin-bottom: 0; }
+
+.welcome__body {
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  max-width: 44ch;
+}
+
+/* ── Auth slide ── */
+.welcome__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  border-radius: var(--radius-lg);
+  background: var(--color-sage-soft);
+}
+
+.welcome__tab {
+  min-height: 44px;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--color-text-secondary);
+}
+
+.welcome__tab.is-active {
+  background: var(--color-white);
+  color: var(--color-forest);
+  box-shadow: var(--shadow-sm);
+}
+
+.welcome__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.welcome .form-control {
+  min-height: 48px;
+  font-size: 1rem; /* 16px stops iOS from zooming on focus */
+}
+
+.welcome__roles {
+  border: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.welcome__roles legend { grid-column: 1 / -1; margin-bottom: var(--space-xs); }
+
+.welcome__role {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 var(--space-sm);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+}
+
+.welcome__role input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.welcome__role.is-active {
+  border-color: var(--color-forest);
+  background: var(--color-sage-soft);
+  color: var(--color-forest);
+  font-weight: 600;
+}
+
+.welcome__form-error { margin: 0; }
+
+.welcome__guest {
+  min-height: 44px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Footer ── */
+.welcome__footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 480px;
+  margin-inline: auto;
+  padding: var(--space-sm) var(--space-md) max(var(--space-md), env(safe-area-inset-bottom));
+}
+
+.welcome__dots { display: flex; }
+
+.welcome__dot {
+  position: relative;
+  width: 44px;
+  height: 32px;
+}
+
+.welcome__dot::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 8px;
+  height: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: var(--radius-pill);
+  background: var(--color-sage-light);
+  transition: width var(--transition-normal), background var(--transition-normal);
+}
+
+.welcome__dot.is-active::after {
+  width: 24px;
+  background: var(--color-forest);
+}
+
+.welcome__next { width: 100%; }
+
+@media (min-width: 769px) {
+  .welcome__title { font-size: 2rem; }
+  .welcome__slide { padding-block: var(--space-xl); }
+}
+
+/* Short phones (landscape or small screens): tighten the art */
+@media (max-height: 640px) {
+  .welcome__art { min-height: 120px; }
+  .welcome__title { font-size: 1.5rem; }
+}

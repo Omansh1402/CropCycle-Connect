@@ -4,6 +4,21 @@
   min-height: 100vh;
 }
 
+.farmer-page .form-group {
+  min-width: 0;
+}
+
+.farmer-page .form-error {
+  display: block;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.farmer-page .form-control {
+  min-height: 44px;
+}
+
 /* Page Header */
 .page-header {
   background-color: var(--color-white);
@@ -251,11 +266,96 @@
   flex-wrap: wrap;
 }
 
+.farmer-page .btn {
+  min-height: 44px;
+}
+
 @media (max-width: 1024px) {
   .farmer-layout {
     grid-template-columns: 1fr;
   }
   .farmer-sidebar {
     position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .farmer-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-lg);
+  }
+
+  .farmer-sidebar {
+    position: static;
+  }
+
+  .form-grid-2,
+  .form-grid-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .farmer-page > .container.section-sm {
+    padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+  }
+
+  .form-section {
+    padding: var(--space-md);
+  }
+
+  .form-section-header {
+    gap: var(--space-sm);
+  }
+
+  .farmer-form-footer {
+    position: fixed;
+    z-index: 10;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md) calc(var(--space-sm) + env(safe-area-inset-bottom));
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    box-shadow: var(--shadow-popover);
+  }
+
+  .footer-notice {
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  .farmer-form-footer > .flex {
+    width: 100%;
+  }
+
+  .farmer-form-footer .btn {
+    flex: 1;
+    min-width: 0;
+    padding-inline: var(--space-sm);
+    white-space: normal;
+  }
+
+  .summary-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .spec-table-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .farmer-success__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .farmer-success__actions .btn {
+    width: 100%;
+    white-space: normal;
   }
 }

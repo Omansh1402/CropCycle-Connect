@@ -1,7 +1,8 @@
 // src/components/Navbar.jsx
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation, SUPPORTED_LANGUAGES } from '../lib/i18n';
+import { currentUser, logout } from '../lib/auth';
 import './Navbar.css';
 
 const navLinks = [
@@ -15,6 +16,8 @@ const navLinks = [
 
 export default function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const user = currentUser();
   const { language, setLanguage, t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -104,6 +107,9 @@ export default function Navbar() {
               </option>
             ))}
           </select>
+
+          {user && <span className="navbar__user-name">{user.name.split(' ')[0]}</span>}
+          {user && <button type="button" className="navbar__link-subtle" onClick={() => { logout(); navigate('/welcome'); }}>Log out</button>}
 
           <Link to="/matches" className="navbar__link-subtle">
             Browse Supply

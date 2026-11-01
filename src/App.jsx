@@ -1,13 +1,15 @@
-import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Link, Navigate } from 'react-router-dom';
 import { useEffect, lazy, Suspense } from 'react';
 import { LanguageProvider } from './lib/i18n';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import { LoadingSpinner } from './components/DbStatus';
+import { hasOnboarded } from './lib/auth';
 import './App.css';
 
 // Route-level code splitting via React.lazy()
 const Home = lazy(() => import('./pages/Home'));
+const Welcome = lazy(() => import('./pages/Welcome'));
 const Farmer = lazy(() => import('./pages/Farmer'));
 const Buyer = lazy(() => import('./pages/Buyer'));
 const Matches = lazy(() => import('./pages/Matches'));
@@ -92,6 +94,9 @@ function Layout({ children }) {
   const { pathname } = useLocation();
   const isHome = pathname === '/';
 
+  if (pathname === '/welcome') return children;
+  if (!hasOnboarded()) return <Navigate to="/welcome" replace />;
+
   return (
     <div className="app-shell">
       <Navbar />
@@ -112,6 +117,7 @@ export default function App() {
         <Layout>
           <Suspense fallback={<RouteLoadingFallback />}>
             <Routes>
+              <Route path="/welcome" element={<Welcome />} />
               <Route path="/" element={<Home />} />
               <Route path="/market-intelligence" element={<MarketIntelligence />} />
               <Route path="/farmer" element={<Farmer />} />
