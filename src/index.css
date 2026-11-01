@@ -72,6 +72,7 @@
 }
 
 html {
+  scrollbar-gutter: stable; /* same page width with or without a scrollbar, so the logo never shifts */
   scroll-behavior: smooth;
   font-size: 16px;
   background-color: var(--color-offwhite);

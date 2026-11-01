@@ -11,20 +11,27 @@
   color: var(--color-text);
 }
 
-/* ── Header ── */
+/* ── Header ──
+   Same bar as the app navbar (height, background, border, container padding),
+   so the logo sits in exactly the same spot on every page. */
 .welcome__header {
+  flex: none;
+  height: var(--nav-height);
+  background-color: rgba(247, 248, 244, 0.94);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.welcome__header-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
-  min-height: var(--nav-height);
+  height: 100%;
+  gap: var(--space-xl);
 }
 
 .welcome__brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
   flex-shrink: 0;
 }
 
@@ -97,35 +104,77 @@
   gap: var(--space-md);
 }
 
-.welcome__art {
-  min-height: 180px;
-  aspect-ratio: 16 / 8;
+/* ── Photo slides ──
+   Background = photo (see src/lib/welcomeImages.js) or a plain green block. */
+.welcome__slide--photo {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+  color: var(--color-white);
+}
+
+.welcome__bg {
+  position: absolute;
+  inset: 0;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-xs);
-  padding: var(--space-lg);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  background: var(--color-sage-soft);
-  text-align: center;
+  align-items: flex-start;
+  justify-content: flex-start;
+  background: var(--color-forest-mid); /* the green placeholder block */
+}
+
+/* Darkens the lower part so white text stays readable on any photo. */
+.welcome__bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(18, 41, 30, 0.82) 0%, rgba(18, 41, 30, 0.45) 45%, rgba(18, 41, 30, 0) 75%);
+  pointer-events: none;
+}
+
+.welcome__bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  user-select: none;
 }
 
 .welcome__photo-label {
+  position: relative;
+  z-index: 1;
+  margin: var(--space-md);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.16);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-forest-mid);
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.welcome__photo-description {
-  max-width: 28ch;
-  color: var(--color-text-secondary);
-  font-size: 0.9375rem;
-  line-height: 1.5;
+.welcome__slide-scroll {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
 }
+
+.welcome__slide--photo .welcome__content {
+  margin-top: auto; /* text sits at the bottom of the photo */
+  padding-top: var(--space-3xl);
+}
+
+.welcome__slide--photo .welcome__title,
+.welcome__slide--photo .welcome__body {
+  color: var(--color-white);
+}
+
+.welcome__slide--photo .welcome__body { color: rgba(255, 255, 255, 0.9); }
 
 .welcome__title {
   font-family: var(--font-display);
@@ -240,7 +289,14 @@
   padding: var(--space-sm) var(--space-md) max(var(--space-md), env(safe-area-inset-bottom));
 }
 
-.welcome__dots { display: flex; }
+/* Dots: grey dots stay put; one green pill slides along them. --p / --s are
+   set from the scroll position in Welcome.jsx, so it follows swipes smoothly. */
+.welcome__dots {
+  --p: 0;
+  --s: 0;
+  position: relative;
+  display: flex;
+}
 
 .welcome__dot {
   position: relative;
@@ -257,23 +313,33 @@
   transform: translate(-50%, -50%);
   border-radius: var(--radius-pill);
   background: var(--color-sage-light);
-  transition: width var(--transition-normal), background var(--transition-normal);
 }
 
-.welcome__dot.is-active::after {
-  width: 24px;
+.welcome__dots-pill {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 8px;
+  width: calc(24px + var(--s) * 14px);
+  margin-top: -4px;
+  margin-left: calc(10px - var(--s) * 7px); /* keeps the pill centred while it stretches */
+  border-radius: var(--radius-pill);
   background: var(--color-forest);
+  transform: translateX(calc(var(--p) * 44px));
+  will-change: transform, width;
+  pointer-events: none;
 }
 
 .welcome__next { width: 100%; }
 
 @media (min-width: 769px) {
   .welcome__title { font-size: 2rem; }
-  .welcome__slide { padding-block: var(--space-xl); }
+  .welcome__slide:not(.welcome__slide--photo) { padding-block: var(--space-xl); }
+  .welcome__slide-scroll { padding-block: var(--space-xl); }
 }
 
 /* Short phones (landscape or small screens): tighten the art */
 @media (max-height: 640px) {
-  .welcome__art { min-height: 120px; }
+  .welcome__slide--photo .welcome__content { padding-top: var(--space-lg); }
   .welcome__title { font-size: 1.5rem; }
 }

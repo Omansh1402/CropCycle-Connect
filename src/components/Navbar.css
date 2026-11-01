@@ -38,36 +38,6 @@
   color: var(--color-forest);
 }
 
-.logo-symbol {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-forest);
-}
-
-.logo-text {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-}
-
-.logo-title {
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  color: var(--color-forest);
-  line-height: 1;
-}
-
-.logo-badge {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-sage);
-}
-
 /* Nav Links */
 .navbar__nav {
   display: flex;
