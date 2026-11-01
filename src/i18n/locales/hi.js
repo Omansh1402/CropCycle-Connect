@@ -1,0 +1,5 @@
+export default {
+  overview: 'अवलोकन', marketIntelligence: 'मार्केट इंटेलिजेंस', farmerPortal: 'किसान पोर्टल', buyerRequirements: 'खरीदार आवश्यकताएं', marketplace: 'मार्केटप्लेस', dashboard: 'डैशबोर्ड',
+  marketIntelligenceTitle: 'फसल अवशेष मार्केट इंटेलिजेंस एवं परिवहन लागत कैलकुलेटर', marketIntelligenceSubtitle: 'राज्यवार कृषि आंकड़े, लाइव प्लेटफॉर्म आपूर्ति-मांग बहीखाता, खरीद-बिक्री दरें और अंतर-राज्यीय परिवहन लागत।',
+  selectState: 'राज्य / केंद्र शासित प्रदेश चुनें', selectDistrict: 'जिला चुनें', selectResidueType: 'फसल अवशेष का प्रकार', buyerPurpose: 'खरीद का उद्देश्य', farmerAskingPrice: 'किसान की अपेक्षित दर', buyerOfferedPrice: 'खरीदार की प्रस्तावित दर', referencePrice: 'आधिकारिक संदर्भ दर', deliveredCost: 'अंतिम डिलीवर मूल्य प्रति टन', transportCost: 'परिवहन लागत', roadDistance: 'सड़क मार्ग दूरी', vehicleTier: 'वाहन प्रोफ़ाइल', requiredTrips: 'आवश्यक ट्रिप संख्या', farmGate: 'फार्म-गेट (खेत पर)', exWarehouse: 'गोदाम (एक्स-वेयरहाउस)', delivered: 'डिलीवर (कारखाने पर)', indicativeDisclaimer: 'सांकेतिक परिवहन अनुमान — अंतिम मूल्य की पुष्टि ट्रांसपोर्टर से करें।',
+};

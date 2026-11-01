@@ -1,0 +1,5 @@
+export default {
+  overview: 'ਜਾਇਜ਼ਾ', marketIntelligence: 'ਮਾਰਕੀਟ ਇੰਟੈਲੀਜੈਂਸ', farmerPortal: 'ਕਿਸਾਨ ਪੋਰਟਲ', buyerRequirements: 'ਖਰੀਦਦਾਰਾਂ ਦੀਆਂ ਲੋੜਾਂ', marketplace: 'ਮੰਡੀ', dashboard: 'ਡੈਸ਼ਬੋਰਡ',
+  marketIntelligenceTitle: 'ਫਸਲੀ ਰਹਿੰਦ-ਖੂੰਹਦ ਮਾਰਕੀਟ ਇੰਟੈਲੀਜੈਂਸ ਅਤੇ ਢੋਆ-ਢੁਆਈ ਲਾਗਤ ਕੈਲਕੁਲੇਟਰ', marketIntelligenceSubtitle: 'ਰਾਜ-ਵਾਰ ਖੇਤੀਬਾੜੀ ਅੰਕੜੇ, ਲਾਈਵ ਸਪਲਾਈ-ਮੰਗ ਲੇਖਾ, ਖਰੀਦ-ਵੇਚ ਦਰਾਂ ਅਤੇ ਅੰਤਰ-ਰਾਜੀ ਢੋਆ-ਢੁਆਈ ਲਾਗਤ।',
+  selectState: 'ਰਾਜ / ਕੇਂਦਰ ਸ਼ਾਸਤ ਪ੍ਰਦੇਸ਼ ਚੁਣੋ', selectDistrict: 'ਜ਼ਿਲ੍ਹਾ ਚੁਣੋ', selectResidueType: 'ਫਸਲੀ ਰਹਿੰਦ-ਖੂੰਹਦ ਦੀ ਕਿਸਮ', buyerPurpose: 'ਖਰੀਦ ਦਾ ਮਕਸਦ', farmerAskingPrice: 'ਕਿਸਾਨ ਦੀ ਮੰਗੀ ਕੀਮਤ', buyerOfferedPrice: 'ਖਰੀਦਦਾਰ ਵੱਲੋਂ ਪੇਸ਼ ਕੀਤੀ ਕੀਮਤ', referencePrice: 'ਸਰਕਾਰੀ ਹਵਾਲਾ ਦਰ', deliveredCost: 'ਪਹੁੰਚੀ ਹੋਈ ਲਾਗਤ ਪ੍ਰਤੀ ਟਨ', transportCost: 'ਢੋਆ-ਢੁਆਈ ਦਾ ਖਰਚਾ', roadDistance: 'ਸੜਕ ਰਾਹੀਂ ਦੂਰੀ', vehicleTier: 'ਵਾਹਨ ਦੀ ਕਿਸਮ', requiredTrips: 'ਲੋੜੀਂਦੇ ਗੇੜੇ', farmGate: 'ਖੇਤ ਤੋਂ ਚੁੱਕਾਈ', exWarehouse: 'ਗੋਦਾਮ ਤੋਂ ਚੁੱਕਾਈ', delivered: 'ਸਹੂਲਤ ਤੱਕ ਪਹੁੰਚਾਇਆ', indicativeDisclaimer: 'ਢੋਆ-ਢੁਆਈ ਦਾ ਅੰਦਾਜ਼ਾ — ਅੰਤਿਮ ਕੀਮਤ ਟਰਾਂਸਪੋਰਟਰ ਨਾਲ ਪੱਕੀ ਕਰੋ।',
+};

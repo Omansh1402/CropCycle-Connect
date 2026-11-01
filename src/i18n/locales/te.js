@@ -1,0 +1,5 @@
+export default {
+  overview: 'సారాంశం', marketIntelligence: 'మార్కెట్ సమాచారం', farmerPortal: 'రైతు వేదిక', buyerRequirements: 'కొనుగోలుదారుల అవసరాలు', marketplace: 'మార్కెట్', dashboard: 'డ్యాష్‌బోర్డ్',
+  marketIntelligenceTitle: 'పంట అవశేషాల మార్కెట్ సమాచారం మరియు రవాణా ఖర్చు గణకం', marketIntelligenceSubtitle: 'రాష్ట్రాల వారీ వ్యవసాయ గణాంకాలు, ప్లాట్‌ఫారమ్‌లో సరఫరా-డిమాండ్, కొనుగోలు-అమ్మకం ధరలు, రాష్ట్రాల మధ్య రవాణా ఖర్చు.',
+  selectState: 'రాష్ట్రం / కేంద్రపాలిత ప్రాంతాన్ని ఎంచుకోండి', selectDistrict: 'జిల్లాను ఎంచుకోండి', selectResidueType: 'పంట అవశేషం రకం', buyerPurpose: 'కొనుగోలు ఉద్దేశం', farmerAskingPrice: 'రైతు కోరే ధర', buyerOfferedPrice: 'కొనుగోలుదారు ఇచ్చే ధర', referencePrice: 'ప్రభుత్వ సూచిక ధర', deliveredCost: 'చేర్చిన ఖర్చు / టన్ను', transportCost: 'రవాణా ఖర్చు', roadDistance: 'రోడ్డు దూరం', vehicleTier: 'వాహనం రకం', requiredTrips: 'అవసరమైన ప్రయాణాలు', farmGate: 'పొలం నుంచి సేకరణ', exWarehouse: 'గిడ్డంగి నుంచి సేకరణ', delivered: 'కేంద్రానికి చేర్చినది', indicativeDisclaimer: 'రవాణా ఖర్చు అంచనా మాత్రమే — తుది ధరను రవాణాదారుతో నిర్ధారించండి.',
+};

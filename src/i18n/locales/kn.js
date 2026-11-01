@@ -1,0 +1,5 @@
+export default {
+  overview: 'ಅವಲೋಕನ', marketIntelligence: 'ಮಾರುಕಟ್ಟೆ ಮಾಹಿತಿ', farmerPortal: 'ರೈತ ಪೋರ್ಟಲ್', buyerRequirements: 'ಖರೀದಿದಾರರ ಅಗತ್ಯಗಳು', marketplace: 'ಮಾರುಕಟ್ಟೆ', dashboard: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್',
+  marketIntelligenceTitle: 'ಬೆಳೆ ಅವಶೇಷ ಮಾರುಕಟ್ಟೆ ಮಾಹಿತಿ ಮತ್ತು ಸಾಗಣೆ ವೆಚ್ಚ ಗಣಕ', marketIntelligenceSubtitle: 'ರಾಜ್ಯವಾರು ಕೃಷಿ ಅಂಕಿಅಂಶಗಳು, ವೇದಿಕೆಯ ನೈಜ ಪೂರೈಕೆ-ಬೇಡಿಕೆ, ಖರೀದಿ-ಮಾರಾಟ ದರಗಳು ಮತ್ತು ಅಂತರರಾಜ್ಯ ಸಾಗಣೆ ವೆಚ್ಚ.',
+  selectState: 'ರಾಜ್ಯ / ಕೇಂದ್ರಾಡಳಿತ ಪ್ರದೇಶ ಆಯ್ಕೆಮಾಡಿ', selectDistrict: 'ಜಿಲ್ಲೆ ಆಯ್ಕೆಮಾಡಿ', selectResidueType: 'ಬೆಳೆ ಅವಶೇಷದ ವಿಧ', buyerPurpose: 'ಖರೀದಿಯ ಉದ್ದೇಶ', farmerAskingPrice: 'ರೈತ ಕೇಳುವ ಬೆಲೆ', buyerOfferedPrice: 'ಖರೀದಿದಾರ ನೀಡುವ ಬೆಲೆ', referencePrice: 'ಸರ್ಕಾರದ ಉಲ್ಲೇಖ ದರ', deliveredCost: 'ತಲುಪಿಸಿದ ವೆಚ್ಚ / ಟನ್', transportCost: 'ಸಾಗಣೆ ವೆಚ್ಚ', roadDistance: 'ರಸ್ತೆ ದೂರ', vehicleTier: 'ವಾಹನದ ವಿಧ', requiredTrips: 'ಅಗತ್ಯ ಸುತ್ತುಗಳು', farmGate: 'ಹೊಲದಿಂದ ಸಂಗ್ರಹ', exWarehouse: 'ಗೋದಾಮಿನಿಂದ ಸಂಗ್ರಹ', delivered: 'ಸೌಲಭ್ಯಕ್ಕೆ ತಲುಪಿಸಿದ', indicativeDisclaimer: 'ಸಾಗಣೆ ವೆಚ್ಚ ಅಂದಾಜು ಮಾತ್ರ — ಅಂತಿಮ ಬೆಲೆಯನ್ನು ಸಾಗಣೆದಾರರೊಂದಿಗೆ ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.',
+};

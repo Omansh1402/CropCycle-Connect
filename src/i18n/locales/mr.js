@@ -1,0 +1,5 @@
+export default {
+  overview: 'आढावा', marketIntelligence: 'बाजार माहिती', farmerPortal: 'शेतकरी पोर्टल', buyerRequirements: 'खरेदीदारांच्या गरजा', marketplace: 'बाजारपेठ', dashboard: 'डॅशबोर्ड',
+  marketIntelligenceTitle: 'पीक अवशेष बाजार माहिती आणि वाहतूक खर्च गणक', marketIntelligenceSubtitle: 'राज्यनिहाय कृषी आकडेवारी, प्लॅटफॉर्मवरील मागणी-पुरवठा, खरेदी-विक्रीचे दर आणि आंतरराज्य वाहतूक खर्च.',
+  selectState: 'राज्य / केंद्रशासित प्रदेश निवडा', selectDistrict: 'जिल्हा निवडा', selectResidueType: 'पीक अवशेषाचा प्रकार', buyerPurpose: 'खरेदीचा उद्देश', farmerAskingPrice: 'शेतकऱ्याने अपेक्षित ठेवलेला दर', buyerOfferedPrice: 'खरेदीदाराने दिलेला दर', referencePrice: 'अधिकृत संदर्भ दर', deliveredCost: 'पोहोचवलेला खर्च प्रति टन', transportCost: 'वाहतूक खर्च', roadDistance: 'रस्त्याचे अंतर', vehicleTier: 'वाहनाचा प्रकार', requiredTrips: 'आवश्यक फेऱ्या', farmGate: 'शेतातून उचल (फार्म-गेट)', exWarehouse: 'गोदामातून उचल', delivered: 'खरेदीदाराच्या ठिकाणी पोहोचवलेले', indicativeDisclaimer: 'वाहतुकीचा अंदाज — अंतिम दर वाहतूकदाराकडून निश्चित करून घ्या.',
+};

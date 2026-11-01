@@ -1,8 +1,10 @@
 // src/lib/i18n.jsx
-import { createContext, useContext, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { SUPPORTED_LANGUAGES, TRANSLATIONS } from './i18nData.js';
 
 export { SUPPORTED_LANGUAGES, TRANSLATIONS };
+
+const warnedMissingKeys = new Set();
 
 const LanguageContext = createContext({
   language: 'en',
@@ -24,7 +26,7 @@ export function LanguageProvider({ children }) {
     return 'en';
   });
 
-  const setLanguage = (langCode) => {
+  const setLanguage = useCallback((langCode) => {
     if (SUPPORTED_LANGUAGES.some((l) => l.code === langCode)) {
       setLanguageState(langCode);
       try {
@@ -33,15 +35,35 @@ export function LanguageProvider({ children }) {
         // Safe catch
       }
     }
-  };
+  }, []);
 
-  const t = (key) => {
+  const t = useCallback((key, vars) => {
     const langDict = TRANSLATIONS[language] || TRANSLATIONS.en;
-    return langDict[key] || TRANSLATIONS.en[key] || key;
-  };
+    const template = langDict[key] ?? TRANSLATIONS.en[key] ?? key;
+    if (!Object.hasOwn(TRANSLATIONS.en, key) && import.meta.env.DEV) {
+      if (!warnedMissingKeys.has(key)) {
+        warnedMissingKeys.add(key);
+        console.warn(`[i18n] Missing English translation for key "${key}"`);
+      }
+    }
+    return String(template).replace(/\{([^{}]+)\}/g, (match, name) => (
+      vars && Object.hasOwn(vars, name) ? String(vars[name]) : match
+    ));
+  }, [language]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const value = useMemo(() => ({
+    language,
+    setLanguage,
+    t,
+    supportedLanguages: SUPPORTED_LANGUAGES,
+  }), [language, setLanguage, t]);
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, supportedLanguages: SUPPORTED_LANGUAGES }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

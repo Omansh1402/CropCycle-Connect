@@ -1,0 +1,5 @@
+export default {
+  overview: 'അവലോകനം', marketIntelligence: 'വിപണി വിവരങ്ങൾ', farmerPortal: 'കർഷക പോർട്ടൽ', buyerRequirements: 'വാങ്ങുന്നവരുടെ ആവശ്യങ്ങൾ', marketplace: 'വിപണി', dashboard: 'ഡാഷ്ബോർഡ്',
+  marketIntelligenceTitle: 'വിള അവശിഷ്ട വിപണി വിവരങ്ങളും ഗതാഗതച്ചെലവ് കണക്കാക്കലും', marketIntelligenceSubtitle: 'സംസ്ഥാനാടിസ്ഥാനത്തിലുള്ള കൃഷി കണക്കുകൾ, പ്ലാറ്റ്‌ഫോമിലെ ലഭ്യതയും ആവശ്യവും, വാങ്ങൽ-വിൽപ്പന നിരക്കുകൾ, സംസ്ഥാനങ്ങൾക്കിടയിലെ ഗതാഗതച്ചെലവ്.',
+  selectState: 'സംസ്ഥാനം / കേന്ദ്രഭരണ പ്രദേശം തിരഞ്ഞെടുക്കുക', selectDistrict: 'ജില്ല തിരഞ്ഞെടുക്കുക', selectResidueType: 'വിള അവശിഷ്ടത്തിന്റെ ഇനം', buyerPurpose: 'വാങ്ങുന്നതിന്റെ ഉദ്ദേശ്യം', farmerAskingPrice: 'കർഷകൻ ആവശ്യപ്പെടുന്ന വില', buyerOfferedPrice: 'വാങ്ങുന്നവർ നൽകുന്ന വില', referencePrice: 'സർക്കാർ സൂചനാ നിരക്ക്', deliveredCost: 'എത്തിച്ച ചെലവ് / ടൺ', transportCost: 'ഗതാഗതച്ചെലവ്', roadDistance: 'റോഡ് ദൂരം', vehicleTier: 'വാഹനത്തിന്റെ ഇനം', requiredTrips: 'ആവശ്യമായ യാത്രകൾ', farmGate: 'കൃഷിയിടത്തിൽ നിന്ന് ശേഖരണം', exWarehouse: 'സംഭരണശാലയിൽ നിന്ന് ശേഖരണം', delivered: 'സ്ഥലത്ത് എത്തിച്ചത്', indicativeDisclaimer: 'ഗതാഗതച്ചെലവ് ഏകദേശമാണ് — അന്തിമ നിരക്ക് ഗതാഗതക്കാരനുമായി ഉറപ്പാക്കുക.',
+};
