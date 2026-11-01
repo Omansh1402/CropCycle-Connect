@@ -1,0 +1,192 @@
+/* src/components/RouteMap.css */
+
+.route-map-wrapper {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  flex-direction: column;
+}
+
+.route-map-header {
+  padding: var(--space-sm) var(--space-md);
+  background-color: #FAFAF8;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.route-map-points {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.route-point {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--color-white);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.route-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.route-dot--origin {
+  background-color: var(--color-forest-mid);
+}
+
+.route-dot--dest {
+  background-color: var(--color-gold);
+}
+
+.route-arrow {
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+}
+
+.route-map-metric {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
+.route-distance-badge {
+  background-color: var(--color-offwhite);
+  color: var(--color-forest);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+}
+
+.route-duration-badge {
+  background-color: var(--color-sage-soft);
+  color: var(--color-forest-mid);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid var(--color-sage-light);
+}
+
+.route-map-canvas {
+  background-color: #EFEFEA;
+  z-index: 1;
+}
+
+.route-map-footer {
+  padding: 6px var(--space-md);
+  background-color: var(--color-white);
+  border-top: 1px solid var(--color-border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot--green {
+  background-color: var(--color-forest-mid);
+}
+
+.status-dot--amber {
+  background-color: var(--color-gold);
+}
+
+/* Custom Pin Marker */
+.custom-map-pin {
+  background: transparent;
+  border: none;
+}
+
+.pin-marker {
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: 1.5px solid white;
+}
+
+.pin-farmer .pin-marker {
+  background-color: var(--color-forest-mid);
+}
+
+.pin-buyer .pin-marker {
+  background-color: var(--color-forest);
+}
+
+.pin-label {
+  transform: rotate(45deg);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+.pin-shadow {
+  width: 10px;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 50%;
+  margin: 1px auto 0;
+}
+
+.map-popup-card {
+  padding: 2px;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+}
+
+.map-popup-header {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-forest);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.route-map-fallback {
+  padding: var(--space-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-offwhite);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}

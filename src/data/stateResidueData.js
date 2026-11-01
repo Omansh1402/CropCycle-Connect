@@ -170,7 +170,7 @@ export const STATE_RESIDUE_STATISTICS = {
   'Punjab': {
     state: 'Punjab',
     reportingYear: '2023-24',
-    source: 'Ministry of Agriculture and Farmers Welfare (DES 2023-24) & Punjab Energy Development Agency (PEDA)',
+    source: 'Directorate of Economics and Statistics (DES), Ministry of Agriculture and Farmers Welfare (2023-24) & Punjab Energy Development Agency (PEDA)',
     sourceUrl: 'https://agricoop.nic.in',
     methodology: 'Gross residue derived using ICAR-IARI NPMCR crop-specific RPR coefficients. Technical collectability factor: 0.85.',
     estimatedExternalMarketDemand: 11500000, // Mandated 5-10% co-firing in thermal plants + SATAT Bio-CNG + 2G ethanol plants

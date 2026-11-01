@@ -11,6 +11,7 @@ const navLinks = [
   { path: '/buyer', labelKey: 'buyerRequirements', defaultLabel: 'Buyer Requirements' },
   { path: '/matches', labelKey: 'marketplace', defaultLabel: 'Marketplace' },
   { path: '/dashboard', labelKey: 'dashboard', defaultLabel: 'Dashboard' },
+  { path: '/profile', labelKey: 'profile', defaultLabel: 'Profile', hasIcon: true },
 ];
 
 export default function Navbar() {
@@ -62,7 +63,7 @@ export default function Navbar() {
 
         {/* Main Desktop Navigation */}
         <nav className="navbar__nav" role="navigation" aria-label="Main Navigation">
-          {navLinks.map(({ path, labelKey, defaultLabel }) => {
+          {navLinks.map(({ path, labelKey, defaultLabel, hasIcon }) => {
             const isActive = location.pathname === path;
             const label = t(labelKey) || defaultLabel;
             return (
@@ -72,7 +73,24 @@ export default function Navbar() {
                 className={`navbar__link ${isActive ? 'navbar__link--active' : ''}`}
                 aria-current={isActive ? 'page' : undefined}
               >
-                {label}
+                {hasIcon && (
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="navbar__link-icon"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                )}
+                <span>{label}</span>
               </Link>
             );
           })}
@@ -80,13 +98,13 @@ export default function Navbar() {
 
         {/* Right CTA Actions */}
         <div className="navbar__actions">
-          {/* Language Selector Dropdown (6 Supported Languages) */}
+          {/* Language Selector Dropdown (9 Supported Languages) */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
             className="navbar__lang-select"
-            aria-label="Interface Language"
-            title="Change language / भाषा बदलें"
+            aria-label={t('interfaceLanguage') || 'Interface Language'}
+            title={t('changeLanguage') || 'Change language / भाषा बदलें'}
             style={{
               padding: '4px 8px',
               fontSize: '0.8125rem',
@@ -106,15 +124,15 @@ export default function Navbar() {
           </select>
 
           <Link to="/matches" className="navbar__link-subtle">
-            Browse Supply
+            {t('browseSupply') || 'Browse Supply'}
           </Link>
           <Link to="/farmer" className="btn btn-primary btn-sm">
-            List Residue
+            {t('listResidue') || 'List Residue'}
           </Link>
 
           <button
             className="navbar__hamburger"
-            aria-label="Toggle navigation menu"
+            aria-label={t('toggleNavMenu') || 'Toggle navigation menu'}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(!menuOpen)}
           >
@@ -129,7 +147,7 @@ export default function Navbar() {
       <div className={`navbar__mobile ${menuOpen ? 'navbar__mobile--open' : ''}`}>
         <div className="container navbar__mobile-inner">
           <nav className="navbar__mobile-links">
-            {navLinks.map(({ path, labelKey, defaultLabel }) => {
+            {navLinks.map(({ path, labelKey, defaultLabel, hasIcon }) => {
               const isActive = location.pathname === path;
               const label = t(labelKey) || defaultLabel;
               return (
@@ -138,17 +156,34 @@ export default function Navbar() {
                   to={path}
                   className={`navbar__mobile-link ${isActive ? 'navbar__mobile-link--active' : ''}`}
                 >
-                  {label}
+                  {hasIcon && (
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="navbar__link-icon"
+                      aria-hidden="true"
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  )}
+                  <span>{label}</span>
                 </Link>
               );
             })}
           </nav>
           <div className="navbar__mobile-actions">
             <Link to="/farmer" className="btn btn-primary w-full">
-              List Residue
+              {t('listResidue') || 'List Residue'}
             </Link>
             <Link to="/buyer" className="btn btn-secondary w-full">
-              Register Buyer Demand
+              {t('registerDemand') || 'Register Buyer Demand'}
             </Link>
           </div>
         </div>
