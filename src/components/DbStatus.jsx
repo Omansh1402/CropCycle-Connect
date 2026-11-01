@@ -1,7 +1,8 @@
 // src/components/DbStatus.jsx
 import './DbStatus.css';
 
-export function DbSetupBanner() {
+export function DbSetupBanner({ t }) {
+  const label = (key, fallback) => (t ? t(key) : fallback);
   return (
     <div className="db-setup-banner" role="alert">
       <div className="db-setup-banner__icon" aria-hidden="true">
@@ -13,22 +14,21 @@ export function DbSetupBanner() {
       </div>
       <div className="db-setup-banner__body">
         <div className="db-setup-banner__header">
-          <h4 className="db-setup-banner__title">Remote Database Connection Standby</h4>
-          <span className="badge badge-muted">Local Demo Mode Active</span>
+          <h4 className="db-setup-banner__title">{label('farmer.dbSetup.title', 'Remote Database Connection Standby')}</h4>
+          <span className="badge badge-muted">{label('farmer.dbSetup.mode', 'Local Demo Mode Active')}</span>
         </div>
         <p className="db-setup-banner__text">
-          Listings and contact requests are currently operating in local storage mode. To activate
-          persistent PostgreSQL syncing, verify your Supabase environment configuration:
+          {label('farmer.dbSetup.description', 'Listings and contact requests are currently operating in local storage mode. To activate persistent PostgreSQL syncing, verify your Supabase environment configuration:')}
         </p>
         <ol className="db-setup-steps">
           <li>
-            Execute <code>supabase/schema.sql</code> in your project’s Supabase SQL Editor.
+            {label('farmer.dbSetup.stepOne', 'Execute')} <code>supabase/schema.sql</code> {label('farmer.dbSetup.stepOneEnd', 'in your project’s Supabase SQL Editor.')}
           </li>
           <li>
-            Verify <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in <code>.env.local</code>.
+            {label('farmer.dbSetup.stepTwoStart', 'Verify')} <code>VITE_SUPABASE_URL</code> {label('farmer.dbSetup.and', 'and')} <code>VITE_SUPABASE_ANON_KEY</code> {label('farmer.dbSetup.stepTwoEnd', 'in')} <code>.env.local</code>.
           </li>
           <li>
-            Reload dev environment (<code>npm run dev</code>) to transition to live database syncing.
+            {label('farmer.dbSetup.stepThreeStart', 'Reload dev environment')} (<code>npm run dev</code>) {label('farmer.dbSetup.stepThreeEnd', 'to transition to live database syncing.')}
           </li>
         </ol>
       </div>
@@ -36,7 +36,7 @@ export function DbSetupBanner() {
   );
 }
 
-export function DbErrorAlert({ message, onRetry }) {
+export function DbErrorAlert({ message, onRetry, t }) {
   return (
     <div className="db-error-alert" role="alert">
       <div className="db-error-alert__icon" aria-hidden="true">
@@ -47,11 +47,11 @@ export function DbErrorAlert({ message, onRetry }) {
         </svg>
       </div>
       <div className="db-error-alert__body">
-        <span className="db-error-alert__title">Database Error:</span> {message}
+        <span className="db-error-alert__title">{t ? t('farmer.dbError.title') : 'Database Error:'}</span> {message}
       </div>
       {onRetry && (
         <button onClick={onRetry} className="btn btn-outline btn-sm db-error-alert__retry">
-          Retry Request
+          {t ? t('farmer.dbError.retry') : 'Retry Request'}
         </button>
       )}
     </div>

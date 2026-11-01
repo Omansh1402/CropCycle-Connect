@@ -5,7 +5,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation, SUPPORTED_LANGUAGES } from '../lib/i18n';
-import { getWelcomeText } from '../lib/welcomeStrings';
 import { register, login, markOnboarded, isValidPhone } from '../lib/auth';
 import { WELCOME_IMAGES } from '../lib/welcomeImages';
 import Brand from '../components/Brand';
@@ -20,8 +19,7 @@ const PHOTO_KEYS = ['photoField', 'photoMatching', 'photoReuse'];
 
 export default function Welcome() {
   const navigate = useNavigate();
-  const { language, setLanguage } = useTranslation();
-  const text = getWelcomeText(language);
+  const { language, setLanguage, t } = useTranslation();
 
   const scrollerRef = useRef(null);
   const rafRef = useRef(0);
@@ -99,9 +97,9 @@ export default function Welcome() {
   const submit = (e) => {
     e.preventDefault();
     const next = {};
-    if (mode === 'register' && !form.name.trim()) next.name = text.errName;
-    if (!isValidPhone(form.phone)) next.phone = text.errPhone;
-    if (mode === 'register' && !form.district.trim()) next.district = text.errDistrict;
+    if (mode === 'register' && !form.name.trim()) next.name = t('welcome.error.name');
+    if (!isValidPhone(form.phone)) next.phone = t('welcome.error.phone');
+    if (mode === 'register' && !form.district.trim()) next.district = t('welcome.error.district');
     if (Object.keys(next).length) {
       setErrors(next);
       return;
@@ -109,8 +107,12 @@ export default function Welcome() {
 
     const result = mode === 'register' ? register(form) : login(form);
     if (!result.ok) {
-      const messages = { exists: text.errExists, notFound: text.errNotFound, storage: text.errStorage };
-      setErrors({ form: messages[result.error] || text.errStorage });
+      const messages = {
+        exists: t('welcome.error.exists'),
+        notFound: t('welcome.error.notFound'),
+        storage: t('welcome.error.storage'),
+      };
+      setErrors({ form: messages[result.error] || t('welcome.error.storage') });
       return;
     }
     finish(result.user);
@@ -127,7 +129,7 @@ export default function Welcome() {
     <div className="welcome" lang={language}>
       <header className="welcome__header">
         <div className="container welcome__header-inner">
-          <div className="welcome__brand" aria-label={text.brand}>
+          <div className="welcome__brand" aria-label={t('welcome.brand')}>
             <Brand />
           </div>
           <div className="welcome__header-actions">
@@ -135,7 +137,7 @@ export default function Welcome() {
               className="welcome__lang"
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
-              aria-label="Language"
+              aria-label={t('welcome.language')}
             >
               {SUPPORTED_LANGUAGES.map((l) => (
                 <option key={l.code} value={l.code}>{l.nativeLabel}</option>
@@ -143,7 +145,7 @@ export default function Welcome() {
             </select>
             {!onAuthSlide && (
               <button type="button" className="welcome__skip" onClick={() => goTo(AUTH_INDEX)}>
-                {text.skip}
+              {t('welcome.skip')}
               </button>
             )}
           </div>
@@ -158,7 +160,7 @@ export default function Welcome() {
         tabIndex={0}
         role="region"
         aria-roledescription="carousel"
-        aria-label={text.brand}
+        aria-label={t('welcome.brand')}
       >
         {PHOTO_KEYS.map((photoKey, i) => {
           const photo = WELCOME_IMAGES[i] || {};
@@ -175,19 +177,19 @@ export default function Welcome() {
                   <img
                     className="welcome__bg-img"
                     src={photo.src}
-                    alt={text[photoKey]}
+                    alt={t(`welcome.${photoKey}`)}
                     style={{ objectPosition: photo.position || 'center' }}
                     loading={i === 0 ? 'eager' : 'lazy'}
                     draggable={false}
                   />
                 ) : (
-                  <span className="welcome__photo-label">{text.photoPlaceholder} {i + 1}</span>
+                  <span className="welcome__photo-label">{t('welcome.photoPlaceholder')} {i + 1}</span>
                 )}
               </div>
               <div className="welcome__slide-scroll">
                 <div className="welcome__content">
-                  <h1 className="welcome__title">{text[`slide${i + 1}Title`]}</h1>
-                  <p className="welcome__body">{text[`slide${i + 1}Body`]}</p>
+                  <h1 className="welcome__title">{t(`welcome.slide${i + 1}.title`)}</h1>
+                  <p className="welcome__body">{t(`welcome.slide${i + 1}.body`)}</p>
                 </div>
               </div>
             </section>
@@ -200,7 +202,7 @@ export default function Welcome() {
           aria-label={`${SLIDE_COUNT} / ${SLIDE_COUNT}`}
         >
           <div className="welcome__content">
-            <h1 className="welcome__title welcome__title--auth">{text.authTitle}</h1>
+            <h1 className="welcome__title welcome__title--auth">{t('welcome.getStarted')}</h1>
 
             <div className="welcome__tabs" role="tablist">
               {['register', 'login'].map((m) => (
@@ -212,7 +214,7 @@ export default function Welcome() {
                   className={`welcome__tab ${mode === m ? 'is-active' : ''}`}
                   onClick={() => switchMode(m)}
                 >
-                  {m === 'register' ? text.tabRegister : text.tabLogin}
+                  {m === 'register' ? t('welcome.register') : t('welcome.logIn')}
                 </button>
               ))}
             </div>
@@ -220,7 +222,7 @@ export default function Welcome() {
             <form className="welcome__form" onSubmit={submit} noValidate>
               {mode === 'register' && (
                 <fieldset className="welcome__roles">
-                  <legend className="form-label">{text.roleLabel}</legend>
+                <legend className="form-label">{t('welcome.roleLabel')}</legend>
                   {['farmer', 'buyer'].map((r) => (
                     <label key={r} className={`welcome__role ${form.role === r ? 'is-active' : ''}`}>
                       <input
@@ -230,7 +232,7 @@ export default function Welcome() {
                         checked={form.role === r}
                         onChange={setField('role')}
                       />
-                      <span>{r === 'farmer' ? text.roleFarmer : text.roleBuyer}</span>
+                      <span>{r === 'farmer' ? t('welcome.roleFarmer') : t('welcome.roleBuyer')}</span>
                     </label>
                   ))}
                 </fieldset>
@@ -238,7 +240,7 @@ export default function Welcome() {
 
               {mode === 'register' && (
                 <div className="form-group">
-                  <label className="form-label" htmlFor="wl-name">{text.name}</label>
+                  <label className="form-label" htmlFor="wl-name">{t('welcome.name')}</label>
                   <input
                     id="wl-name"
                     className={`form-control ${errors.name ? 'form-control--error' : ''}`}
@@ -252,7 +254,7 @@ export default function Welcome() {
               )}
 
               <div className="form-group">
-                <label className="form-label" htmlFor="wl-phone">{text.phone}</label>
+                <label className="form-label" htmlFor="wl-phone">{t('welcome.phone')}</label>
                 <input
                   id="wl-phone"
                   className={`form-control ${errors.phone ? 'form-control--error' : ''}`}
@@ -265,13 +267,13 @@ export default function Welcome() {
                 />
                 {errors.phone && <span className="form-error" role="alert">{errors.phone}</span>}
                 {mode === 'login' && !errors.phone && (
-                  <span className="form-hint">{text.loginHint}</span>
+                  <span className="form-hint">{t('welcome.loginHint')}</span>
                 )}
               </div>
 
               {mode === 'register' && (
                 <div className="form-group">
-                  <label className="form-label" htmlFor="wl-district">{text.district}</label>
+                  <label className="form-label" htmlFor="wl-district">{t('welcome.district')}</label>
                   <input
                     id="wl-district"
                     className={`form-control ${errors.district ? 'form-control--error' : ''}`}
@@ -287,10 +289,10 @@ export default function Welcome() {
               {errors.form && <p className="form-error welcome__form-error" role="alert">{errors.form}</p>}
 
               <button type="submit" className="btn btn-primary btn-lg w-full">
-                {mode === 'register' ? text.createAccount : text.logIn}
+                {mode === 'register' ? t('welcome.createAccount') : t('welcome.logIn')}
               </button>
               <button type="button" className="welcome__guest" onClick={guest}>
-                {text.guest}
+                {t('welcome.guest')}
               </button>
             </form>
           </div>
@@ -304,7 +306,7 @@ export default function Welcome() {
               key={i}
               type="button"
               className="welcome__dot"
-              aria-label={`${text.slideOf} ${i + 1}`}
+              aria-label={`${t('welcome.goToSlide')} ${i + 1}`}
               aria-current={index === i}
               onClick={() => goTo(i)}
             />
@@ -313,7 +315,7 @@ export default function Welcome() {
         </div>
         {!onAuthSlide && (
           <button type="button" className="btn btn-primary btn-lg welcome__next" onClick={() => goTo(index + 1)}>
-            {text.next}
+            {t('welcome.next')}
           </button>
         )}
       </footer>

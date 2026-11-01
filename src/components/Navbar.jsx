@@ -7,12 +7,12 @@ import Brand from './Brand';
 import './Navbar.css';
 
 const navLinks = [
-  { path: '/', labelKey: 'overview', defaultLabel: 'Overview' },
-  { path: '/market-intelligence', labelKey: 'marketIntelligence', defaultLabel: 'Market Intelligence' },
-  { path: '/farmer', labelKey: 'farmerPortal', defaultLabel: 'Farmer Portal' },
-  { path: '/buyer', labelKey: 'buyerRequirements', defaultLabel: 'Buyer Requirements' },
-  { path: '/matches', labelKey: 'marketplace', defaultLabel: 'Marketplace' },
-  { path: '/dashboard', labelKey: 'dashboard', defaultLabel: 'Dashboard' },
+  { path: '/', labelKey: 'nav.overview' },
+  { path: '/market-intelligence', labelKey: 'nav.marketIntelligence' },
+  { path: '/farmer', labelKey: 'nav.farmerPortal' },
+  { path: '/buyer', labelKey: 'nav.buyerRequirements' },
+  { path: '/matches', labelKey: 'nav.marketplace' },
+  { path: '/dashboard', labelKey: 'nav.dashboard' },
 ];
 
 export default function Navbar() {
@@ -43,15 +43,15 @@ export default function Navbar() {
     <header className={`navbar ${scrolled ? 'navbar--scrolled' : ''}`}>
       <div className="container navbar__inner">
         {/* Brand Identity */}
-        <Link to="/" className="navbar__logo" aria-label="CropCycle Connect Home">
+        <Link to="/" className="navbar__logo" aria-label={t('nav.homeAria')}>
           <Brand />
         </Link>
 
         {/* Main Desktop Navigation */}
-        <nav className="navbar__nav" role="navigation" aria-label="Main Navigation">
-          {navLinks.map(({ path, labelKey, defaultLabel }) => {
+        <nav className="navbar__nav" role="navigation" aria-label={t('nav.mainAria')}>
+          {navLinks.map(({ path, labelKey }) => {
             const isActive = location.pathname === path;
-            const label = t(labelKey) || defaultLabel;
+            const label = t(labelKey);
             return (
               <Link
                 key={path}
@@ -67,13 +67,13 @@ export default function Navbar() {
 
         {/* Right CTA Actions */}
         <div className="navbar__actions">
-          {/* Language Selector Dropdown (6 Supported Languages) */}
+          {/* Language Selector Dropdown */}
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
             className="navbar__lang-select"
-            aria-label="Interface Language"
-            title="Change language / भाषा बदलें"
+            aria-label={t('nav.languageAria')}
+            title={t('nav.languageTitle')}
             style={{
               padding: '4px 8px',
               fontSize: '0.8125rem',
@@ -93,18 +93,18 @@ export default function Navbar() {
           </select>
 
           {user && <span className="navbar__user-name">{user.name.split(' ')[0]}</span>}
-          {user && <button type="button" className="navbar__link-subtle" onClick={() => { logout(); navigate('/welcome'); }}>Log out</button>}
+          {user && <button type="button" className="navbar__link-subtle" onClick={() => { logout(); navigate('/welcome'); }}>{t('nav.logOut')}</button>}
 
           <Link to="/matches" className="navbar__link-subtle">
-            Browse Supply
+            {t('nav.browseSupply')}
           </Link>
           <Link to="/farmer" className="btn btn-primary btn-sm">
-            List Residue
+            {t('nav.listResidue')}
           </Link>
 
           <button
             className="navbar__hamburger"
-            aria-label="Toggle navigation menu"
+            aria-label={t('nav.toggleMenu')}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen(!menuOpen)}
           >
@@ -119,9 +119,9 @@ export default function Navbar() {
       <div className={`navbar__mobile ${menuOpen ? 'navbar__mobile--open' : ''}`}>
         <div className="container navbar__mobile-inner">
           <nav className="navbar__mobile-links">
-            {navLinks.map(({ path, labelKey, defaultLabel }) => {
+            {navLinks.map(({ path, labelKey }) => {
               const isActive = location.pathname === path;
-              const label = t(labelKey) || defaultLabel;
+              const label = t(labelKey);
               return (
                 <Link
                   key={path}
@@ -135,10 +135,10 @@ export default function Navbar() {
           </nav>
           <div className="navbar__mobile-actions">
             <Link to="/farmer" className="btn btn-primary w-full">
-              List Residue
+              {t('nav.listResidue')}
             </Link>
             <Link to="/buyer" className="btn btn-secondary w-full">
-              Register Buyer Demand
+              {t('nav.registerBuyerDemand')}
             </Link>
           </div>
         </div>
