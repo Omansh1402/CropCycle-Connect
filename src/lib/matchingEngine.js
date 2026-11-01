@@ -210,15 +210,18 @@ export function checkCompatibility(listingInput, buyerInput) {
   const listing = normalizeListing(listingInput);
   const buyer = normalizeBuyer(buyerInput);
   const reasons = [];
+  const reasonDetails = [];
 
   // Check 1: Invalid listing quantity
   if (listing.quantity <= 0) {
     reasons.push(`Invalid listing quantity: ${listing.quantity} tonnes (must be greater than 0)`);
+    reasonDetails.push({ key: 'engine.incompatible.quantity', params: { quantity: listing.quantity } });
   }
 
   // Check 2: Residue type compatibility
   if (!listing.residueType) {
     reasons.push('Listing has no residue type specified');
+    reasonDetails.push({ key: 'engine.incompatible.residueMissing', params: {} });
   } else {
     const listingTypeClean = listing.residueType.toLowerCase().trim();
     const acceptsType = buyer.acceptedTypes.some(
@@ -230,17 +233,20 @@ export function checkCompatibility(listingInput, buyerInput) {
       reasons.push(
         `Residue type '${listing.residueType}' is not accepted by this buyer (accepts: ${acceptedList})`
       );
+      reasonDetails.push({ key: 'engine.incompatible.residue', params: { residue: listing.residueType, accepted: acceptedList } });
     }
   }
 
   // Check 3: Buyer acceptance availability
   if (!buyer.available) {
     reasons.push('Buyer is currently on hold / not accepting new residue batches');
+    reasonDetails.push({ key: 'engine.incompatible.hold', params: {} });
   }
 
   return {
     compatible: reasons.length === 0,
     reasons,
+    reasonDetails,
   };
 }
 
@@ -473,6 +479,7 @@ export function scoreMatch(listingInput, buyerInput) {
     return {
       compatible: false,
       incompatibleReasons: compCheck.reasons,
+      incompatibleReasonDetails: compCheck.reasonDetails,
       scores: null,
       weightedPoints: null,
       finalScore: 0,
@@ -600,6 +607,12 @@ export function scoreMatch(listingInput, buyerInput) {
       ...weightedPoints,
       total: Number(rawFinal.toFixed(1)),
     },
+    factorLabelKeys: {
+      quantity: 'engine.factor.quantity',
+      proximity: 'engine.factor.proximity',
+      capacity: 'engine.factor.capacity',
+      useCase: 'engine.factor.useCase',
+    },
     finalScore,
     explanation,
     metadata: {
@@ -702,6 +715,8 @@ export function matchListingWithBuyers(listingInput, buyersInput = []) {
       ...item,
       rank,
       badgeText,
+      badgeKey: rank === 1 ? 'engine.badge.best' : rank === 2 ? 'engine.badge.strong' : rank === 3 ? 'engine.badge.alternative' : 'engine.badge.rank',
+      badgeParams: { rank },
       badgeTier,
     };
   });

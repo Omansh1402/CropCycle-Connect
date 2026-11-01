@@ -1,8 +1,11 @@
 // src/components/DbStatus.jsx
 import './DbStatus.css';
+import { useTranslation } from '../lib/i18n';
 
 export function DbSetupBanner({ t }) {
-  const label = (key, fallback) => (t ? t(key) : fallback);
+  const context = useTranslation();
+  const translate = t || context.t;
+  const label = (key) => translate(key);
   return (
     <div className="db-setup-banner" role="alert">
       <div className="db-setup-banner__icon" aria-hidden="true">
@@ -14,21 +17,21 @@ export function DbSetupBanner({ t }) {
       </div>
       <div className="db-setup-banner__body">
         <div className="db-setup-banner__header">
-          <h4 className="db-setup-banner__title">{label('farmer.dbSetup.title', 'Remote Database Connection Standby')}</h4>
-          <span className="badge badge-muted">{label('farmer.dbSetup.mode', 'Local Demo Mode Active')}</span>
+          <h4 className="db-setup-banner__title">{label('db.setup.title')}</h4>
+          <span className="badge badge-muted">{label('db.setup.mode')}</span>
         </div>
         <p className="db-setup-banner__text">
-          {label('farmer.dbSetup.description', 'Listings and contact requests are currently operating in local storage mode. To activate persistent PostgreSQL syncing, verify your Supabase environment configuration:')}
+          {label('db.setup.description')}
         </p>
         <ol className="db-setup-steps">
           <li>
-            {label('farmer.dbSetup.stepOne', 'Execute')} <code>supabase/schema.sql</code> {label('farmer.dbSetup.stepOneEnd', 'in your project’s Supabase SQL Editor.')}
+            {label('db.setup.stepOne')} <code>supabase/schema.sql</code> {label('db.setup.stepOneEnd')}
           </li>
           <li>
-            {label('farmer.dbSetup.stepTwoStart', 'Verify')} <code>VITE_SUPABASE_URL</code> {label('farmer.dbSetup.and', 'and')} <code>VITE_SUPABASE_ANON_KEY</code> {label('farmer.dbSetup.stepTwoEnd', 'in')} <code>.env.local</code>.
+            {label('db.setup.stepTwoStart')} <code>VITE_SUPABASE_URL</code> {label('db.setup.and')} <code>VITE_SUPABASE_ANON_KEY</code> {label('db.setup.stepTwoEnd')} <code>.env.local</code>.
           </li>
           <li>
-            {label('farmer.dbSetup.stepThreeStart', 'Reload dev environment')} (<code>npm run dev</code>) {label('farmer.dbSetup.stepThreeEnd', 'to transition to live database syncing.')}
+            {label('db.setup.stepThreeStart')} (<code>npm run dev</code>) {label('db.setup.stepThreeEnd')}
           </li>
         </ol>
       </div>
@@ -37,6 +40,8 @@ export function DbSetupBanner({ t }) {
 }
 
 export function DbErrorAlert({ message, onRetry, t }) {
+  const context = useTranslation();
+  const translate = t || context.t;
   return (
     <div className="db-error-alert" role="alert">
       <div className="db-error-alert__icon" aria-hidden="true">
@@ -47,11 +52,11 @@ export function DbErrorAlert({ message, onRetry, t }) {
         </svg>
       </div>
       <div className="db-error-alert__body">
-        <span className="db-error-alert__title">{t ? t('farmer.dbError.title') : 'Database Error:'}</span> {message}
+        <span className="db-error-alert__title">{translate('db.error.title')}</span> {message}
       </div>
       {onRetry && (
         <button onClick={onRetry} className="btn btn-outline btn-sm db-error-alert__retry">
-          {t ? t('farmer.dbError.retry') : 'Retry Request'}
+          {translate('db.error.retry')}
         </button>
       )}
     </div>
@@ -59,6 +64,7 @@ export function DbErrorAlert({ message, onRetry, t }) {
 }
 
 export function DbSuccessBanner({ message }) {
+  const { t } = useTranslation();
   return (
     <div className="db-success-banner" role="status">
       <div className="db-success-banner__icon" aria-hidden="true">
@@ -67,16 +73,18 @@ export function DbSuccessBanner({ message }) {
           <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
       </div>
-      <span>{message || 'Record successfully committed to database.'}</span>
+      <span>{message || t('db.success.saved')}</span>
     </div>
   );
 }
 
-export function LoadingSpinner({ label = 'Processing…' }) {
+export function LoadingSpinner({ label }) {
+  const { t } = useTranslation();
+  const spinnerLabel = label || t('db.loading');
   return (
-    <div className="db-spinner" aria-label={label}>
+    <div className="db-spinner" aria-label={spinnerLabel}>
       <span className="db-spinner__ring" />
-      <span className="db-spinner__label">{label}</span>
+      <span className="db-spinner__label">{spinnerLabel}</span>
     </div>
   );
 }

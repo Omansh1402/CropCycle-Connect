@@ -10,6 +10,7 @@ const LanguageContext = createContext({
   language: 'en',
   setLanguage: () => {},
   t: (key) => key,
+  tx: (_prefix, value) => value,
   supportedLanguages: SUPPORTED_LANGUAGES,
 });
 
@@ -51,16 +52,25 @@ export function LanguageProvider({ children }) {
     ));
   }, [language]);
 
+  const tx = useCallback((prefix, value) => {
+    if (value == null) return value;
+    const key = `${prefix}.${value}`;
+    const langDict = TRANSLATIONS[language] || TRANSLATIONS.en;
+    return Object.hasOwn(langDict, key) || Object.hasOwn(TRANSLATIONS.en, key) ? t(key) : value;
+  }, [language, t]);
+
   useEffect(() => {
     document.documentElement.lang = language;
-  }, [language]);
+    document.title = t('app.title');
+  }, [language, t]);
 
   const value = useMemo(() => ({
     language,
     setLanguage,
     t,
+    tx,
     supportedLanguages: SUPPORTED_LANGUAGES,
-  }), [language, setLanguage, t]);
+  }), [language, setLanguage, t, tx]);
 
   return (
     <LanguageContext.Provider value={value}>

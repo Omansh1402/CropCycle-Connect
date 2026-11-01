@@ -13,6 +13,9 @@
 export const VEHICLE_CONFIGS = {
   tractor_trolley: {
     id: 'tractor_trolley',
+    labelKey: 'transport.vehicle.tractor_trolley.label',
+    categoryKey: 'transport.vehicle.tractor_trolley.category',
+    descriptionKey: 'transport.vehicle.tractor_trolley.description',
     label: 'Tractor Trolley',
     category: 'Local Farm Transit (< 60 km)',
     payloadTonnes: 4,
@@ -27,6 +30,9 @@ export const VEHICLE_CONFIGS = {
   },
   small_truck: {
     id: 'small_truck',
+    labelKey: 'transport.vehicle.small_truck.label',
+    categoryKey: 'transport.vehicle.small_truck.category',
+    descriptionKey: 'transport.vehicle.small_truck.description',
     label: 'Small Commercial Truck (Tata 407 / 709)',
     category: 'Intra-District & Short Haul (50–250 km)',
     payloadTonnes: 8,
@@ -41,6 +47,9 @@ export const VEHICLE_CONFIGS = {
   },
   medium_truck: {
     id: 'medium_truck',
+    labelKey: 'transport.vehicle.medium_truck.label',
+    categoryKey: 'transport.vehicle.medium_truck.category',
+    descriptionKey: 'transport.vehicle.medium_truck.description',
     label: 'Medium Commercial Truck (6–10 Wheeler)',
     category: 'Regional Haulage (150–600 km)',
     payloadTonnes: 15,
@@ -55,6 +64,9 @@ export const VEHICLE_CONFIGS = {
   },
   heavy_truck: {
     id: 'heavy_truck',
+    labelKey: 'transport.vehicle.heavy_truck.label',
+    categoryKey: 'transport.vehicle.heavy_truck.category',
+    descriptionKey: 'transport.vehicle.heavy_truck.description',
     label: 'Heavy Goods Multi-Axle Truck (12–14 Wheeler / Trailer)',
     category: 'Interstate Long-Haul (> 500 km)',
     payloadTonnes: 28,
@@ -115,11 +127,14 @@ export function calculateTransportationCost({
       reason: isNaN(dist) || dist <= 0
         ? 'Road distance could not be determined. Please specify exact origin and destination locations.'
         : 'Invalid residue quantity specified.',
+      reasonKey: isNaN(dist) || dist <= 0 ? 'transport.error.distance' : 'transport.error.quantity',
+      reasonParams: {},
       trips: 0,
       totalTransportationCost: null,
       costPerTonne: null,
       breakdown: null,
       disclaimer: 'Transportation calculation unavailable without verified route distance.',
+      disclaimerKey: 'transport.disclaimer.unavailable',
     };
   }
 
@@ -169,6 +184,9 @@ export function calculateTransportationCost({
     totalQuantityTonnes: qty,
     vehicleConfig: {
       id: baseConfig.id,
+      labelKey: baseConfig.labelKey,
+      categoryKey: baseConfig.categoryKey,
+      descriptionKey: baseConfig.descriptionKey,
       label: baseConfig.label,
       category: baseConfig.category,
       payloadCapacity,
@@ -196,6 +214,7 @@ export function calculateTransportationCost({
       totalEmptyReturn: Number((trips * emptyReturnPerTrip).toFixed(2)),
     },
     disclaimer: 'Indicative Transportation Estimate — Confirm Final Price With Transporter.',
+    disclaimerKey: 'transport.disclaimer.estimate',
   };
 }
 
@@ -228,7 +247,10 @@ export function calculateDeliveredCost({
       reason: purchase == null
         ? 'Crop residue purchase price is unlisted.'
         : 'Transportation freight cost could not be calculated.',
+      reasonKey: purchase == null ? 'transport.delivered.purchaseMissing' : 'transport.delivered.freightMissing',
+      reasonParams: {},
       disclaimer: 'Delivered cost calculation requires verified purchase rate and road freight estimate.',
+      disclaimerKey: 'transport.disclaimer.delivered',
     };
   }
 
@@ -250,6 +272,7 @@ export function calculateDeliveredCost({
     totalOtherCost,
     totalDeliveredCost,
     disclaimer: 'Indicative Transportation Estimate — Confirm Final Price With Transporter.',
+    disclaimerKey: 'transport.disclaimer.estimate',
   };
 }
 

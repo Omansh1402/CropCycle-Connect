@@ -514,3 +514,17 @@ export function formatDbError(error) {
 
   return error.message || 'An unexpected database error occurred.';
 }
+
+/** Return a stable translation key for a database error without changing its legacy message. */
+export function dbErrorKey(error) {
+  if (!error) return { key: 'db.error.generic', params: {} };
+  if (error.code === 'NOT_CONFIGURED') return { key: 'db.error.notConfigured', params: {} };
+  if (error.code === '23514') return { key: 'db.error.constraint', params: {} };
+  if (error.code === '23502') return { key: 'db.error.required', params: {} };
+  if (error.code === '23503') return { key: 'db.error.reference', params: {} };
+  if (error.code === '42501') return { key: 'db.error.permission', params: {} };
+  if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+    return { key: 'db.error.network', params: {} };
+  }
+  return { key: 'db.error.generic', params: {} };
+}
