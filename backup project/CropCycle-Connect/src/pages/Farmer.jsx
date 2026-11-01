@@ -261,7 +261,7 @@ export default function Farmer() {
                   <span className="form-section-num">01</span>
                   <div>
                     <h2 className="heading-md">{t('farmerNameLabel') || 'Producer & Point of Contact'}</h2>
-                    <p className="body-sm text-muted">Primary entity identification for logistics coordination.</p>
+                    <p className="body-sm text-muted">{t('producerContactSub') || 'Primary entity identification for logistics coordination.'}</p>
                   </div>
                 </div>
 
@@ -318,7 +318,7 @@ export default function Farmer() {
                       maxLength={200}
                     />
                     {errors.contactEmail && <span className="form-error" role="alert">{errors.contactEmail}</span>}
-                    <span className="form-hint">Used strictly for automated pickup confirmation notices.</span>
+                    <span className="form-hint">{t('autoNoticeHint') || 'Used strictly for automated pickup confirmation notices.'}</span>
                   </div>
                 </div>
               </div>
@@ -329,7 +329,7 @@ export default function Farmer() {
                   <span className="form-section-num">02</span>
                   <div>
                     <h2 className="heading-md">{t('residueTypeLabel') || 'Residue Specifications'}</h2>
-                    <p className="body-sm text-muted">Crop species, available tonnage, and batch volume.</p>
+                    <p className="body-sm text-muted">{t('residueSpecsSub') || 'Crop species, available tonnage, and batch volume.'}</p>
                   </div>
                 </div>
 
@@ -380,8 +380,8 @@ export default function Farmer() {
                         aria-label="Unit of measurement"
                       >
                         <option value="tonnes">{t('tonnes') || 'tonnes'}</option>
-                        <option value="quintals">quintals</option>
-                        <option value="kg">kg</option>
+                        <option value="quintals">{t('quintals') || 'quintals'}</option>
+                        <option value="kg">{t('kg') || 'kg'}</option>
                       </select>
                     </div>
                     {errors.quantity && <span className="form-error" role="alert">{errors.quantity}</span>}
@@ -395,7 +395,7 @@ export default function Farmer() {
                   <span className="form-section-num">03</span>
                   <div>
                     <h2 className="heading-md">{t('locationLabel') || 'Field Location & Regional Cluster'}</h2>
-                    <p className="body-sm text-muted">Geographic data feeds the proximity and road-routing algorithm.</p>
+                    <p className="body-sm text-muted">{t('fieldLocationSub') || 'Geographic data feeds the proximity and road-routing algorithm.'}</p>
                   </div>
                 </div>
 
@@ -459,7 +459,7 @@ export default function Farmer() {
                   <span className="form-section-num">04</span>
                   <div>
                     <h2 className="heading-md">{t('askingPriceLabel') || 'Commercial Terms & Residue Quality'}</h2>
-                    <p className="body-sm text-muted">Specify expected asking price, condition, moisture and physical form.</p>
+                    <p className="body-sm text-muted">{t('commercialQualitySub') || 'Specify expected asking price, condition, moisture and physical form.'}</p>
                   </div>
                 </div>
 
@@ -515,7 +515,7 @@ export default function Farmer() {
                     >
                       <option value="baled">{t('formBaled') || 'Baled (Square / Round Bales)'}</option>
                       <option value="loose">{t('formLoose') || 'Loose / Unprocessed Field Biomass'}</option>
-                      <option value="shredded">Shredded / Chopped Straw</option>
+                      <option value="shredded">{t('formShreddedStraw') || 'Shredded / Chopped Straw'}</option>
                       <option value="pelletized">{t('formPelletized') || 'Pelletized / Briquetted'}</option>
                     </select>
                   </div>
@@ -561,7 +561,7 @@ export default function Farmer() {
                   <span className="form-section-num">05</span>
                   <div>
                     <h2 className="heading-md">{t('availabilityDateLabel') || 'Availability Window & Haulage Mode'}</h2>
-                    <p className="body-sm text-muted">Field clearance timeline and preferred loading protocol.</p>
+                    <p className="body-sm text-muted">{t('availabilityLogisticsSub') || 'Field clearance timeline and preferred loading protocol.'}</p>
                   </div>
                 </div>
 
@@ -625,11 +625,11 @@ export default function Farmer() {
               {/* Form Action Controls */}
               <div className="farmer-form-footer">
                 <div className="footer-notice">
-                  Fields marked <span className="text-danger">*</span> are required for algorithm matching.
+                  {t('requiredFieldsNote') || <>Fields marked <span className="text-danger">*</span> are required for algorithm matching.</>}
                 </div>
                 <div className="flex gap-sm">
                   <button type="button" onClick={handleReset} className="btn btn-outline" disabled={loading}>
-                    {t('cancel') || 'Reset Form'}
+                    {t('resetFormBtn') || 'Reset Form'}
                   </button>
                   <button type="submit" className="btn btn-primary" disabled={loading}>
                     {loading ? <LoadingSpinner label={t('submitting') || 'Writing record…'} /> : (t('submitListingBtn') || 'Submit Farm Listing')}
@@ -645,33 +645,31 @@ export default function Farmer() {
               <div className="sidebar-card-header">
                 <span className="sidebar-dot" />
                 <span className="heading-sm">
-                  {isConfigured ? 'Live Database Active' : 'Local Standby Engine'}
+                  {isConfigured ? t('liveDbActive') : t('localStandbyEngine')}
                 </span>
               </div>
               <p className="body-sm text-muted">
-                {isConfigured
-                  ? 'Active listings automatically sync with the live matching engine and persistent Supabase database.'
-                  : 'Demonstration environment. Submissions populate local memory and matching algorithms.'}
+                {isConfigured ? t('liveDbDesc') : t('localStandbyDesc')}
               </p>
             </div>
 
             <div className="sidebar-card mt-lg">
-              <h3 className="heading-sm mb-sm">{t('feedstockStandards') || 'Listing Quality Standards'}</h3>
+              <h3 className="heading-sm mb-sm">{t('listingQualityStandards') || 'Listing Quality Standards'}</h3>
               <ul className="sidebar-checklist">
-                <li>Specify verified crop variety to optimize calorific mapping.</li>
-                <li>Report realistic dry-matter weights for accurate logistics sizing.</li>
-                <li>State asking price in ₹/tonne or select farm-gate for local collection.</li>
-                <li>Align harvest date with required field turnaround schedules.</li>
+                <li>{t('farmerGuideline1')}</li>
+                <li>{t('farmerGuideline2')}</li>
+                <li>{t('farmerGuideline3')}</li>
+                <li>{t('farmerGuideline4')}</li>
               </ul>
             </div>
 
             <div className="sidebar-card mt-lg">
-              <h3 className="heading-sm mb-sm">{t('protocolEyebrow') || 'System Workflow'}</h3>
+              <h3 className="heading-sm mb-sm">{t('systemWorkflowTitle') || 'System Workflow'}</h3>
               <ol className="sidebar-steps">
-                <li><strong>1. Lot Registration:</strong> Batch profile enters deterministic index.</li>
-                <li><strong>2. Algorithmic Ranking:</strong> Proximity, price &amp; volume fit scored on 100 pt scale.</li>
-                <li><strong>3. Direct Inquiries:</strong> Industrial buyers initiate transport requests.</li>
-                <li><strong>4. Clearance:</strong> Residue dispatched with verifiable audit trail.</li>
+                <li>{t('workflowStep1')}</li>
+                <li>{t('workflowStep2')}</li>
+                <li>{t('workflowStep3')}</li>
+                <li>{t('workflowStep4')}</li>
               </ol>
             </div>
           </FadeContent>

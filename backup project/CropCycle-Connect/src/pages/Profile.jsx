@@ -70,31 +70,31 @@ export default function Profile() {
   const validate = () => {
     const errs = {};
     if (!formData.fullName || formData.fullName.trim().length < 2) {
-      errs.fullName = 'Full name must be at least 2 characters long.';
+      errs.fullName = t('errFullName');
     }
 
     if (!formData.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      errs.email = 'Please provide a valid email address.';
+      errs.email = t('errEmailValidation');
     }
 
     if (!formData.phone || !/^[0-9+\s()-]{7,15}$/.test(formData.phone.trim())) {
-      errs.phone = 'Please provide a valid phone number (minimum 7 digits).';
+      errs.phone = t('errPhoneValidation');
     }
 
     if (!formData.accountType || !['Farmer', 'Buyer'].includes(formData.accountType)) {
-      errs.accountType = 'Please select a valid account type.';
+      errs.accountType = t('errAccountType');
     }
 
     if (!formData.state || formData.state.trim().length === 0) {
-      errs.state = 'State is required.';
+      errs.state = t('errState');
     }
 
     if (!formData.district || formData.district.trim().length === 0) {
-      errs.district = 'District is required.';
+      errs.district = t('errDistrict');
     }
 
     if (!formData.location || formData.location.trim().length === 0) {
-      errs.location = 'Location or address is required.';
+      errs.location = t('errLocationReq');
     }
 
     return errs;
@@ -137,7 +137,7 @@ export default function Profile() {
     const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-      setErrorMessage('Please correct the highlighted fields before saving.');
+      setErrorMessage(t('profileValidationPrompt'));
       return;
     }
 
@@ -155,9 +155,9 @@ export default function Profile() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
       setProfile(updated);
       setIsEditing(false);
-      setSuccessMessage('Profile changes have been successfully saved to local browser storage.');
+      setSuccessMessage(t('profileSavedSuccess'));
     } catch {
-      setErrorMessage('Unable to save changes to browser storage. Please check storage permissions.');
+      setErrorMessage(t('profileSaveError'));
     }
   };
 
@@ -182,15 +182,15 @@ export default function Profile() {
               strokeLinejoin="round"
               aria-hidden="true"
             >
-              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="10" r="10" />
               <line x1="12" y1="16" x2="12" y2="12" />
               <line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
           </div>
           <div className="profile-notice__content">
-            <h2 className="profile-notice__title">Local Demo Profile</h2>
+            <h2 className="profile-notice__title">{t('localDemoProfile')}</h2>
             <p className="profile-notice__text">
-              This profile is stored locally in your browser storage for evaluation and demonstration. Cloud authentication and remote synchronization are not active. Changes saved here will persist across browser refreshes on this device.
+              {t('localDemoProfileNotice')}
             </p>
           </div>
         </section>
@@ -254,10 +254,10 @@ export default function Profile() {
                     profile.accountType === 'Farmer' ? 'profile-badge--farmer' : 'profile-badge--buyer'
                   }`}
                 >
-                  {profile.accountType}
+                  {profile.accountType === 'Farmer' ? t('farmerProducerOption') : t('buyerConsumerOption')}
                 </span>
                 {memberDate && (
-                  <span className="profile-member-date">Member since {memberDate}</span>
+                  <span className="profile-member-date">{t('memberSince')} {memberDate}</span>
                 )}
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function Profile() {
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
-                Edit Profile
+                {t('editProfile')}
               </button>
             </div>
           )}
@@ -311,7 +311,7 @@ export default function Profile() {
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
-                Edit Profile Details
+                {t('editProfileDetails')}
               </h2>
             </div>
 
@@ -320,7 +320,7 @@ export default function Profile() {
                 {/* Full Name */}
                 <div className="profile-form-group">
                   <label htmlFor="field-fullName" className="profile-form-label">
-                    Full Name <span className="req">*</span>
+                    {t('fullName')} <span className="req">*</span>
                   </label>
                   <input
                     id="field-fullName"
@@ -346,7 +346,7 @@ export default function Profile() {
                 {/* Account Type */}
                 <div className="profile-form-group">
                   <label htmlFor="field-accountType" className="profile-form-label">
-                    Account Type <span className="req">*</span>
+                    {t('accountType')} <span className="req">*</span>
                   </label>
                   <select
                     id="field-accountType"
@@ -359,8 +359,8 @@ export default function Profile() {
                     aria-invalid={Boolean(errors.accountType)}
                     aria-describedby={errors.accountType ? 'err-accountType' : undefined}
                   >
-                    <option value="Farmer">Farmer (Residue Producer)</option>
-                    <option value="Buyer">Buyer (Biomass Consumer)</option>
+                    <option value="Farmer">{t('farmerProducerOption')}</option>
+                    <option value="Buyer">{t('buyerConsumerOption')}</option>
                   </select>
                   {errors.accountType && (
                     <span id="err-accountType" className="profile-form-error" role="alert">
@@ -372,7 +372,7 @@ export default function Profile() {
                 {/* Email Address */}
                 <div className="profile-form-group">
                   <label htmlFor="field-email" className="profile-form-label">
-                    Email Address <span className="req">*</span>
+                    {t('emailAddress')} <span className="req">*</span>
                   </label>
                   <input
                     id="field-email"
@@ -398,7 +398,7 @@ export default function Profile() {
                 {/* Phone Number */}
                 <div className="profile-form-group">
                   <label htmlFor="field-phone" className="profile-form-label">
-                    Phone Number <span className="req">*</span>
+                    {t('phoneNumber')} <span className="req">*</span>
                   </label>
                   <input
                     id="field-phone"
@@ -424,7 +424,7 @@ export default function Profile() {
                 {/* State */}
                 <div className="profile-form-group">
                   <label htmlFor="field-state" className="profile-form-label">
-                    State <span className="req">*</span>
+                    {t('stateLabel')} <span className="req">*</span>
                   </label>
                   <input
                     id="field-state"
@@ -450,7 +450,7 @@ export default function Profile() {
                 {/* District */}
                 <div className="profile-form-group">
                   <label htmlFor="field-district" className="profile-form-label">
-                    District <span className="req">*</span>
+                    {t('districtLabel')} <span className="req">*</span>
                   </label>
                   <input
                     id="field-district"
@@ -476,7 +476,7 @@ export default function Profile() {
                 {/* Location */}
                 <div className="profile-form-group profile-form-grid--full">
                   <label htmlFor="field-location" className="profile-form-label">
-                    Specific Location / Address <span className="req">*</span>
+                    {t('specificLocationAddress')} <span className="req">*</span>
                   </label>
                   <input
                     id="field-location"
@@ -507,13 +507,13 @@ export default function Profile() {
                   className="btn btn-secondary"
                   onClick={handleCancel}
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   className="btn btn-primary"
                 >
-                  Save Changes
+                  {t('saveChanges')}
                 </button>
               </div>
             </div>
@@ -538,28 +538,28 @@ export default function Profile() {
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
                   </svg>
-                  Account Information
+                  {t('accountInformation')}
                 </h2>
               </div>
               <div className="profile-card__body">
                 <div className="profile-grid">
                   <div className="profile-field">
-                    <span className="profile-field__label">Full Name</span>
+                    <span className="profile-field__label">{t('fullName')}</span>
                     <span className="profile-field__value">{profile.fullName}</span>
                   </div>
 
                   <div className="profile-field">
-                    <span className="profile-field__label">Account Role</span>
+                    <span className="profile-field__label">{t('accountRole')}</span>
                     <span className="profile-field__value">{profile.accountType}</span>
                   </div>
 
                   <div className="profile-field">
-                    <span className="profile-field__label">Email Address</span>
+                    <span className="profile-field__label">{t('emailAddress')}</span>
                     <span className="profile-field__value">{profile.email}</span>
                   </div>
 
                   <div className="profile-field">
-                    <span className="profile-field__label">Phone Number</span>
+                    <span className="profile-field__label">{t('phoneNumber')}</span>
                     <span className="profile-field__value">{profile.phone}</span>
                   </div>
                 </div>
@@ -584,23 +584,23 @@ export default function Profile() {
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                     <circle cx="12" cy="10" r="3" />
                   </svg>
-                  Operating Location
+                  {t('operatingLocation')}
                 </h2>
               </div>
               <div className="profile-card__body">
                 <div className="profile-grid">
                   <div className="profile-field">
-                    <span className="profile-field__label">State</span>
+                    <span className="profile-field__label">{t('stateLabel')}</span>
                     <span className="profile-field__value">{profile.state}</span>
                   </div>
 
                   <div className="profile-field">
-                    <span className="profile-field__label">District</span>
+                    <span className="profile-field__label">{t('districtLabel')}</span>
                     <span className="profile-field__value">{profile.district}</span>
                   </div>
 
                   <div className="profile-field profile-grid--full">
-                    <span className="profile-field__label">Specific Location / Address</span>
+                    <span className="profile-field__label">{t('specificLocationAddress')}</span>
                     <span className="profile-field__value">{profile.location}</span>
                   </div>
                 </div>
@@ -631,21 +631,21 @@ export default function Profile() {
               <div className="profile-card__body">
                 <div className="profile-grid">
                   <div className="profile-field">
-                    <span className="profile-field__label">Data Persistence Mode</span>
-                    <span className="profile-field__value">Local Browser Storage (Client-side)</span>
+                    <span className="profile-field__label">{t('dataPersistenceMode')}</span>
+                    <span className="profile-field__value">{t('clientSideStorage')}</span>
                   </div>
 
                   {memberDate && (
                     <div className="profile-field">
-                      <span className="profile-field__label">Account Created</span>
+                      <span className="profile-field__label">{t('accountCreated')}</span>
                       <span className="profile-field__value">{memberDate}</span>
                     </div>
                   )}
 
                   <div className="profile-field profile-grid--full">
-                    <span className="profile-field__label">Security Architecture Note</span>
+                    <span className="profile-field__label">{t('securityArchNote')}</span>
                     <span className="profile-field__value" style={{ color: 'var(--color-text-secondary)', fontSize: '0.8125rem' }}>
-                      Profile state is maintained securely in your local browser sandbox without exposing backend API secrets or requesting unauthorized public Supabase writes.
+                      {t('securityArchSandboxDesc')}
                     </span>
                   </div>
                 </div>

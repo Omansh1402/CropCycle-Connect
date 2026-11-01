@@ -1,14 +1,57 @@
 // src/lib/i18n.jsx
-import { createContext, useContext, useState } from 'react';
-import { SUPPORTED_LANGUAGES, TRANSLATIONS } from './i18nData.js';
+/* oxlint-disable react/only-export-components */
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState, useEffect } from 'react';
+import {
+  SUPPORTED_LANGUAGES,
+  TRANSLATIONS,
+  CROP_TRANSLATIONS,
+  RESIDUE_TRANSLATIONS,
+  PURPOSE_TRANSLATIONS,
+  VEHICLE_TRANSLATIONS,
+  DELIVERY_TRANSLATIONS,
+  STATUS_TRANSLATIONS,
+  INDUSTRY_TRANSLATIONS,
+  tCrop,
+  tResidue,
+  tPurpose,
+  tVehicle,
+  tDelivery,
+  tStatus,
+  tIndustry,
+} from './i18nData.js';
 
-export { SUPPORTED_LANGUAGES, TRANSLATIONS };
+export {
+  SUPPORTED_LANGUAGES,
+  TRANSLATIONS,
+  CROP_TRANSLATIONS,
+  RESIDUE_TRANSLATIONS,
+  PURPOSE_TRANSLATIONS,
+  VEHICLE_TRANSLATIONS,
+  DELIVERY_TRANSLATIONS,
+  STATUS_TRANSLATIONS,
+  INDUSTRY_TRANSLATIONS,
+  tCrop,
+  tResidue,
+  tPurpose,
+  tVehicle,
+  tDelivery,
+  tStatus,
+  tIndustry,
+};
 
 const LanguageContext = createContext({
   language: 'en',
   setLanguage: () => {},
   t: (key) => key,
   supportedLanguages: SUPPORTED_LANGUAGES,
+  tCrop: (c) => c,
+  tResidue: (r) => r,
+  tPurpose: (p) => p,
+  tVehicle: (v) => v,
+  tDelivery: (d) => d,
+  tStatus: (s) => s,
+  tIndustry: (i) => i,
 });
 
 export function LanguageProvider({ children }) {
@@ -24,6 +67,16 @@ export function LanguageProvider({ children }) {
     return 'en';
   });
 
+  useEffect(() => {
+    try {
+      if (typeof document !== 'undefined') {
+        document.documentElement.lang = language;
+      }
+    } catch {
+      // Safe catch
+    }
+  }, [language]);
+
   const setLanguage = (langCode) => {
     if (SUPPORTED_LANGUAGES.some((l) => l.code === langCode)) {
       setLanguageState(langCode);
@@ -35,13 +88,34 @@ export function LanguageProvider({ children }) {
     }
   };
 
-  const t = (key) => {
+  const t = (key, params) => {
+    if (!key) return '';
     const langDict = TRANSLATIONS[language] || TRANSLATIONS.en;
-    return langDict[key] || TRANSLATIONS.en[key] || key;
+    let str = (langDict && langDict[key]) ?? (TRANSLATIONS.en && TRANSLATIONS.en[key]) ?? key;
+    if (params && typeof params === 'object' && typeof str === 'string') {
+      Object.keys(params).forEach((paramKey) => {
+        str = str.replace(new RegExp(`\\{${paramKey}\\}`, 'g'), params[paramKey]);
+      });
+    }
+    return str;
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, supportedLanguages: SUPPORTED_LANGUAGES }}>
+    <LanguageContext.Provider
+      value={{
+        language,
+        setLanguage,
+        t,
+        supportedLanguages: SUPPORTED_LANGUAGES,
+        tCrop: (c) => tCrop(c, language),
+        tResidue: (r) => tResidue(r, language),
+        tPurpose: (p) => tPurpose(p, language),
+        tVehicle: (v) => tVehicle(v, language),
+        tDelivery: (d) => tDelivery(d, language),
+        tStatus: (s) => tStatus(s, language),
+        tIndustry: (i) => tIndustry(i, language),
+      }}
+    >
       {children}
     </LanguageContext.Provider>
   );

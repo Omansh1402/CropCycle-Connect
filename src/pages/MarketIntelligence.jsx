@@ -25,7 +25,7 @@ import FadeContent from '../components/reactbits/FadeContent';
 import './MarketIntelligence.css';
 
 export default function MarketIntelligence() {
-  const { t } = useTranslation();
+  const { t, tCrop, tResidue, tPurpose, tVehicle, tStatus } = useTranslation();
 
   // ── Filter State ──
   const [selectedState, setSelectedState] = useState('Punjab');
@@ -368,7 +368,7 @@ export default function MarketIntelligence() {
         <div className="container">
           <div className="flex justify-between items-start flex-wrap gap-md">
             <div>
-              <span className="section-eyebrow">National Agro-Biomass Intelligence</span>
+              <span className="section-eyebrow">{t('nationalAgroBiomassIntelligence')}</span>
               <SplitText
                 text={t('marketIntelligenceTitle')}
                 tag="h1"
@@ -380,7 +380,7 @@ export default function MarketIntelligence() {
               </p>
             </div>
             <div className="data-source-badge-card">
-              <span className="badge badge-green">Traceable Ground Truth</span>
+              <span className="badge badge-green">{t('traceableGroundTruth')}</span>
               <div className="body-xs text-muted mt-xs">
                 MoA&amp;FW (DES 2022-24) · MNRE Atlas · ICAR-IARI
               </div>
@@ -395,7 +395,7 @@ export default function MarketIntelligence() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-md items-end">
             <div>
               <label className="form-label font-semibold" htmlFor="state-selector">
-                {t('selectState')} (28 States &amp; 8 UTs)
+                {t('selectState')} ({t('twentyEightStatesEightUts')})
               </label>
               <select
                 id="state-selector"
@@ -425,7 +425,7 @@ export default function MarketIntelligence() {
                 className="form-control"
                 disabled={availableDistricts.length === 0}
               >
-                <option value="All">All Districts ({availableDistricts.length})</option>
+                <option value="All">{t('allDistrictsOption')} ({availableDistricts.length})</option>
                 {availableDistricts.map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
@@ -442,7 +442,7 @@ export default function MarketIntelligence() {
                 onChange={(e) => setSelectedResidueType(e.target.value)}
                 className="form-control"
               >
-                <option value="All">All Crop Residue Types</option>
+                <option value="All">{t('allResidueTypes')}</option>
                 {RESIDUE_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
@@ -459,7 +459,7 @@ export default function MarketIntelligence() {
                 onChange={(e) => setSelectedPurpose(e.target.value)}
                 className="form-control"
               >
-                <option value="All">All Industrial Purposes</option>
+                <option value="All">{t('allIndustrialPurposes')}</option>
                 {BUYER_PURPOSES.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
@@ -473,15 +473,15 @@ export default function MarketIntelligence() {
           <div className="section-header-row mb-md">
             <div>
               <div className="flex items-center gap-xs">
-                <span className="badge badge-green">Part 1</span>
-                <h2 className="heading-lg">State-Wise Agricultural Crop Residue Production</h2>
+                <span className="badge badge-green">{t('partOneBadge')}</span>
+                <h2 className="heading-lg">{t('stateWiseAgriProduction')}</h2>
               </div>
               <p className="body-sm text-muted mt-xs">
-                Reporting Region: <strong>{selectedState}</strong> · Reporting Cycle: <strong>{stateAgriculturalData?.reportingYear || '2023-24'}</strong> · Units: <strong>tonnes/year</strong>
+                {t('reportingRegion')}: <strong>{selectedState}</strong> · {t('reportingCycle')}: <strong>{stateAgriculturalData?.reportingYear || '2023-24'}</strong> · {t('unitsTonnesYear')}
               </p>
             </div>
             <div className="text-right">
-              <span className="body-xs text-muted block">Grounded Sourced Dataset:</span>
+              <span className="body-xs text-muted block">{t('groundedSourcedDataset')}:</span>
               <a
                 href={stateAgriculturalData?.sourceUrl || 'https://agricoop.nic.in'}
                 target="_blank"
@@ -496,7 +496,7 @@ export default function MarketIntelligence() {
           {stateAgriculturalData?.dataUnavailableReason ? (
             /* Explicit Transparent Unavailable State (Part 1 rule: no fabricated figures) */
             <div className="unavailable-data-notice card">
-              <div className="badge badge-warm mb-xs">Official Sourced Status</div>
+              <div className="badge badge-warm mb-xs">{t('officialSourcedStatus')}</div>
               <h3 className="heading-md text-muted">{stateAgriculturalData.dataUnavailableReason}</h3>
               <p className="body-sm text-muted mt-xs">
                 {stateAgriculturalData.methodology}
@@ -507,15 +507,15 @@ export default function MarketIntelligence() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Major Crop Produced</th>
-                    <th>Residue Type</th>
-                    <th>Crop Production (t/yr)</th>
-                    <th>Residue Generated (t/yr)</th>
-                    <th>Estimated Usable Surplus (t/yr)</th>
-                    <th>Technically Collectable (t/yr)</th>
-                    <th>Existing Uses (t/yr)</th>
-                    <th>Remaining Available (t/yr)</th>
-                    <th>Classification</th>
+                    <th>{t('colMajorCropProduced')}</th>
+                    <th>{t('colResidueType')}</th>
+                    <th>{t('colCropProductionTonneYear')}</th>
+                    <th>{t('colResidueGeneratedTonneYear')}</th>
+                    <th>{t('colEstimatedUsableSurplusTonneYear')}</th>
+                    <th>{t('colTechnicallyCollectableTonneYear')}</th>
+                    <th>{t('colExistingUsesTonneYear')}</th>
+                    <th>{t('colRemainingAvailableTonneYear')}</th>
+                    <th>{t('colClassification')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -534,7 +534,7 @@ export default function MarketIntelligence() {
                         <td className="font-bold text-forest">{c.potentialAvailableTonnes?.toLocaleString('en-IN') || 'Data not available'}</td>
                         <td>
                           <span className="badge badge-muted" title={c.methodology}>
-                            {c.classification || 'Scientifically Estimated'}
+                            {c.classification ? t(c.classification) : t('scientificallyEstimated')}
                           </span>
                         </td>
                       </tr>
@@ -543,7 +543,7 @@ export default function MarketIntelligence() {
                   {(!stateAgriculturalData?.crops || stateAgriculturalData.crops.length === 0) && (
                     <tr>
                       <td colSpan={9} className="text-center py-lg text-muted">
-                        No crop residue production records found for this state.
+                        {t('noCropRecordsFound')}
                       </td>
                     </tr>
                   )}
@@ -561,8 +561,8 @@ export default function MarketIntelligence() {
           <div className="section-header-row mb-md">
             <div>
               <div className="flex items-center gap-xs">
-                <span className="badge badge-green">Part 2</span>
-                <h2 className="heading-lg">State-Wise Supply &amp; Demand Ledger</h2>
+                <span className="badge badge-green">{t('partTwoBadge')}</span>
+                <h2 className="heading-lg">{t('stateWiseSupplyDemandLedger')}</h2>
               </div>
               <p className="body-sm text-muted mt-xs">
                 Clear distinction between annual statewide agricultural estimates and active live platform inventory on CropCycle Connect.
@@ -574,12 +574,12 @@ export default function MarketIntelligence() {
             {/* Left Ledger: Statewide Annual Agricultural Estimates */}
             <div className="card ledger-box ledger-box--statewide">
               <div className="ledger-header">
-                <span className="badge badge-muted">Macro Agricultural Estimates (DES / MNRE)</span>
+                <span className="badge badge-muted">{t('macroAgriEstimates')}</span>
                 <h3 className="heading-md mt-xs">{selectedState} Annual Residue Baseline</h3>
               </div>
               <div className="ledger-rows mt-md">
                 <div className="ledger-row">
-                  <span className="ledger-label">A. Total Agricultural Production</span>
+                  <span className="ledger-label">{t('ledgerTotalAgriProduction')}</span>
                   <strong className="ledger-val">
                     {ledgerMetrics.totalProduction > 0
                       ? `${ledgerMetrics.totalProduction.toLocaleString('en-IN')} t/yr`
@@ -587,7 +587,7 @@ export default function MarketIntelligence() {
                   </strong>
                 </div>
                 <div className="ledger-row">
-                  <span className="ledger-label">B. Available Agricultural Surplus</span>
+                  <span className="ledger-label">{t('ledgerAvailableAgriSurplus')}</span>
                   <strong className="ledger-val text-forest">
                     {ledgerMetrics.availableSurplus > 0
                       ? `${ledgerMetrics.availableSurplus.toLocaleString('en-IN')} t/yr`
@@ -595,7 +595,7 @@ export default function MarketIntelligence() {
                   </strong>
                 </div>
                 <div className="ledger-row">
-                  <span className="ledger-label">Technically Collectable Potential</span>
+                  <span className="ledger-label">{t('ledgerTechCollectablePotential')}</span>
                   <span className="ledger-val">
                     {ledgerMetrics.technicallyCollectable > 0
                       ? `${ledgerMetrics.technicallyCollectable.toLocaleString('en-IN')} t/yr`
@@ -603,7 +603,7 @@ export default function MarketIntelligence() {
                   </span>
                 </div>
                 <div className="ledger-row">
-                  <span className="ledger-label">Existing Uses (Fodder &amp; Fuel)</span>
+                  <span className="ledger-label">{t('ledgerExistingUsesFodderFuel')}</span>
                   <span className="ledger-val text-muted">
                     {ledgerMetrics.existingUses > 0
                       ? `${ledgerMetrics.existingUses.toLocaleString('en-IN')} t/yr`
@@ -611,7 +611,7 @@ export default function MarketIntelligence() {
                   </span>
                 </div>
                 <div className="ledger-row highlight">
-                  <span className="ledger-label font-semibold">Estimated External Market Demand</span>
+                  <span className="ledger-label font-semibold">{t('ledgerEstimatedExternalMarketDemand')}</span>
                   <strong className="ledger-val">
                     {ledgerMetrics.estimatedExternalMarketDemand
                       ? `${ledgerMetrics.estimatedExternalMarketDemand.toLocaleString('en-IN')} t/yr`
@@ -629,42 +629,42 @@ export default function MarketIntelligence() {
             {/* Right Ledger: Live Platform Inventory on CropCycle Connect */}
             <div className="card ledger-box ledger-box--platform">
               <div className="ledger-header">
-                <span className="badge badge-green">Live Platform Inventory</span>
-                <h3 className="heading-md mt-xs">CropCycle Connect Verified Pool</h3>
+                <span className="badge badge-green">{t('livePlatformInventory')}</span>
+                <h3 className="heading-md mt-xs">{t('cropCycleVerifiedPool')}</h3>
               </div>
               <div className="ledger-rows mt-md">
                 <div className="ledger-row">
-                  <span className="ledger-label">C. Platform Supply (Active Farmer Listings)</span>
+                  <span className="ledger-label">{t('ledgerPlatformSupply')}</span>
                   <strong className="ledger-val text-forest">
                     {ledgerMetrics.platformSupply.toLocaleString('en-IN')} tonnes
                   </strong>
                 </div>
                 <div className="ledger-row">
-                  <span className="ledger-label">D. Platform Demand (Active Buyer Requirements)</span>
+                  <span className="ledger-label">{t('ledgerPlatformDemand')}</span>
                   <strong className="ledger-val">
                     {ledgerMetrics.platformDemand.toLocaleString('en-IN')} tonnes
                   </strong>
                 </div>
                 <div className="ledger-row">
-                  <span className="ledger-label">E. Matched Quantity (Allocated Supply)</span>
+                  <span className="ledger-label">{t('ledgerMatchedQuantity')}</span>
                   <strong className="ledger-val text-forest font-bold">
                     {ledgerMetrics.matchedQuantity.toLocaleString('en-IN')} tonnes
                   </strong>
                 </div>
                 <div className="ledger-row">
-                  <span className="ledger-label">F. Unmet Demand (Unallocated Procurement)</span>
+                  <span className="ledger-label">{t('ledgerUnmetDemand')}</span>
                   <span className="ledger-val text-warm font-semibold">
                     {ledgerMetrics.unmetDemand.toLocaleString('en-IN')} tonnes
                   </span>
                 </div>
                 <div className="ledger-row highlight">
-                  <span className="ledger-label font-semibold">G. Available Unmatched Supply (Ready to Match)</span>
+                  <span className="ledger-label font-semibold">{t('ledgerAvailableUnmatchedSupply')}</span>
                   <strong className="ledger-val text-forest">
                     {ledgerMetrics.availableUnmatchedSupply.toLocaleString('en-IN')} tonnes
                   </strong>
                 </div>
                 <p className="body-xs text-muted mt-xs">
-                  * Live inventory deduplicates real and demonstration lots to prevent double counting.
+                  {t('ledgerDeduplicateFootnote')}
                 </p>
               </div>
             </div>
@@ -676,8 +676,8 @@ export default function MarketIntelligence() {
           <div className="section-header-row mb-md">
             <div>
               <div className="flex items-center gap-xs">
-                <span className="badge badge-green">Part 3</span>
-                <h2 className="heading-lg">Residue Visual Analytics &amp; Breakdown</h2>
+                <span className="badge badge-green">{t('partThreeBadge')}</span>
+                <h2 className="heading-lg">{t('residueVisualAnalyticsBreakdown')}</h2>
               </div>
               <p className="body-sm text-muted mt-xs">
                 Comparative distributions of production, surplus, platform utilization, and matched quantities.
@@ -688,8 +688,8 @@ export default function MarketIntelligence() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
             {/* Chart 1: Residue Production by Type */}
             <div className="card chart-card">
-              <h4 className="heading-sm mb-xs">Residue Production by Crop Species (t/yr)</h4>
-              <span className="body-xs text-muted mb-md block">Annual estimated generation across major crops</span>
+              <h4 className="heading-sm mb-xs">{t('chartResidueProductionByCrop')}</h4>
+              <span className="body-xs text-muted mb-md block">{t('chartAnnualEstimatedGen')}</span>
               <div className="chart-bars">
                 {stateAgriculturalData?.crops?.map((c) => {
                   const maxResidue = Math.max(...(stateAgriculturalData.crops.map((x) => x.residueGeneratedTonnes || 1)));
@@ -697,7 +697,7 @@ export default function MarketIntelligence() {
                   return (
                     <div key={c.residueType} className="chart-bar-row">
                       <div className="chart-bar-label">
-                        <span className="font-medium body-xs">{c.residueType}</span>
+                        <span className="font-medium body-xs">{tResidue(c.residueType)}</span>
                         <span className="body-xs text-muted">{c.residueGeneratedTonnes?.toLocaleString('en-IN')} t</span>
                       </div>
                       <div className="chart-track">
@@ -707,15 +707,15 @@ export default function MarketIntelligence() {
                   );
                 })}
                 {(!stateAgriculturalData?.crops || stateAgriculturalData.crops.length === 0) && (
-                  <p className="body-sm text-muted text-center py-md">No agricultural crops reported.</p>
+                  <p className="body-sm text-muted text-center py-md">{t('noAgriCropsReported')}</p>
                 )}
               </div>
             </div>
 
             {/* Chart 2: Residue Utilization Breakdown */}
             <div className="card chart-card">
-              <h4 className="heading-sm mb-xs">Residue Utilization Breakdown</h4>
-              <span className="body-xs text-muted mb-md block">Fodder &amp; Domestic vs Surplus vs Collectable</span>
+              <h4 className="heading-sm mb-xs">{t('chartResidueUtilizationBreakdown')}</h4>
+              <span className="body-xs text-muted mb-md block">{t('chartFodderDomesticVsSurplus')}</span>
               {ledgerMetrics.totalProduction > 0 ? (
                 <div className="utilization-breakdown">
                   <div className="utilization-bar-stacked mb-sm">
@@ -733,33 +733,33 @@ export default function MarketIntelligence() {
                   <div className="chart-legend-grid">
                     <div className="legend-item">
                       <span className="legend-color-dot seg-uses" />
-                      <span className="body-xs">Existing Uses: {((ledgerMetrics.existingUses / ledgerMetrics.totalProduction) * 100).toFixed(1)}%</span>
+                      <span className="body-xs">{t('existingUsesLabel')}: {((ledgerMetrics.existingUses / ledgerMetrics.totalProduction) * 100).toFixed(1)}%</span>
                     </div>
                     <div className="legend-item">
                       <span className="legend-color-dot seg-surplus" />
-                      <span className="body-xs">Available Surplus: {((ledgerMetrics.availableSurplus / ledgerMetrics.totalProduction) * 100).toFixed(1)}%</span>
+                      <span className="body-xs">{t('availableSurplusLabel')}: {((ledgerMetrics.availableSurplus / ledgerMetrics.totalProduction) * 100).toFixed(1)}%</span>
                     </div>
                   </div>
                   <div className="mt-md pt-sm" style={{ borderTop: '1px solid #E5E7EB' }}>
-                    <span className="body-xs text-muted">Technically Collectable Fraction:</span>
+                    <span className="body-xs text-muted">{t('technicallyCollectableFraction')}</span>
                     <strong className="body-sm block text-forest">
-                      {ledgerMetrics.technicallyCollectable.toLocaleString('en-IN')} tonnes/year (~75–85% of gross residue)
+                      {ledgerMetrics.technicallyCollectable.toLocaleString('en-IN')} tonnes/year {t('seventyFiveToEightyFiveGrossResidue')}
                     </strong>
                   </div>
                 </div>
               ) : (
-                <p className="body-sm text-muted text-center py-md">Data not available for utilization breakdown.</p>
+                <p className="body-sm text-muted text-center py-md">{t('dataNotAvailable')}</p>
               )}
             </div>
 
             {/* Chart 3: Live Platform Supply vs Demand */}
             <div className="card chart-card">
-              <h4 className="heading-sm mb-xs">Platform Supply vs Demand (CropCycle Connect)</h4>
-              <span className="body-xs text-muted mb-md block">Active inventory listed by registered users</span>
+              <h4 className="heading-sm mb-xs">{t('chartPlatformSupplyVsDemand')}</h4>
+              <span className="body-xs text-muted mb-md block">{t('chartActiveInventoryListed')}</span>
               <div className="chart-bars">
                 <div className="chart-bar-row">
                   <div className="chart-bar-label">
-                    <span className="font-medium body-xs">Platform Supply (Farmers)</span>
+                    <span className="font-medium body-xs">{t('chartPlatformSupplyFarmers')}</span>
                     <span className="body-xs font-semibold text-forest">{ledgerMetrics.platformSupply} t</span>
                   </div>
                   <div className="chart-track">
@@ -771,7 +771,7 @@ export default function MarketIntelligence() {
                 </div>
                 <div className="chart-bar-row">
                   <div className="chart-bar-label">
-                    <span className="font-medium body-xs">Platform Demand (Buyers)</span>
+                    <span className="font-medium body-xs">{t('chartPlatformDemandBuyers')}</span>
                     <span className="body-xs font-semibold">{ledgerMetrics.platformDemand} t</span>
                   </div>
                   <div className="chart-track">
@@ -786,12 +786,12 @@ export default function MarketIntelligence() {
 
             {/* Chart 4: Matched vs Unmatched Quantity */}
             <div className="card chart-card">
-              <h4 className="heading-sm mb-xs">Allocation: Matched vs Unmatched Quantity</h4>
-              <span className="body-xs text-muted mb-md block">Lot allocation status in active marketplace</span>
+              <h4 className="heading-sm mb-xs">{t('chartAllocationMatchedVsUnmatched')}</h4>
+              <span className="body-xs text-muted mb-md block">{t('chartLotAllocationStatus')}</span>
               <div className="chart-bars">
                 <div className="chart-bar-row">
                   <div className="chart-bar-label">
-                    <span className="font-medium body-xs">Matched Quantity</span>
+                    <span className="font-medium body-xs">{t('chartMatchedQuantity')}</span>
                     <span className="body-xs font-semibold text-forest">{ledgerMetrics.matchedQuantity} t</span>
                   </div>
                   <div className="chart-track">
@@ -803,7 +803,7 @@ export default function MarketIntelligence() {
                 </div>
                 <div className="chart-bar-row">
                   <div className="chart-bar-label">
-                    <span className="font-medium body-xs">Available Unmatched Supply</span>
+                    <span className="font-medium body-xs">{t('chartAvailableUnmatchedSupply')}</span>
                     <span className="body-xs font-semibold">{ledgerMetrics.availableUnmatchedSupply} t</span>
                   </div>
                   <div className="chart-track">
@@ -815,7 +815,7 @@ export default function MarketIntelligence() {
                 </div>
                 <div className="chart-bar-row">
                   <div className="chart-bar-label">
-                    <span className="font-medium body-xs">Unmet Buyer Demand</span>
+                    <span className="font-medium body-xs">{t('chartUnmetBuyerDemand')}</span>
                     <span className="body-xs font-semibold text-warm">{ledgerMetrics.unmetDemand} t</span>
                   </div>
                   <div className="chart-track">
@@ -835,8 +835,8 @@ export default function MarketIntelligence() {
           <div className="section-header-row mb-md">
             <div>
               <div className="flex items-center gap-xs">
-                <span className="badge badge-green">Part 4</span>
-                <h2 className="heading-lg">Crop Residue Buying &amp; Selling Rates</h2>
+                <span className="badge badge-green">{t('partFourBadge')}</span>
+                <h2 className="heading-lg">{t('cropResidueBuyingSellingRates')}</h2>
               </div>
               <p className="body-sm text-muted mt-xs">
                 Real asking prices, buyer quotes, and verified official benchmark tariffs. All rates in <strong>INR / tonne (₹/tonne)</strong>.
@@ -854,36 +854,36 @@ export default function MarketIntelligence() {
 
                 <div className="pricing-rows body-sm mt-sm">
                   <div className="flex justify-between py-xs border-b">
-                    <span className="text-muted">Farmer Asking:</span>
+                    <span className="text-muted">{t('farmerAskingRate')}</span>
                     <strong className="text-forest">
-                      {p.avgAskingPrice ? `₹${p.avgAskingPrice.toLocaleString('en-IN')} / t` : 'Direct Negotiation'}
+                      {p.avgAskingPrice ? `₹${p.avgAskingPrice.toLocaleString('en-IN')} / t` : t('directNegotiation')}
                     </strong>
                   </div>
 
                   <div className="flex justify-between py-xs border-b">
-                    <span className="text-muted">Buyer Offered:</span>
+                    <span className="text-muted">{t('buyerOfferedRate')}</span>
                     <strong>
-                      {p.avgOfferedPrice ? `₹${p.avgOfferedPrice.toLocaleString('en-IN')} / t` : 'Open Quote'}
+                      {p.avgOfferedPrice ? `₹${p.avgOfferedPrice.toLocaleString('en-IN')} / t` : t('openQuote')}
                     </strong>
                   </div>
 
                   <div className="flex justify-between py-xs border-b">
-                    <span className="text-muted">Verified Reference:</span>
+                    <span className="text-muted">{t('verifiedReferenceRate')}</span>
                     <strong className="text-forest">
-                      {p.referenceRate ? `₹${p.referenceRate.typicalRate.toLocaleString('en-IN')} / t` : 'No verified rate'}
+                      {p.referenceRate ? `₹${p.referenceRate.typicalRate.toLocaleString('en-IN')} / t` : t('noVerifiedRate')}
                     </strong>
                   </div>
 
                   {p.referenceRate && (
                     <div className="mt-xs body-xs text-muted">
-                      <span>Condition: {p.referenceRate.deliveryCondition}</span>
-                      <span className="block mt-xxs">Source: {p.referenceRate.source} ({p.referenceRate.reportingYear})</span>
+                      <span>{t('deliveryCondition')} {p.referenceRate.deliveryCondition}</span>
+                      <span className="block mt-xxs">{t('sourceLabel')} {p.referenceRate.source} ({p.referenceRate.reportingYear})</span>
                     </div>
                   )}
 
                   {!p.referenceRate && !p.avgAskingPrice && !p.avgOfferedPrice && (
                     <div className="mt-xs body-xs text-muted" style={{ fontStyle: 'italic' }}>
-                      No verified price available. Contact the buyer or negotiate directly.
+                      {t('noVerifiedPriceNegotiate')}
                     </div>
                   )}
                 </div>
@@ -897,23 +897,23 @@ export default function MarketIntelligence() {
           <div className="section-header-row mb-md">
             <div>
               <div className="flex items-center gap-xs">
-                <span className="badge badge-green">Part 5</span>
-                <h2 className="heading-lg">Smart Interstate Transportation Cost Calculator</h2>
+                <span className="badge badge-green">{t('partFiveBadge')}</span>
+                <h2 className="heading-lg">{t('smartTransportationCalculator')}</h2>
               </div>
               <p className="body-sm text-muted mt-xs">
                 Compute route distance, multi-trip payload logistics, and delivered procurement costs between any two districts or states.
               </p>
             </div>
-            <span className="badge badge-warm">OSRM Road Distance Grounded</span>
+            <span className="badge badge-warm">{t('osrmRoadDistanceGrounded')}</span>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
             {/* Controls Form */}
             <div className="card lg:col-span-1" style={{ backgroundColor: '#F8FAF9' }}>
-              <h3 className="heading-sm mb-md">Route &amp; Freight Parameters</h3>
+              <h3 className="heading-sm mb-md">{t('routeFreightParameters')}</h3>
 
               <div className="form-group mb-sm">
-                <label className="form-label font-semibold">Origin State (Farmer Location)</label>
+                <label className="form-label font-semibold">{t('originStateFarmerLocation')}</label>
                 <select
                   value={calcOriginState}
                   onChange={(e) => setCalcOriginState(e.target.value)}
@@ -926,7 +926,7 @@ export default function MarketIntelligence() {
               </div>
 
               <div className="form-group mb-sm">
-                <label className="form-label font-semibold">Origin District / Town</label>
+                <label className="form-label font-semibold">{t('originDistrictTown')}</label>
                 <input
                   type="text"
                   value={calcOriginDistrict}
@@ -937,7 +937,7 @@ export default function MarketIntelligence() {
               </div>
 
               <div className="form-group mb-sm">
-                <label className="form-label font-semibold">Destination State (Buyer Location)</label>
+                <label className="form-label font-semibold">{t('destinationStateBuyerLocation')}</label>
                 <select
                   value={calcDestState}
                   onChange={(e) => setCalcDestState(e.target.value)}
@@ -950,7 +950,7 @@ export default function MarketIntelligence() {
               </div>
 
               <div className="form-group mb-sm">
-                <label className="form-label font-semibold">Destination District / Plant</label>
+                <label className="form-label font-semibold">{t('destinationDistrictPlant')}</label>
                 <input
                   type="text"
                   value={calcDestDistrict}
@@ -962,7 +962,7 @@ export default function MarketIntelligence() {
 
               <div className="grid grid-cols-2 gap-sm mb-sm">
                 <div className="form-group">
-                  <label className="form-label font-semibold">Residue Type</label>
+                  <label className="form-label font-semibold">{t('residueType')}</label>
                   <select
                     value={calcResidueType}
                     onChange={(e) => setCalcResidueType(e.target.value)}
@@ -975,7 +975,7 @@ export default function MarketIntelligence() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label font-semibold">Lot Size (Tonnes)</label>
+                  <label className="form-label font-semibold">{t('lotSizeTonnes')}</label>
                   <input
                     type="number"
                     min="1"
@@ -987,7 +987,7 @@ export default function MarketIntelligence() {
               </div>
 
               <div className="form-group mb-sm">
-                <label className="form-label font-semibold">Commercial Vehicle Profile</label>
+                <label className="form-label font-semibold">{t('commercialVehicleProfile')}</label>
                 <select
                   value={calcVehicleTier}
                   onChange={(e) => setCalcVehicleTier(e.target.value)}
@@ -1003,7 +1003,7 @@ export default function MarketIntelligence() {
 
               <div className="grid grid-cols-2 gap-sm mb-sm">
                 <div className="form-group">
-                  <label className="form-label">Purchase Price (₹/t)</label>
+                  <label className="form-label">{t('purchasePricePerTonneLabel')}</label>
                   <input
                     type="number"
                     value={calcPurchasePrice}
@@ -1012,7 +1012,7 @@ export default function MarketIntelligence() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Other Charges (₹/t)</label>
+                  <label className="form-label">{t('otherChargesPerTonneLabel')}</label>
                   <input
                     type="number"
                     value={calcOtherCharges}
@@ -1030,7 +1030,7 @@ export default function MarketIntelligence() {
                     checked={calcIncludeEmptyReturn}
                     onChange={(e) => setCalcIncludeEmptyReturn(e.target.checked)}
                   />
-                  <span className="body-sm">Include Empty Return Surcharge (50%)</span>
+                  <span className="body-sm">{t('includeEmptyReturnSurcharge')}</span>
                 </label>
               </div>
             </div>
@@ -1040,103 +1040,103 @@ export default function MarketIntelligence() {
               <div className="card mb-md" style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0' }}>
                 <div className="flex justify-between items-center mb-md flex-wrap gap-xs">
                   <div>
-                    <span className="badge badge-green">Scenario Evaluation</span>
+                    <span className="badge badge-green">{t('scenarioEvaluationBadge')}</span>
                     <h3 className="heading-md mt-xs">
                       {logisticsCalculation.origin} → {logisticsCalculation.destination}
                     </h3>
                   </div>
                   <span className="badge badge-warm">
-                    {logisticsCalculation.isInterstate ? 'Interstate Freight' : 'Intra-State Haulage'}
+                    {logisticsCalculation.isInterstate ? t('interstateFreightBadge') : t('intraStateHaulageBadge')}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-md mb-md">
                   <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
-                    <span className="body-xs text-muted">Road Transit Distance</span>
+                    <span className="body-xs text-muted">{t('roadTransitDistance')}</span>
                     <div className="heading-md text-forest mt-xs">{logisticsCalculation.roadDistanceKm} km</div>
-                    <span className="body-xs text-muted">OSRM Route</span>
+                    <span className="body-xs text-muted">{t('osrmRoute')}</span>
                   </div>
 
                   <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
-                    <span className="body-xs text-muted">Required Trips</span>
+                    <span className="body-xs text-muted">{t('requiredTrips')}</span>
                     <div className="heading-md text-forest mt-xs">{logisticsCalculation.transport?.trips} trips</div>
                     <span className="body-xs text-muted">Ceiling({calcQuantity}t ÷ {logisticsCalculation.transport?.vehicleConfig?.payloadCapacity}t)</span>
                   </div>
 
                   <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
-                    <span className="body-xs text-muted">Cost Per Trip</span>
+                    <span className="body-xs text-muted">{t('costPerTrip')}</span>
                     <div className="heading-md text-forest mt-xs">₹{logisticsCalculation.transport?.costPerTrip?.toLocaleString('en-IN')}</div>
-                    <span className="body-xs text-muted">Freight + tolls + handling</span>
+                    <span className="body-xs text-muted">{t('freightTollsHandling')}</span>
                   </div>
 
                   <div className="card" style={{ padding: 'var(--space-md)', background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
-                    <span className="body-xs text-forest font-semibold">Delivered Cost / Tonne</span>
+                    <span className="body-xs text-forest font-semibold">{t('deliveredCostPerTonne')}</span>
                     <div className="heading-lg text-forest font-bold mt-xs">
                       ₹{logisticsCalculation.delivered?.deliveredCostPerTonne?.toLocaleString('en-IN')} / t
                     </div>
-                    <span className="body-xs text-forest">Total: ₹{logisticsCalculation.delivered?.totalDeliveredCost?.toLocaleString('en-IN')}</span>
+                    <span className="body-xs text-forest">{t('totalCostLabel')}: ₹{logisticsCalculation.delivered?.totalDeliveredCost?.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 
                 {/* Full Breakdown Table */}
-                <h4 className="heading-sm mb-xs">Itemized Freight &amp; Delivered Cost Breakdown</h4>
+                <h4 className="heading-sm mb-xs">{t('itemizedCostBreakdown')}</h4>
                 <div className="table-responsive">
                   <table className="data-table">
                     <thead>
                       <tr>
-                        <th>Cost Component</th>
-                        <th>Per Trip</th>
+                        <th>{t('colCostComponent')}</th>
+                        <th>{t('colPerTrip')}</th>
                         <th>All Trips ({logisticsCalculation.transport?.trips})</th>
-                        <th>Cost Per Tonne</th>
+                        <th>{t('colCostPerTonne')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td>Distance Charge ({logisticsCalculation.roadDistanceKm} km @ ₹{logisticsCalculation.transport?.vehicleConfig?.ratePerKm}/km)</td>
+                        <td>{t('distanceChargeRow', { distance: logisticsCalculation.roadDistanceKm, rate: logisticsCalculation.transport?.vehicleConfig?.ratePerKm })}</td>
                         <td>₹{logisticsCalculation.transport?.breakdown?.distanceChargePerTrip?.toLocaleString('en-IN')}</td>
                         <td>₹{logisticsCalculation.transport?.breakdown?.totalDistanceCharge?.toLocaleString('en-IN')}</td>
                         <td>₹{(logisticsCalculation.transport?.breakdown?.totalDistanceCharge / calcQuantity).toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td>Fixed Trip Base Charge</td>
+                        <td>{t('fixedTripBaseCharge')}</td>
                         <td>₹{logisticsCalculation.transport?.breakdown?.fixedTripCharge?.toLocaleString('en-IN')}</td>
                         <td>₹{logisticsCalculation.transport?.breakdown?.totalFixedCharges?.toLocaleString('en-IN')}</td>
                         <td>₹{(logisticsCalculation.transport?.breakdown?.totalFixedCharges / calcQuantity).toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td>Highway Toll Expenses (NHAI Standard)</td>
+                        <td>{t('highwayTollExpenses')}</td>
                         <td>₹{logisticsCalculation.transport?.breakdown?.tollChargesPerTrip?.toLocaleString('en-IN')}</td>
                         <td>₹{logisticsCalculation.transport?.breakdown?.totalTolls?.toLocaleString('en-IN')}</td>
                         <td>₹{(logisticsCalculation.transport?.breakdown?.totalTolls / calcQuantity).toFixed(2)}</td>
                       </tr>
                       <tr>
-                        <td>Loading &amp; Unloading Handling</td>
+                        <td>{t('loadingUnloadingHandling')}</td>
                         <td>₹{logisticsCalculation.transport?.breakdown?.handlingPerTrip?.toLocaleString('en-IN')}</td>
                         <td>₹{logisticsCalculation.transport?.breakdown?.totalHandling?.toLocaleString('en-IN')}</td>
                         <td>₹{(logisticsCalculation.transport?.breakdown?.totalHandling / calcQuantity).toFixed(2)}</td>
                       </tr>
                       {logisticsCalculation.isInterstate && (
                         <tr>
-                          <td>Interstate Commercial Permit Surcharge</td>
+                          <td>{t('interstatePermitSurcharge')}</td>
                           <td>₹{logisticsCalculation.transport?.breakdown?.interstateFeePerTrip?.toLocaleString('en-IN')}</td>
                           <td>₹{logisticsCalculation.transport?.breakdown?.totalInterstateFees?.toLocaleString('en-IN')}</td>
                           <td>₹{(logisticsCalculation.transport?.breakdown?.totalInterstateFees / calcQuantity).toFixed(2)}</td>
                         </tr>
                       )}
                       <tr className="font-semibold bg-gray-50">
-                        <td>Total Transportation Logistics Expense</td>
+                        <td>{t('totalTransportExpense')}</td>
                         <td>₹{logisticsCalculation.transport?.costPerTrip?.toLocaleString('en-IN')}</td>
                         <td className="text-forest font-bold">₹{logisticsCalculation.transport?.totalTransportationCost?.toLocaleString('en-IN')}</td>
                         <td className="text-forest font-bold">₹{logisticsCalculation.transport?.costPerTonne?.toLocaleString('en-IN')} / t</td>
                       </tr>
                       <tr>
-                        <td>Biomass Raw Purchase Price (Farm-Gate)</td>
+                        <td>{t('rawPurchasePriceFarmGate')}</td>
                         <td>—</td>
                         <td>₹{logisticsCalculation.delivered?.totalPurchaseCost?.toLocaleString('en-IN')}</td>
                         <td>₹{Number(calcPurchasePrice).toLocaleString('en-IN')} / t</td>
                       </tr>
                       <tr className="font-bold text-forest" style={{ backgroundColor: '#F0FDF4' }}>
-                        <td>Final Delivered Cost (Purchase + Transport + Other)</td>
+                        <td>{t('finalDeliveredCost')}</td>
                         <td>—</td>
                         <td className="heading-md">₹{logisticsCalculation.delivered?.totalDeliveredCost?.toLocaleString('en-IN')}</td>
                         <td className="heading-md">₹{logisticsCalculation.delivered?.deliveredCostPerTonne?.toLocaleString('en-IN')} / t</td>
@@ -1146,7 +1146,7 @@ export default function MarketIntelligence() {
                 </div>
 
                 <div className="mt-md body-xs text-muted" style={{ fontStyle: 'italic' }}>
-                  <strong>Important Notice:</strong> Indicative Transportation Estimate — Confirm Final Price With Transporter.
+                  {t('transportDisclaimerNotice')}
                 </div>
               </div>
             </div>
@@ -1158,7 +1158,7 @@ export default function MarketIntelligence() {
           <div className="section-header-row mb-md">
             <div>
               <div className="flex items-center gap-xs">
-                <span className="badge badge-green">Part 6</span>
+                <span className="badge badge-green">{t('partSixBadge')}</span>
                 <h2 className="heading-lg">Commercial Matching Opportunities ({commercialMatches.length})</h2>
               </div>
               <p className="body-sm text-muted mt-xs">
@@ -1171,20 +1171,20 @@ export default function MarketIntelligence() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Producer (Farmer)</th>
-                  <th>Buyer / Enterprise</th>
-                  <th>Residue Type</th>
-                  <th>Available Qty</th>
-                  <th>Origin District &amp; State</th>
-                  <th>Destination Location</th>
-                  <th>Road Dist.</th>
-                  <th>Asking Rate</th>
-                  <th>Offered Rate</th>
-                  <th>Purchasing Purpose</th>
-                  <th>Est. Freight</th>
-                  <th>Delivered Cost</th>
-                  <th>Total Cost</th>
-                  <th>Action</th>
+                  <th>{t('colProducerFarmer')}</th>
+                  <th>{t('colBuyerEnterprise')}</th>
+                  <th>{t('colResidueType')}</th>
+                  <th>{t('colAvailableQty')}</th>
+                  <th>{t('colOriginDistrictState')}</th>
+                  <th>{t('colDestLocation')}</th>
+                  <th>{t('colRoadDist')}</th>
+                  <th>{t('colAskingRate')}</th>
+                  <th>{t('colOfferedRate')}</th>
+                  <th>{t('colPurchasingPurpose')}</th>
+                  <th>{t('colEstFreight')}</th>
+                  <th>{t('colDeliveredCost')}</th>
+                  <th>{t('colTotalCost')}</th>
+                  <th>{t('colAction')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1192,7 +1192,7 @@ export default function MarketIntelligence() {
                   <tr key={m.id} className={m.priorityTier === 1 ? 'row-local-match' : ''}>
                     <td className="font-semibold">{m.farmerName}</td>
                     <td className="font-medium text-forest">{m.buyerOrgName}</td>
-                    <td>{m.residueType}</td>
+                    <td>{tResidue(m.residueType)}</td>
                     <td>{m.availableQuantity}t</td>
                     <td>
                       {m.sourceDistrict}, {m.sourceState}
@@ -1206,7 +1206,7 @@ export default function MarketIntelligence() {
                     <td>₹{m.farmerAskingPrice.toLocaleString('en-IN')}/t</td>
                     <td className="text-forest font-semibold">₹{m.buyerOfferedRate.toLocaleString('en-IN')}/t</td>
                     <td>
-                      <span className="badge badge-warm">{m.buyerPurchasingPurpose}</span>
+                      <span className="badge badge-warm">{tPurpose(m.buyerPurchasingPurpose)}</span>
                     </td>
                     <td>₹{m.transportCostPerTonne.toLocaleString('en-IN')}/t</td>
                     <td className="font-bold text-forest">₹{m.deliveredPricePerTonne.toLocaleString('en-IN')}/t</td>
@@ -1225,7 +1225,7 @@ export default function MarketIntelligence() {
                 {commercialMatches.length === 0 && (
                   <tr>
                     <td colSpan={14} className="text-center py-lg text-muted">
-                      No commercial matches match your current filter criteria.
+                      {t('noCommercialMatchesFilter')}
                     </td>
                   </tr>
                 )}

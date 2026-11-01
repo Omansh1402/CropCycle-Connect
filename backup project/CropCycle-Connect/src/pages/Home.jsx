@@ -44,45 +44,45 @@ const BASE_SYSTEM_STAGES = [
 const FEEDSTOCK_SPECIFICATIONS = [
   {
     crop: 'Paddy Straw',
-    category: 'Cereal Residue',
+    categoryKey: 'cerealResidue',
     calorific: '~3,200 kcal/kg',
     moisture: '< 15%',
-    primaryUses: 'Bio-CNG, Bioethanol, Particle Board, Mushroom Beds',
+    usesKey: 'usesPaddyStraw',
   },
   {
     crop: 'Wheat Straw',
-    category: 'Cereal Residue',
+    categoryKey: 'cerealResidue',
     calorific: '~3,400 kcal/kg',
     moisture: '< 12%',
-    primaryUses: 'Fodder Pellets, Cellulose Paper, Eco-Packaging',
+    usesKey: 'usesWheatStraw',
   },
   {
     crop: 'Sugarcane Bagasse',
-    category: 'Agro-Industrial',
+    categoryKey: 'stalkFiber',
     calorific: '~2,200 kcal/kg (wet)',
     moisture: '< 50%',
-    primaryUses: 'Cogeneration Power, Pulp & Paper, Molded Tableware',
+    usesKey: 'usesSugarcaneBagasse',
   },
   {
     crop: 'Cotton Stalks',
-    category: 'Woody Biomass',
+    categoryKey: 'stalkFiber',
     calorific: '~3,900 kcal/kg',
     moisture: '< 14%',
-    primaryUses: 'Industrial Pellets, Bio-Coal, Briquetting',
+    usesKey: 'usesCottonStalks',
   },
   {
     crop: 'Maize Stover',
-    category: 'Cereal Residue',
+    categoryKey: 'cerealResidue',
     calorific: '~3,800 kcal/kg',
     moisture: '< 15%',
-    primaryUses: 'Animal Fodder, Cellulosic Fuel, Biochar',
+    usesKey: 'usesMaizeStover',
   },
   {
     crop: 'Groundnut Shells',
-    category: 'Husk / Shell',
+    categoryKey: 'huskShell',
     calorific: '~4,200 kcal/kg',
     moisture: '< 10%',
-    primaryUses: 'High-Density Boiler Briquettes, Activated Carbon',
+    usesKey: 'usesGroundnutShells',
   },
 ];
 
@@ -495,10 +495,10 @@ export default function Home() {
                 {FEEDSTOCK_SPECIFICATIONS.map((item) => (
                   <tr key={item.crop}>
                     <td className="font-semibold text-forest">{tResidue(item.crop)}</td>
-                    <td><span className="badge badge-muted">{item.category}</span></td>
+                    <td><span className="badge badge-muted">{t(item.categoryKey) || item.categoryKey}</span></td>
                     <td className="font-medium">{item.calorific}</td>
                     <td>{item.moisture}</td>
-                    <td className="text-muted">{item.primaryUses}</td>
+                    <td className="text-muted">{t(item.usesKey) || item.usesKey}</td>
                   </tr>
                 ))}
               </tbody>

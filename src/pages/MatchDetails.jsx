@@ -24,7 +24,7 @@ export default function MatchDetails() {
   const { buyerId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const listingId = searchParams.get('listing');
-  const { t } = useTranslation();
+  const { t, tResidue, tVehicle, tPurpose, tIndustry } = useTranslation();
 
   // Loaded buyer and listing state (supports both DB and sample)
   const [buyerData, setBuyerData] = useState(() => {
@@ -165,7 +165,7 @@ export default function MatchDetails() {
     return (
       <main className="match-details-page">
         <div className="container section flex justify-center">
-          <LoadingSpinner label="Retrieving buyer profile…" />
+          <LoadingSpinner label={t('retrievingBuyerProfile')} />
         </div>
       </main>
     );
@@ -176,12 +176,12 @@ export default function MatchDetails() {
       <main className="match-details-page">
         <div className="container section">
           <div className="error-state-card text-center">
-            <h2 className="heading-lg">Buyer Profile Not Located</h2>
+            <h2 className="heading-lg">{t('buyerProfileNotLocated')}</h2>
             <p className="body-md text-muted mt-xs">
-              The requested buyer requirement ID could not be retrieved from the active index.
+              {t('buyerProfileNotLocatedDesc')}
             </p>
             <Link to="/matches" className="btn btn-primary mt-md">
-              Return to Matches Catalog
+              {t('returnToMatchesCatalog')}
             </Link>
           </div>
         </div>
@@ -200,7 +200,7 @@ export default function MatchDetails() {
     setMsgError('');
 
     if (!message.trim() || message.trim().length < 10) {
-      setMsgError('Message must contain at least 10 characters.');
+      setMsgError(t('msgMinCharsErr'));
       return;
     }
 
@@ -232,7 +232,7 @@ export default function MatchDetails() {
       setSavedRequestId(data?.id || null);
       setRequestSent(true);
     } catch {
-      setDbError('An unexpected network error occurred while transmitting your request.');
+      setDbError(t('networkErrSendingInquiry'));
     } finally {
       setLoading(false);
     }
@@ -244,7 +244,7 @@ export default function MatchDetails() {
       <header className="page-header">
         <div className="container">
           <div className="breadcrumb-nav mb-sm">
-            <Link to="/matches" className="body-sm text-forest font-medium">← All Matches</Link>
+            <Link to="/matches" className="body-sm text-forest font-medium">{t('allMatchesBreadcrumb')}</Link>
             <span className="body-sm text-muted"> / </span>
             <span className="body-sm text-muted">{normalizedBuyer.orgName}</span>
           </div>
@@ -253,34 +253,34 @@ export default function MatchDetails() {
             <div>
               <div className="flex items-center gap-xs flex-wrap mb-xs">
                 <span className="badge badge-muted">
-                  {normalizedBuyer.orgType || 'Industrial Buyer'}
+                  {tIndustry(normalizedBuyer.orgType) || t('industrialBuyer')}
                 </span>
                 {normalizedBuyer.purchasingPurpose && (
-                  <span className="badge badge-warm">{normalizedBuyer.purchasingPurpose}</span>
+                  <span className="badge badge-warm">{tPurpose(normalizedBuyer.purchasingPurpose)}</span>
                 )}
                 {normalizedBuyer.isDemo && (
-                  <span className="badge badge-muted">Reference Record</span>
+                  <span className="badge badge-muted">{t('referenceRecord')}</span>
                 )}
                 <span className={`status-pill ${normalizedBuyer.available ? 'status-pill--active' : 'status-pill--standby'}`}>
                   <span className="status-dot-mini" />
-                  {normalizedBuyer.available ? 'Active Intake' : 'Intake Standby'}
+                  {normalizedBuyer.available ? t('activeIntake') : t('intakeStandby')}
                 </span>
               </div>
               <SplitText text={normalizedBuyer.orgName} tag="h1" className="display-lg" delay={0.02} />
               <p className="body-lg text-muted mt-xs">
-                {normalizedBuyer.location}, {normalizedBuyer.state} · Seeking {normalizedBuyer.requiredQuantity} tonnes
+                {normalizedBuyer.location}, {normalizedBuyer.state} · {t('seekingTonnes', { quantity: normalizedBuyer.requiredQuantity })}
               </p>
             </div>
 
             {/* Score Callout */}
             <div className="score-callout-card">
-              <span className="score-callout-label">Match Alignment</span>
+              <span className="score-callout-label">{t('matchAlignment')}</span>
               <div className={`score-pill ${scoreBadgeClass}`} style={{ fontSize: '1.75rem', padding: '8px 16px' }}>
                 <span className="score-val"><CountUp to={score} duration={1.2} /></span>
                 <span className="score-unit">%</span>
               </div>
               <span className="body-xs text-muted mt-xs">
-                {score >= 80 ? 'Optimal Sourcing Match' : score >= 60 ? 'Compatible Profile' : 'Partial Match'}
+                {score >= 80 ? t('optimalSourcingMatch') : score >= 60 ? t('compatibleProfile') : t('partialMatch')}
               </span>
             </div>
           </div>
@@ -293,13 +293,13 @@ export default function MatchDetails() {
           <div className="listing-selector-banner card mb-xl">
             <div className="flex items-center justify-between gap-md flex-wrap">
               <div>
-                <span className="badge badge-warm">No Farm Listing Selected</span>
-                <h3 className="heading-md mt-xs">Select a Farm Listing to Evaluate Exact Fit</h3>
+                <span className="badge badge-warm">{t('noFarmListingSelected')}</span>
+                <h3 className="heading-md mt-xs">{t('selectFarmListingPrompt')}</h3>
                 <p className="body-sm text-muted mt-xs">
-                  Choose an available residue lot to calculate batch fulfillment, road haulage distance, and lot valuation.
+                  {t('selectFarmListingDesc')}
                 </p>
               </div>
-              <Link to="/farmer" className="btn btn-primary btn-sm">+ Post Farm Listing</Link>
+              <Link to="/farmer" className="btn btn-primary btn-sm">{t('postFarmListing')}</Link>
             </div>
             <div className="listing-chips-container mt-md">
               {availableListings.map((l) => {
@@ -313,14 +313,14 @@ export default function MatchDetails() {
                     }}
                     type="button"
                   >
-                    <span>{norm.residueType}</span>
+                    <span>{tResidue(norm.residueType)}</span>
                     <span className="listing-chip-meta">
                       {norm.quantity}t · {norm.district || norm.state || norm.location}
                     </span>
                     {norm.isDemo ? (
-                      <span className="chip-demo-tag">demo</span>
+                      <span className="chip-demo-tag">{t('referenceRecord')}</span>
                     ) : (
-                      <span className="badge badge-green" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>real</span>
+                      <span className="badge badge-green" style={{ fontSize: '0.625rem', padding: '1px 5px' }}>{t('verifiedBadge')}</span>
                     )}
                   </button>
                 );
@@ -331,22 +331,22 @@ export default function MatchDetails() {
           <div className="listing-selector-banner card mb-xl">
             <div className="flex items-center justify-between gap-md flex-wrap">
               <div className="flex items-center gap-md flex-wrap">
-                <span className="badge badge-green">Evaluated Listing</span>
+                <span className="badge badge-green">{t('evaluatedListing')}</span>
                 <span className="heading-sm">
-                  {normalizedListing.residueType} ({normalizedListing.quantity} tonnes)
+                  {tResidue(normalizedListing.residueType)} ({normalizedListing.quantity} {t('tonnes')})
                 </span>
                 <span className="body-sm text-muted">
                   {normalizedListing.district ? `${normalizedListing.district}, ` : ''}{normalizedListing.state || normalizedListing.location}
                 </span>
               </div>
               <div className="flex items-center gap-sm">
-                <Link to="/matches" className="btn btn-outline btn-sm">All Matches</Link>
+                <Link to="/matches" className="btn btn-outline btn-sm">{t('allMatches')}</Link>
                 <button
                   type="button"
                   className="btn btn-outline btn-sm"
                   onClick={() => setSearchParams({})}
                 >
-                  Change Farm Lot
+                  {t('changeFarmLot')}
                 </button>
               </div>
             </div>
@@ -358,13 +358,13 @@ export default function MatchDetails() {
           <FadeContent delay={0.1} distance={20} className="details-main">
             {normalizedBuyer.isDemo && (
               <div className="alert-box mb-lg">
-                <span className="font-semibold text-forest">Verified Reference Record:</span> {normalizedBuyer.orgName} represents an indexed regional industrial processor.
+                <span className="font-semibold text-forest">{t('verifiedReferenceRecord')}:</span> {normalizedBuyer.orgName} {t('indexedProcessorDesc')}
               </div>
             )}
 
             {/* About Section */}
             <section className="card details-section">
-              <h2 className="heading-md mb-sm">Enterprise Facility Overview</h2>
+              <h2 className="heading-md mb-sm">{t('enterpriseFacilityOverview')}</h2>
               <p className="body-md" style={{ lineHeight: '1.65' }}>
                 {normalizedBuyer.notes || 'Operating commercial conversion facilities for agricultural residues.'}
               </p>
@@ -373,57 +373,57 @@ export default function MatchDetails() {
             {/* Commercial Lot Valuation */}
             <section className="card details-section">
               <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
-                <h2 className="heading-md">Commercial Lot Valuation</h2>
+                <h2 className="heading-md">{t('commercialLotValuation')}</h2>
                 {matchResult?.metadata?.pricing?.pricePerTonne != null ? (
-                  <span className="badge badge-green">Calculated Value</span>
+                  <span className="badge badge-green">{t('calculatedValue')}</span>
                 ) : (
-                  <span className="badge badge-muted">Price Upon Inquiry</span>
+                  <span className="badge badge-muted">{t('priceUponInquiry')}</span>
                 )}
               </div>
 
               <div className="spec-metric-grid">
                 <div className="spec-metric-cell">
-                  <span className="label">Buyer Intake Price</span>
+                  <span className="label">{t('buyerIntakePrice')}</span>
                   {matchResult?.metadata?.pricing?.pricePerTonne != null ? (
                     <div>
                       <div className="display-md text-forest">
                         ₹{matchResult.metadata.pricing.pricePerTonne.toLocaleString('en-IN')}{' '}
-                        <span style={{ fontSize: '0.875rem', fontWeight: 400 }}>/ tonne</span>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 400 }}>/ {t('tonnes')}</span>
                       </div>
                       {matchResult.metadata.pricing.isDemoPrice && (
-                        <span className="badge badge-warm mt-xs">Reference Quotation</span>
+                        <span className="badge badge-warm mt-xs">{t('referenceQuotation')}</span>
                       )}
                     </div>
                   ) : (
                     <div>
-                      <span className="badge badge-muted">Price upon inquiry</span>
-                      <p className="body-sm text-muted mt-xs">Submit inquiry below for commercial terms</p>
+                      <span className="badge badge-muted">{t('priceUponInquiry')}</span>
+                      <p className="body-sm text-muted mt-xs">{t('submitInquiryForCommercialTerms')}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="spec-metric-cell">
-                  <span className="label">Estimated Batch Lot Value</span>
+                  <span className="label">{t('estimatedBatchLotValue')}</span>
                   {matchResult?.metadata?.pricing?.indicativeValue != null ? (
                     <div>
                       <div className="display-md text-forest">
                         ₹{matchResult.metadata.pricing.indicativeValue.toLocaleString('en-IN')}
                       </div>
                       <p className="body-sm text-muted mt-xs">
-                        {normalizedListing?.quantity || 0} tonnes × ₹{matchResult.metadata.pricing.pricePerTonne.toLocaleString('en-IN')}/t
+                        {normalizedListing?.quantity || 0} {t('tonnes')} × ₹{matchResult.metadata.pricing.pricePerTonne.toLocaleString('en-IN')}/{t('tonnes')}
                       </p>
                     </div>
                   ) : (
                     <div>
-                      <div className="heading-lg text-muted">Quote Required</div>
-                      <p className="body-sm text-muted mt-xs">Direct quote required for this residue variety.</p>
+                      <div className="heading-lg text-muted">{t('quoteRequired')}</div>
+                      <p className="body-sm text-muted mt-xs">{t('directQuoteRequired')}</p>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="disclaimer-text mt-md">
-                Indicative value represents estimated gross proceeds. Final pricing depends on moisture thresholds (&lt; 15%), baling condition, and agreed haulage logistics.
+                {t('lotValuationDisclaimer')}
               </div>
             </section>
 
@@ -432,34 +432,34 @@ export default function MatchDetails() {
               <section className="card details-section">
                 <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
                   <div>
-                    <h2 className="heading-md">Smart Logistics &amp; Delivered Cost Breakdown</h2>
+                    <h2 className="heading-md">{t('smartLogisticsBreakdown')}</h2>
                     <p className="body-sm text-muted">
-                      Transparent multi-tier freight model with verified capacities and road travel distances.
+                      {t('multiTierFreightModel')}
                     </p>
                   </div>
                   <span className="badge badge-green">
-                    {transportCalc.isInterstate ? 'Interstate Delivery' : 'Intra-State Delivery'}
+                    {transportCalc.isInterstate ? t('interstateDelivery') : t('intraStateDelivery')}
                   </span>
                 </div>
 
                 {/* Route & Distance Info */}
                 <div className="spec-table-grid mb-md">
                   <div className="spec-item">
-                    <span className="label">Origin</span>
+                    <span className="label">{t('originLabel')}</span>
                     <div className="spec-val">{normalizedListing.location}{normalizedListing.state ? `, ${normalizedListing.state}` : ''}</div>
                   </div>
                   <div className="spec-item">
-                    <span className="label">Destination</span>
+                    <span className="label">{t('destinationLabel')}</span>
                     <div className="spec-val">{normalizedBuyer.location}, {normalizedBuyer.state}</div>
                   </div>
                   <div className="spec-item">
-                    <span className="label">Road Transit Distance</span>
+                    <span className="label">{t('roadTransitDistance')}</span>
                     <div className="spec-val font-semibold text-forest">
-                      {transportCalc.distanceKm} km (OSRM Road Routing)
+                      {transportCalc.distanceKm} km ({t('osrmRoadRouting')})
                     </div>
                   </div>
                   <div className="spec-item">
-                    <span className="label">Active Vehicle Profile</span>
+                    <span className="label">{t('activeVehicleProfile')}</span>
                     <div className="spec-val">
                       <select
                         value={selectedVehicle}
@@ -467,10 +467,10 @@ export default function MatchDetails() {
                         className="form-control"
                         style={{ padding: '4px 8px', fontSize: '0.875rem' }}
                       >
-                        <option value="auto">Auto-Selected Tier ({transportCalc.transport.vehicleConfig.label})</option>
+                        <option value="auto">{t('autoSelectedTier')} ({tVehicle(transportCalc.transport.vehicleConfig.id) || transportCalc.transport.vehicleConfig.label})</option>
                         {Object.values(VEHICLE_CONFIGS).map((v) => (
                           <option key={v.id} value={v.id}>
-                            {v.label} ({v.payloadTonnes}T payload · ₹{v.ratePerKm}/km)
+                            {tVehicle(v.id) || v.label} ({v.payloadTonnes}T payload · ₹{v.ratePerKm}/km)
                           </option>
                         ))}
                       </select>
@@ -481,37 +481,37 @@ export default function MatchDetails() {
                 {/* 4 Cost Cards: Trips, Cost/Trip, Transport/Tonne, Delivered/Tonne */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-md mb-md">
                   <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
-                    <span className="text-muted body-sm">Required Trips</span>
-                    <div className="heading-lg text-forest mt-xs">{transportCalc.transport.trips} trip{transportCalc.transport.trips > 1 ? 's' : ''}</div>
-                    <span className="body-xs text-muted">Ceiling({normalizedListing.quantity}t ÷ {transportCalc.transport.vehicleConfig.payloadCapacity}t capacity)</span>
+                    <span className="text-muted body-sm">{t('requiredTripsCard')}</span>
+                    <div className="heading-lg text-forest mt-xs">{transportCalc.transport.trips} {transportCalc.transport.trips > 1 ? t('tripPlural') : t('tripSingular')}</div>
+                    <span className="body-xs text-muted">{t('tripCeilingExplanation', { quantity: normalizedListing.quantity, capacity: transportCalc.transport.vehicleConfig.payloadCapacity })}</span>
                   </div>
                   <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
-                    <span className="text-muted body-sm">Cost Per Trip</span>
+                    <span className="text-muted body-sm">{t('costPerTripCard')}</span>
                     <div className="heading-lg text-forest mt-xs">₹{transportCalc.transport.costPerTrip.toLocaleString('en-IN')}</div>
-                    <span className="body-xs text-muted">Freight + tolls + handling</span>
+                    <span className="body-xs text-muted">{t('freightTollsHandling')}</span>
                   </div>
                   <div className="card" style={{ padding: 'var(--space-md)', background: '#F8FAF9' }}>
-                    <span className="text-muted body-sm">Transport Expense / Tonne</span>
-                    <div className="heading-lg text-forest mt-xs">₹{transportCalc.transport.costPerTonne.toLocaleString('en-IN')} / t</div>
-                    <span className="body-xs text-muted">Total: ₹{transportCalc.transport.totalTransportationCost.toLocaleString('en-IN')}</span>
+                    <span className="text-muted body-sm">{t('transportExpensePerTonne')}</span>
+                    <div className="heading-lg text-forest mt-xs">₹{transportCalc.transport.costPerTonne.toLocaleString('en-IN')} / {t('tonnes')}</div>
+                    <span className="body-xs text-muted">{t('totalLotLabel')} ₹{transportCalc.transport.totalTransportationCost.toLocaleString('en-IN')}</span>
                   </div>
                   <div className="card" style={{ padding: 'var(--space-md)', background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
-                    <span className="text-muted body-sm font-medium">Final Delivered Rate</span>
-                    <div className="heading-lg text-forest mt-xs font-bold">₹{transportCalc.delivered.deliveredCostPerTonne.toLocaleString('en-IN')} / t</div>
-                    <span className="body-xs text-muted">Total Lot: ₹{transportCalc.delivered.totalDeliveredCost.toLocaleString('en-IN')}</span>
+                    <span className="text-muted body-sm font-medium">{t('finalDeliveredRateCard')}</span>
+                    <div className="heading-lg text-forest mt-xs font-bold">₹{transportCalc.delivered.deliveredCostPerTonne.toLocaleString('en-IN')} / {t('tonnes')}</div>
+                    <span className="body-xs text-muted">{t('totalLotLabel')} ₹{transportCalc.delivered.totalDeliveredCost.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
 
                 {/* Delivered Cost Formula Breakdown */}
                 <div className="card" style={{ padding: 'var(--space-md)', background: '#FAFAFA', border: '1px solid #E5E7EB' }}>
-                  <span className="font-semibold body-sm">Final Delivered Cost Formula (Part 5):</span>
+                  <span className="font-semibold body-sm">{t('finalDeliveredCostFormulaTitle')}</span>
                   <div className="body-sm mt-xs" style={{ fontFamily: 'monospace' }}>
-                    Final Delivered Cost = Purchase Rate (₹{transportCalc.delivered.purchasePricePerTonne.toLocaleString('en-IN')}/t) + Transport Cost (₹{transportCalc.delivered.transportCostPerTonne.toLocaleString('en-IN')}/t) + Other Charges (₹{transportCalc.delivered.otherChargesPerTonne}/t) = <strong>₹{transportCalc.delivered.deliveredCostPerTonne.toLocaleString('en-IN')} / tonne</strong>
+                    {t('finalDeliveredCostFormulaText', { purchase: transportCalc.delivered.purchasePricePerTonne.toLocaleString('en-IN'), transport: transportCalc.delivered.transportCostPerTonne.toLocaleString('en-IN'), other: transportCalc.delivered.otherChargesPerTonne, delivered: transportCalc.delivered.deliveredCostPerTonne.toLocaleString('en-IN') })}
                   </div>
                 </div>
 
                 <div className="mt-md body-xs text-muted" style={{ fontStyle: 'italic' }}>
-                  <strong>Notice:</strong> Indicative Transportation Estimate — Confirm Final Price With Transporter.
+                  {t('indicativeTransportNotice')}
                 </div>
               </section>
             )}
@@ -519,18 +519,18 @@ export default function MatchDetails() {
             {/* Location & Route Map */}
             <section className="card details-section">
               <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
-                <h2 className="heading-md">Haulage Route &amp; Transit Analysis</h2>
-                <span className="badge badge-muted">OpenStreetMap Compatible</span>
+                <h2 className="heading-md">{t('haulageRouteAnalysisHeading')}</h2>
+                <span className="badge badge-muted">{t('openStreetMapCompatible')}</span>
               </div>
 
               <p className="body-sm text-muted mb-md">
-                Origin point ({normalizedListing?.location || 'Origin Farm'}) mapped against delivery yard ({normalizedBuyer.location}).
+                {t('originMappedAgainstYard', { origin: normalizedListing?.location || 'Origin Farm', destination: normalizedBuyer.location })}
               </p>
 
               <Suspense
                 fallback={
                   <div className="route-map-loading">
-                    <LoadingSpinner label="Loading interactive haulage map…" />
+                    <LoadingSpinner label={t('calculatingRoute')} />
                   </div>
                 }
               >
@@ -546,18 +546,18 @@ export default function MatchDetails() {
             {/* Score Breakdown (5 Dimensions) */}
             <section className="card details-section">
               <div className="flex justify-between items-center mb-md flex-wrap gap-sm">
-                <h2 className="heading-md">5-Dimension Algorithmic Evaluation</h2>
+                <h2 className="heading-md">{t('algorithmicEvaluationTitle')}</h2>
                 <span className="badge badge-green">
-                  Formula: 40% Q + 30% P + 20% C + 10% U
+                  {t('matchFormulaWeightBadge')}
                 </span>
               </div>
 
               <div className="match-factors">
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Batch Quantity Alignment (40% Weight)</span>
+                    <span className="font-medium body-sm">{t('batchQuantityAlignment')}</span>
                     <span className="font-semibold body-sm text-forest">
-                      {Math.round((matchResult?.scores?.quantityFit || 0) * 100)}% ({matchResult?.weightedPoints?.quantity || 0} / 40 pts)
+                      {Math.round((matchResult?.scores?.quantityFit || 0) * 100)}% ({matchResult?.weightedPoints?.quantity || 0} / 40 {t('pointsUnit')})
                     </span>
                   </div>
                   <div className="factor-bar-track">
@@ -573,9 +573,9 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Proximity &amp; Transit Efficiency (30% Weight)</span>
+                    <span className="font-medium body-sm">{t('proximityTransitEfficiency')}</span>
                     <span className="font-semibold body-sm text-forest">
-                      {Math.round((matchResult?.scores?.proximityFit || 0) * 100)}% ({matchResult?.weightedPoints?.proximity || 0} / 30 pts)
+                      {Math.round((matchResult?.scores?.proximityFit || 0) * 100)}% ({matchResult?.weightedPoints?.proximity || 0} / 30 {t('pointsUnit')})
                     </span>
                   </div>
                   <div className="factor-bar-track">
@@ -591,9 +591,9 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Intake Capacity Headroom (20% Weight)</span>
+                    <span className="font-medium body-sm">{t('intakeCapacityHeadroom')}</span>
                     <span className="font-semibold body-sm text-forest">
-                      {Math.round((matchResult?.scores?.capacityFit || 0) * 100)}% ({matchResult?.weightedPoints?.capacity || 0} / 20 pts)
+                      {Math.round((matchResult?.scores?.capacityFit || 0) * 100)}% ({matchResult?.weightedPoints?.capacity || 0} / 20 {t('pointsUnit')})
                     </span>
                   </div>
                   <div className="factor-bar-track">
@@ -609,9 +609,9 @@ export default function MatchDetails() {
 
                 <div className="match-factor">
                   <div className="flex justify-between mb-xs">
-                    <span className="font-medium body-sm">Industrial Transformation Synergy (10% Weight)</span>
+                    <span className="font-medium body-sm">{t('industrialSynergy')}</span>
                     <span className="font-semibold body-sm text-forest">
-                      {Math.round((matchResult?.scores?.useCaseFit || 0) * 100)}% ({matchResult?.weightedPoints?.useCase || 0} / 10 pts)
+                      {Math.round((matchResult?.scores?.useCaseFit || 0) * 100)}% ({matchResult?.weightedPoints?.useCase || 0} / 10 {t('pointsUnit')})
                     </span>
                   </div>
                   <div className="factor-bar-track">
@@ -629,16 +629,16 @@ export default function MatchDetails() {
 
             {/* Accepted Feedstocks */}
             <section className="card details-section">
-              <h2 className="heading-md mb-sm">All Permitted Biomass Species</h2>
+              <h2 className="heading-md mb-sm">{t('permittedBiomassSpecies')}</h2>
               <div className="tag-list">
-                {normalizedBuyer.acceptedTypes.map((t) => (
+                {normalizedBuyer.acceptedTypes.map((tType) => (
                   <span
-                    key={t}
-                    className={`badge ${normalizedListing?.residueType === t ? 'badge-green font-semibold' : 'badge-muted'}`}
+                    key={tType}
+                    className={`badge ${normalizedListing?.residueType === tType ? 'badge-green font-semibold' : 'badge-muted'}`}
                     style={{ fontSize: '0.875rem', padding: '6px 12px' }}
                   >
-                    {normalizedListing?.residueType === t && '✓ '}
-                    {t}
+                    {normalizedListing?.residueType === tType && '✓ '}
+                    {tResidue(tType)}
                   </span>
                 ))}
               </div>
@@ -652,20 +652,22 @@ export default function MatchDetails() {
                 <div className="contact-success">
                   <div className="success-badge">
                     <span className="success-dot" />
-                    <span>Inquiry Logged</span>
+                    <span>{t('inquiryLoggedBadge')}</span>
                   </div>
-                  <h3 className="heading-md text-forest mt-xs">Inquiry Transmitted</h3>
+                  <h3 className="heading-md text-forest mt-xs">{t('inquiryTransmittedHeading')}</h3>
                   <p className="body-sm text-muted mt-xs">
-                    Your {requestType === 'pickup' ? 'pickup dispatch request' : requestType === 'quote' ? 'quote inquiry' : 'message'}{' '}
-                    has been {savedRequestId ? 'persisted into the database.' : 'recorded for this demo session.'}
+                    {t('inquiryConfirmationBody', {
+                      requestType: requestType === 'pickup' ? t('pickupDispatchRequest') : requestType === 'quote' ? t('quoteInquiry') : t('messageWord'),
+                      destination: savedRequestId ? t('persistedIntoDb') : t('recordedForDemoSession')
+                    })}
                   </p>
                   {savedRequestId && (
                     <p className="body-sm text-muted mt-xs">
-                      Reference ID: <code className="record-id">{savedRequestId}</code>
+                      {t('referenceIdLabel')} <code className="record-id">{savedRequestId}</code>
                     </p>
                   )}
                   <Link to="/dashboard" className="btn btn-primary w-full mt-md">
-                    Open Operations Dashboard
+                    {t('openOperationsDashboardBtn')}
                   </Link>
                   <button
                     onClick={() => {
@@ -677,21 +679,21 @@ export default function MatchDetails() {
                     }}
                     className="btn btn-outline w-full mt-xs"
                   >
-                    Submit Additional Notice
+                    {t('submitAdditionalNoticeBtn')}
                   </button>
                 </div>
               ) : (
                 <>
-                  <h3 className="heading-md mb-xs">Submit Sourcing Inquiry</h3>
+                  <h3 className="heading-md mb-xs">{t('submitSourcingInquiryHeading')}</h3>
                   <p className="body-sm text-muted mb-md">
-                    Direct outreach to {normalizedBuyer.orgName}. Sourcing requests are securely indexed in Supabase.
+                    {t('directOutreachSub', { org: normalizedBuyer.orgName })}
                   </p>
 
                   {dbError && <DbErrorAlert message={dbError} onRetry={() => setDbError(null)} />}
 
                   <form onSubmit={handleSendRequest}>
                     <div className="form-group mb-sm">
-                      <label className="form-label" htmlFor="requestType">Inquiry Protocol</label>
+                      <label className="form-label" htmlFor="requestType">{t('inquiryProtocolLabel')}</label>
                       <select
                         id="requestType"
                         className="form-control"
@@ -699,19 +701,19 @@ export default function MatchDetails() {
                         onChange={(e) => setRequestType(e.target.value)}
                         disabled={loading}
                       >
-                        <option value="pickup">Schedule Residue Haulage / Pickup</option>
-                        <option value="quote">Request Offtake Price Quote</option>
-                        <option value="contact">General Commercial Inquiry</option>
+                        <option value="pickup">{t('schedulePickupOption')}</option>
+                        <option value="quote">{t('requestQuoteOption')}</option>
+                        <option value="contact">{t('generalInquiryOption')}</option>
                       </select>
                     </div>
 
                     <div className="form-group mb-sm">
-                      <label className="form-label" htmlFor="requester-name">Representative Name</label>
+                      <label className="form-label" htmlFor="requester-name">{t('representativeNameLabel')}</label>
                       <input
                         id="requester-name"
                         type="text"
                         className="form-control"
-                        placeholder="e.g. Ramesh Kumar (Cooperative Lead)"
+                        placeholder={t('repNamePlaceholder')}
                         value={requesterName}
                         onChange={(e) => setRequesterName(e.target.value)}
                         disabled={loading}
@@ -720,12 +722,12 @@ export default function MatchDetails() {
                     </div>
 
                     <div className="form-group mb-sm">
-                      <label className="form-label" htmlFor="requester-email">Official Email</label>
+                      <label className="form-label" htmlFor="requester-email">{t('officialEmailLabel')}</label>
                       <input
                         id="requester-email"
                         type="email"
                         className="form-control"
-                        placeholder="e.g. ramesh@cooperative.in"
+                        placeholder={t('repEmailPlaceholder')}
                         value={requesterEmail}
                         onChange={(e) => setRequesterEmail(e.target.value)}
                         disabled={loading}
@@ -735,35 +737,39 @@ export default function MatchDetails() {
 
                     <div className="form-group mb-md">
                       <label className="form-label" htmlFor="contact-message">
-                        Logistics Specifications <span className="required">*</span>
+                        {t('logisticsSpecsLabel')} <span className="required">*</span>
                       </label>
                       <textarea
                         id="contact-message"
                         className={`form-control ${msgError ? 'form-control--error' : ''}`}
                         rows={4}
-                        placeholder={`We have ${normalizedListing?.quantity ?? '25'} tonnes of ${normalizedListing?.residueType ?? 'Paddy Straw'} ready for dispatch at ${normalizedListing?.location ?? normalizedBuyer.location}. Requesting available pickup schedule.`}
+                        placeholder={t('logisticsSpecsPlaceholder', {
+                          quantity: normalizedListing?.quantity ?? '25',
+                          residue: tResidue(normalizedListing?.residueType) || 'Paddy Straw',
+                          location: normalizedListing?.location ?? normalizedBuyer.location
+                        })}
                         value={message}
                         onChange={(e) => { setMessage(e.target.value); setMsgError(''); }}
                         disabled={loading}
                         maxLength={2000}
                       />
                       {msgError && <span className="form-error" role="alert">{msgError}</span>}
-                      <span className="form-hint">{message.length}/2000 characters (minimum 10)</span>
+                      <span className="form-hint">{t('charsMinNotice', { count: message.length })}</span>
                     </div>
 
                     <button type="submit" className="btn btn-primary w-full" disabled={loading}>
-                      {loading ? <LoadingSpinner label="Sending inquiry…" /> : 'Transmit Sourcing Request'}
+                      {loading ? <LoadingSpinner label={t('sendingInquirySpinner')} /> : t('transmitSourcingRequestBtn')}
                     </button>
                   </form>
 
                   <div className="divider" style={{ marginBlock: 'var(--space-md)' }} />
                   <div className="contact-info">
-                    <span className="label">Registered Point of Contact</span>
+                    <span className="label">{t('registeredPointOfContact')}</span>
                     <p className="body-sm text-muted mt-xs">
-                      <strong>Email:</strong> {normalizedBuyer.contact || 'procurement@buyer.in'}
+                      <strong>{t('emailLabel')}</strong> {normalizedBuyer.contact || 'procurement@buyer.in'}
                     </p>
                     <p className="body-sm text-muted">
-                      <strong>Phone:</strong> {normalizedBuyer.phone || '+91 98765 43210'}
+                      <strong>{t('phoneLabel')}</strong> {normalizedBuyer.phone || '+91 98765 43210'}
                     </p>
                   </div>
                 </>
@@ -772,7 +778,7 @@ export default function MatchDetails() {
 
             <div className="mt-md">
               <Link to="/matches" className="btn btn-outline w-full">
-                ← Return to Matches Catalog
+                {t('returnToMatchesCatalog')}
               </Link>
             </div>
           </FadeContent>
